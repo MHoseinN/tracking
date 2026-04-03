@@ -251,6 +251,8 @@ async function handleSaveInvoice({ data, isEdit }) {
   // Reload invoices for current month
   if (currentFilter.value.persianYear) {
     await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
+  } else {
+    await invoiceStore.fetchInvoices();
   }
 }
 
@@ -269,6 +271,8 @@ async function handleDeleteInvoice() {
     // Reload
     if (currentFilter.value.persianYear) {
       await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
+    } else {
+      await invoiceStore.fetchInvoices();
     }
   } else {
     toast.error(result.message);
