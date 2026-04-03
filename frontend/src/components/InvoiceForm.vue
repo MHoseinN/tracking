@@ -20,7 +20,7 @@
         </div>
 
         <!-- Body -->
-        <form @submit.prevent="handleSubmit" class="p-5 space-y-4">
+        <form @submit.prevent class="p-5 space-y-4">
           <!-- Customer dropdown (only shown when not in customer-specific mode) -->
           <div v-if="!customerId">
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -115,7 +115,8 @@
           <!-- Buttons -->
           <div class="flex gap-3 pt-2">
             <button
-              type="submit"
+              type="button"
+              @click="handleSubmit"
               :disabled="saving"
               class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
             >

@@ -1,7 +1,9 @@
 /**
  * Date conversion utilities for Persian (Jalali) <-> Gregorian dates
- * Using persian-date library
+ * Using persian-date library (ES module compatible)
  */
+
+import PersianDate from 'persian-date';
 
 // Persian month names
 export const PERSIAN_MONTHS = [
@@ -19,7 +21,6 @@ export const PERSIAN_MONTHS = [
 export function toPersianDate(gregorianDate) {
   if (!gregorianDate) return '';
   try {
-    const PersianDate = window.persianDate || require('persian-date');
     const pd = new PersianDate(new Date(gregorianDate));
     return `${pd.year()}/${String(pd.month()).padStart(2, '0')}/${String(pd.date()).padStart(2, '0')}`;
   } catch (e) {
@@ -36,7 +37,6 @@ export function toPersianDate(gregorianDate) {
 export function toGregorianDate(persianDate) {
   if (!persianDate) return '';
   try {
-    const PersianDate = window.persianDate || require('persian-date');
     const parts = persianDate.split('/');
     if (parts.length !== 3) return persianDate;
 
@@ -55,7 +55,6 @@ export function toGregorianDate(persianDate) {
  */
 export function getCurrentPersianDate() {
   try {
-    const PersianDate = window.persianDate || require('persian-date');
     const pd = new PersianDate();
     return {
       year: pd.year(),
@@ -76,14 +75,11 @@ export function getCurrentPersianDate() {
  */
 export function getPersianMonthGregorianRange(persianYear, persianMonth) {
   try {
-    const PersianDate = window.persianDate || require('persian-date');
-
     // Start of Persian month
     const startPd = new PersianDate([persianYear, persianMonth, 1]);
     const startGreg = startPd.toCalendar('gregorian').toLocale('en').format('YYYY-MM-DD');
 
-    // End of Persian month (last day of month)
-    // Get days in month by going to next month day 0
+    // End of Persian month (last day - go to start of next month then subtract 1 day)
     const nextMonth = persianMonth === 12 ? 1 : persianMonth + 1;
     const nextYear = persianMonth === 12 ? persianYear + 1 : persianYear;
     const endPd = new PersianDate([nextYear, nextMonth, 1]).subtract('day', 1);
@@ -97,7 +93,7 @@ export function getPersianMonthGregorianRange(persianYear, persianMonth) {
 }
 
 /**
- * Format price as Persian number with thousands separator
+ * Format price as Persian number with thousands separator + تومان
  * @param {number} price
  * @returns {string}
  */

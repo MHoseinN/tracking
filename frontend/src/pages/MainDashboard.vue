@@ -134,7 +134,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/authStore';
 import { useInvoiceStore } from '../stores/invoiceStore';
-import { PERSIAN_MONTHS, getCurrentPersianDate } from '../utils/dateConverter';
+import { PERSIAN_MONTHS, getCurrentPersianDate, getPersianMonthGregorianRange } from '../utils/dateConverter';
 
 import MonthSelector from '../components/MonthSelector.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
@@ -186,12 +186,7 @@ async function handleMonthChange({ persianYear, persianMonth }) {
 }
 
 async function loadInvoicesForPersianMonth(persianYear, persianMonth) {
-  // Convert Persian year/month to Gregorian for API
-  // We'll pass the Persian year/month and let the backend handle it via date range
-  // Actually we pass Gregorian year/month derived from the range
   try {
-    // Get the Gregorian dates range for this Persian month
-    const { getPersianMonthGregorianRange } = await import('../utils/dateConverter');
     const { startDate, endDate } = getPersianMonthGregorianRange(persianYear, persianMonth);
 
     if (startDate && endDate) {
@@ -268,7 +263,7 @@ async function handleDeleteInvoice() {
   deleting.value = false;
 
   if (result.success) {
-    toast.error('فاکتور با موفقیت حذف شد', { type: 'success' });
+    toast.success('فاکتور با موفقیت حذف شد');
     showConfirmDelete.value = false;
     deleteTargetId.value = null;
     // Reload
