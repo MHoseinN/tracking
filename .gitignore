@@ -11,6 +11,8 @@ frontend/.vite/
 backend/data/
 *.db
 *.sqlite
+!backend/data/backups/
+!backend/data/backups/*.db
 
 # Environment files
 backend/.env

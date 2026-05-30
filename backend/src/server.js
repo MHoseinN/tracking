@@ -5,7 +5,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const { initDatabase } = require('./db/init');
-const { startWeeklyBackupScheduler } = require('./services/backupService');
+const { backupDatabase } = require('./services/backupService');
 const authRoutes = require('./routes/authRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const customerRoutes = require('./routes/customerRoutes');
@@ -68,12 +68,15 @@ app.use((err, req, res, next) => {
 
 function startServer() {
   initDatabase();
-  startWeeklyBackupScheduler();
+
+  backupDatabase('startup').catch((error) => {
+    console.error('[backup] Startup backup failed:', error.message || error);
+  });
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log('Weekly database backups are enabled.');
+    console.log('Startup database backup is enabled.');
   });
 }
 

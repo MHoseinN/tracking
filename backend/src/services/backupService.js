@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const Database = require('better-sqlite3');
 const { getBackupDir, getDatabasePath } = require('../db/paths');
 
@@ -53,6 +54,96 @@ function createBackupFileName(date = new Date()) {
   return path.join(ensureBackupDir(), `tracking-${formatTimestamp(date)}.db`);
 }
 
+function findGitRepoRoot(startDir) {
+  let current = path.resolve(startDir);
+  const { root } = path.parse(current);
+
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git'))) {
+      return current;
+    }
+
+    if (current === root) {
+      return null;
+    }
+
+    current = path.dirname(current);
+  }
+}
+
+function runGitCommand(args, cwd) {
+  const result = spawnSync('git', args, {
+    cwd,
+    encoding: 'utf8'
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error((result.stderr || result.stdout || `git ${args.join(' ')} failed`).trim());
+  }
+
+  return (result.stdout || '').trim();
+}
+
+function hasStagedChanges(cwd) {
+  const result = spawnSync('git', ['diff', '--cached', '--quiet'], {
+    cwd,
+    encoding: 'utf8'
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status === 0) {
+    return false;
+  }
+
+  if (result.status === 1) {
+    return true;
+  }
+
+  throw new Error((result.stderr || result.stdout || 'Could not determine staged changes').trim());
+}
+
+function syncBackupsToGitRepo(backupPath) {
+  if (process.env.BACKUP_GIT_PUSH === 'false') {
+    console.log('[backup] Git push is disabled by BACKUP_GIT_PUSH=false.');
+    return;
+  }
+
+  const repoRoot = findGitRepoRoot(path.join(__dirname, '../../..'));
+  if (!repoRoot) {
+    console.warn('[backup] No git repository found. Backup was created locally only.');
+    return;
+  }
+
+  const backupsRelativeDir = path.relative(repoRoot, getBackupDir()).replace(/\\/g, '/');
+  if (backupsRelativeDir.startsWith('..')) {
+    console.warn('[backup] Backup directory is outside of this git repository; skipping git sync.');
+    return;
+  }
+
+  try {
+    runGitCommand(['add', '-A', backupsRelativeDir], repoRoot);
+
+    if (!hasStagedChanges(repoRoot)) {
+      console.log('[backup] No backup changes to commit.');
+      return;
+    }
+
+    const backupFileName = path.basename(backupPath);
+    runGitCommand(['commit', '-m', `chore(backup): ${backupFileName}`], repoRoot);
+    runGitCommand(['push', 'origin', 'HEAD'], repoRoot);
+    console.log('[backup] Backup changes committed and pushed to origin.');
+  } catch (error) {
+    console.warn(`[backup] Git sync failed: ${error.message || error}`);
+  }
+}
+
 async function backupDatabase(reason = 'manual') {
   const databasePath = getDatabasePath();
   if (!fs.existsSync(databasePath)) {
@@ -66,6 +157,7 @@ async function backupDatabase(reason = 'manual') {
     await source.backup(backupPath);
     pruneOldBackups();
     console.log(`[backup] ${reason} backup created: ${backupPath}`);
+    syncBackupsToGitRepo(backupPath);
     return backupPath;
   } finally {
     source.close();
