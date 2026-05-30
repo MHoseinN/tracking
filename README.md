@@ -73,6 +73,7 @@ npm run dev
 - فقط 12 بک‌آپ آخر نگه داشته می‌شود تا فضای دیسک بی‌جهت پر نشود.
 - بعد از ساخت بک‌آپ، تغییرات پوشه بک‌آپ به صورت خودکار commit و روی `origin` push می‌شود (اگر مخزن git و دسترسی احراز هویت وجود داشته باشد).
 - اگر بخواهی فقط بک‌آپ محلی داشته باشی و push انجام نشود، در فایل `.env` مقدار `BACKUP_GIT_PUSH=false` را بگذار.
+- اگر برنامه را از یک پوشه معمولی اجرا می‌کنی و خود آن پوشه `.git` ندارد، مقدار `BACKUP_GIT_REPO_PATH` را به مسیر clone واقعی ریپو بده تا بکاپ‌ها همان‌جا commit و push شوند.
 
 ### راه‌اندازی روی سیستم جدید برای push بک‌آپ
 
@@ -84,6 +85,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-git-backup-on-new-syste
 ```
 
 - اگر نام/ایمیل گیت تنظیم نشده بود، یک‌بار تنظیم کن:
+	- اگر پروژه را از همان clone اجرا می‌کنی، این مرحله کافی است.
+	- اگر پروژه از یک پوشه جدا اجرا می‌شود، علاوه بر این مرحله باید `BACKUP_GIT_REPO_PATH` را هم تنظیم کنی.
 
 ```powershell
 git config user.name "Your Name"
@@ -91,6 +94,12 @@ git config user.email "you@example.com"
 ```
 
 - احراز هویت گیت را روی همان سیستم انجام بده (SSH key یا Git Credential Manager).
+- اگر این پوشه خود ریپو نیست، در `.env` مسیر clone واقعی را ست کن:
+
+```powershell
+BACKUP_GIT_REPO_PATH=C:\path\to\tracking-clone
+```
+
 - برای تست دسترسی push:
 
 ```powershell

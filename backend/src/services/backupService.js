@@ -71,6 +71,21 @@ function findGitRepoRoot(startDir) {
   }
 }
 
+function resolveGitRepoRoot() {
+  const configuredRepoPath = process.env.BACKUP_GIT_REPO_PATH;
+
+  if (configuredRepoPath) {
+    const resolvedRepoPath = path.resolve(configuredRepoPath);
+    if (fs.existsSync(path.join(resolvedRepoPath, '.git'))) {
+      return resolvedRepoPath;
+    }
+
+    throw new Error(`Configured BACKUP_GIT_REPO_PATH is not a git repository: ${resolvedRepoPath}`);
+  }
+
+  return findGitRepoRoot(path.join(__dirname, '../../..'));
+}
+
 function runGitCommand(args, cwd) {
   const result = spawnSync('git', args, {
     cwd,
@@ -133,9 +148,9 @@ function syncBackupsToGitRepo(backupPath) {
     return;
   }
 
-  const repoRoot = findGitRepoRoot(path.join(__dirname, '../../..'));
+  const repoRoot = resolveGitRepoRoot();
   if (!repoRoot) {
-    console.warn('[backup] No git repository found. Backup was created locally only.');
+    console.warn('[backup] No git repository found. Set BACKUP_GIT_REPO_PATH to a cloned repo if you want push support.');
     return;
   }
 
