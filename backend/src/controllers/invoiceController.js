@@ -205,6 +205,50 @@ function updateInvoiceStatus(req, res) {
   }
 }
 
+// GET /api/invoices/stats?groupBy=month|year&year=YYYY&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+// Get aggregated statistics. Supports optional start_date/end_date for date range filtering
+function getInvoiceStats(req, res) {
+  const groupBy = req.query.groupBy === 'year' ? 'year' : 'month';
+  const year = String(req.query.year || '').trim();
+  const startDate = String(req.query.start_date || '').trim();
+  const endDate = String(req.query.end_date || '').trim();
+  const periodExpression = groupBy === 'year' ? 'SUBSTR(i.date, 1, 4)' : 'SUBSTR(i.date, 1, 7)';
+
+  try {
+    const conditions = [];
+    const params = [];
+
+    // If explicit date range provided, use it (preferred for Persian-year support)
+    if (startDate && endDate) {
+      conditions.push('i.date >= ?');
+      conditions.push('i.date <= ?');
+      params.push(startDate, endDate);
+    } else if (groupBy === 'month' && year) {
+      // Backwards-compatible: if year provided (Gregorian), filter by that year
+      conditions.push('SUBSTR(i.date, 1, 4) = ?');
+      params.push(year);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const query = `
+      SELECT 
+        ${periodExpression} as period,
+        COUNT(*) as invoice_count,
+        COALESCE(SUM(i.price), 0) as total_income
+      FROM invoices i
+      ${whereClause}
+      GROUP BY ${periodExpression}
+      ORDER BY period ASC
+    `;
+
+    const rows = db.prepare(query).all(...params);
+    res.json({ groupBy, rows });
+  } catch (err) {
+    console.error('Get invoice stats error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 module.exports = {
   getInvoicesByMonth,
   getCustomerInvoices,
@@ -212,5 +256,6 @@ module.exports = {
   createInvoice,
   updateInvoice,
   deleteInvoice,
-  updateInvoiceStatus
+  updateInvoiceStatus,
+  getInvoiceStats
 };

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div ref="pickerRoot" class="relative">
     <input
       v-model="displayValue"
       @focus="openCalendar"
@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import PersianDate from 'persian-date';
 import { PERSIAN_MONTHS } from '../utils/dateConverter';
 
@@ -57,6 +57,7 @@ const currentYear = ref(null);
 const currentMonth = ref(null);
 const selectedDay = ref(null);
 const displayValue = ref('');
+const pickerRoot = ref(null);
 
 const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
@@ -100,6 +101,12 @@ onMounted(() => {
     currentYear.value = pd.year();
     currentMonth.value = pd.month();
   }
+
+  document.addEventListener('mousedown', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleClickOutside);
 });
 
 const monthLabel = computed(() => PERSIAN_MONTHS[currentMonth.value - 1] || '');
@@ -136,6 +143,15 @@ function openCalendar() {
 }
 function closeCalendar() {
   show.value = false;
+}
+
+function handleClickOutside(event) {
+  if (!show.value) return;
+  if (!pickerRoot.value) return;
+
+  if (!pickerRoot.value.contains(event.target)) {
+    closeCalendar();
+  }
 }
 
 function prevMonth() {

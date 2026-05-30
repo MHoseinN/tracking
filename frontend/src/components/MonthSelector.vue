@@ -7,6 +7,7 @@
         v-model.number="selectedMonth"
         class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
+        <option :value="0">همه ماه‌ها</option>
         <option v-for="(name, index) in PERSIAN_MONTHS" :key="index + 1" :value="index + 1">
           {{ name }}
         </option>
@@ -48,7 +49,7 @@ const selectedYear = ref(currentPersian.year);
 function emitFilter() {
   emit('change', {
     persianYear: Number(selectedYear.value),
-    persianMonth: Number(selectedMonth.value)
+    persianMonth: Number(selectedMonth.value) === 0 ? null : Number(selectedMonth.value)
   });
 }
 

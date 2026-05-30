@@ -31,7 +31,8 @@
 ## نصب و راه‌اندازی
 
 ### پیش‌نیازها
-- Node.js نسخه 18 یا بالاتر
+- Node.js نسخه 20 یا بالاتر
+- روی دستگاه جدید، `node_modules` را از دستگاه قبلی کپی نکن؛ باید وابستگی‌ها روی همان دستگاه نصب شوند تا ماژول‌های بومی مثل `better-sqlite3` برای همان نسخه Node ساخته شوند.
 
 ### نصب بکاند
 ```bash
@@ -41,6 +42,18 @@ cp .env.example .env
 npm install
 npm start
 ```
+
+اگر بعد از انتقال پروژه با خطای `NODE_MODULE_VERSION` برای `better-sqlite3` روبه‌رو شدی، این‌ها را انجام بده:
+
+```powershell
+cd backend
+Remove-Item -Recurse -Force node_modules
+Remove-Item -Force package-lock.json
+npm install
+npm start
+```
+
+اگر نمی‌خواهی `package-lock.json` را حذف کنی، حداقل `node_modules` را پاک کن و دوباره `npm install` بزن.
 
 ### نصب فرانت‌اند
 ```bash
@@ -52,6 +65,52 @@ npm run dev
 ### اجرا
 - بکاند: http://localhost:3000
 - فرانت‌اند: http://localhost:5173
+
+## دیتابیس و بک‌آپ
+
+- دیتابیس برنامه به صورت محلی در SQLite ذخیره می‌شود و فایل اصلی آن در مسیر `backend/data/tracking.db` ساخته می‌شود.
+- وقتی بک‌اند روشن است، بک‌آپ هفتگی به صورت خودکار ساخته می‌شود و فایل‌ها در `backend/data/backups/` ذخیره می‌شوند.
+- فقط 12 بک‌آپ آخر نگه داشته می‌شود تا فضای دیسک بی‌جهت پر نشود.
+- برای بک‌آپ دستی:
+
+```bash
+cd backend
+npm run backup
+```
+
+- برای بازیابی آخرین بک‌آپ یا یک فایل مشخص:
+
+```bash
+cd backend
+npm run restore
+# یا
+npm run restore -- path\to\backup.db
+```
+
+- برای ثبت بک‌آپ هفتگی مستقل در Task Scheduler ویندوز:
+
+```powershell
+cd tracking-main\backend
+npm run schedule-backup
+```
+
+- اگر بخواهی با یک کلیک ثبتش کنی، فایل [install-weekly-backup.bat](install-weekly-backup.bat) را اجرا کن؛ این فایل برای ثبت تسک، پنجره UAC ویندوز را باز می‌کند و باید تأییدش کنی.
+
+- اگر بخواهی تسک را حذف کنی:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ..\scripts\remove-weekly-backup-task.ps1
+```
+
+- برای حذف یک‌کلیکی هم فایل [remove-weekly-backup.bat](remove-weekly-backup.bat) را اجرا کن؛ آن هم UAC را باز می‌کند.
+
+- همچنین می‌توانی از `npm run unschedule-backup` داخل پوشه `backend` استفاده کنی.
+
+## اجرای یک‌کلیکی
+
+- فایل [run-app.bat](run-app.bat) را اجرا کنید تا بک‌اند و فرانت‌اند هم‌زمان بالا بیایند.
+- اگر `node_modules` موجود نباشد، همان اجرا اول برای هر بخش `npm install` انجام می‌شود.
+- برای بازیابی اطلاعات، قبل از restore بهتر است بک‌اند را متوقف کنید.
 
 ## ساختار پروژه
 ```

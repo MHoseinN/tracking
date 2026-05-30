@@ -5,7 +5,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "backup": "node scripts/backupDatabase.js",
+    "restore": "node scripts/restoreBackup.js",
+    "schedule-backup": "..\\install-weekly-backup.bat",
+    "unschedule-backup": "..\\remove-weekly-backup.bat"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

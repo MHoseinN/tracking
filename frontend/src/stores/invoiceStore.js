@@ -6,6 +6,7 @@ export const useInvoiceStore = defineStore('invoice', {
     currentInvoices: [],
     allInvoices: [],
     customers: [],
+    customersOverview: [],
     loading: false,
     error: null
   }),
@@ -151,15 +152,32 @@ export const useInvoiceStore = defineStore('invoice', {
       }
     },
 
+    // Fetch customers with invoice aggregates for admin table
+    async fetchCustomersOverview() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await api.get('/customers/overview');
+        this.customersOverview = response.data;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || 'خطا در دریافت لیست کاربران';
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     // Add a customer
-    async addCustomer(customerData) {
+    async addCustomer(customerData, options = {}) {
+      const { allowExisting = true } = options;
       try {
         const response = await api.post('/customers', customerData);
         this.customers.push(response.data);
         return { success: true, data: response.data };
       } catch (err) {
         // If customer already exists, return existing id
-        if (err.response?.data?.id) {
+        if (allowExisting && err.response?.data?.id) {
           return { success: true, data: { id: err.response.data.id, name: customerData.name } };
         }
         const message = err.response?.data?.message || 'خطا در افزودن مشتری';

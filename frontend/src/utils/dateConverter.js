@@ -118,6 +118,38 @@ export function getPersianMonthGregorianRange(persianYear, persianMonth) {
 }
 
 /**
+ * Get the Gregorian date range for a full Persian year
+ * @param {number} persianYear
+ * @returns {{ startDate: string, endDate: string }} in YYYY-MM-DD format
+ */
+export function getPersianYearGregorianRange(persianYear) {
+  try {
+    const startPd = new PersianDate([persianYear, 1, 1]);
+    const nextStartPd = new PersianDate([persianYear + 1, 1, 1]);
+
+    const startGregStr = startPd.toCalendar('gregorian').toLocale('en').format('YYYY-MM-DD');
+    const nextStartGregStr = nextStartPd.toCalendar('gregorian').toLocale('en').format('YYYY-MM-DD');
+
+    const m = String(nextStartGregStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return { startDate: startGregStr, endDate: startGregStr };
+
+    const ny = Number(m[1]), nm = Number(m[2]), nd = Number(m[3]);
+    const nextDateObj = new Date(ny, nm - 1, nd);
+    nextDateObj.setDate(nextDateObj.getDate() - 1);
+
+    const ey = nextDateObj.getFullYear();
+    const em = String(nextDateObj.getMonth() + 1).padStart(2, '0');
+    const ed = String(nextDateObj.getDate()).padStart(2, '0');
+    const endGreg = `${ey}-${em}-${ed}`;
+
+    return { startDate: startGregStr, endDate: endGreg };
+  } catch (e) {
+    console.error('Year range error:', e);
+    return { startDate: null, endDate: null };
+  }
+}
+
+/**
  * Format price as Persian number with thousands separator + تومان
  * @param {number} price
  * @returns {string}

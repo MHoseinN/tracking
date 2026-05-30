@@ -5,15 +5,13 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const { initDatabase } = require('./db/init');
+const { startWeeklyBackupScheduler } = require('./services/backupService');
 const authRoutes = require('./routes/authRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Initialize database
-initDatabase();
 
 // CORS - restrict to configured frontend URL or localhost in development
 const allowedOrigins = process.env.FRONTEND_URL
@@ -68,9 +66,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+function startServer() {
+  initDatabase();
+  startWeeklyBackupScheduler();
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('Weekly database backups are enabled.');
+  });
+}
+
+startServer();
 
 module.exports = app;

@@ -7,7 +7,8 @@ const {
   createInvoice,
   updateInvoice,
   deleteInvoice,
-  updateInvoiceStatus
+  updateInvoiceStatus,
+  getInvoiceStats
 } = require('../controllers/invoiceController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -15,6 +16,20 @@ const router = express.Router();
 
 // All invoice routes require authentication
 router.use(authMiddleware);
+
+// GET /api/invoices/stats - aggregated statistics
+router.get('/stats', getInvoiceStats);
+
+// Backward-compatible aliases
+router.get('/stats/monthly', (req, res) => {
+  req.query.groupBy = 'month';
+  return getInvoiceStats(req, res);
+});
+
+router.get('/stats/yearly', (req, res) => {
+  req.query.groupBy = 'year';
+  return getInvoiceStats(req, res);
+});
 
 // GET /api/invoices/search - must be before /:id routes
 router.get('/search', searchInvoices);

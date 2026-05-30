@@ -17,8 +17,39 @@ function initDatabase() {
     CREATE TABLE IF NOT EXISTS customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
+      first_name TEXT,
+      last_name TEXT,
+      phone TEXT,
+      referrer TEXT,
+      account_status TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+
+  // Safe migration for existing databases created before profile columns were added.
+  const customerColumns = db.prepare('PRAGMA table_info(customers)').all().map((c) => c.name);
+  if (!customerColumns.includes('first_name')) {
+    db.exec('ALTER TABLE customers ADD COLUMN first_name TEXT');
+  }
+  if (!customerColumns.includes('last_name')) {
+    db.exec('ALTER TABLE customers ADD COLUMN last_name TEXT');
+  }
+  if (!customerColumns.includes('phone')) {
+    db.exec('ALTER TABLE customers ADD COLUMN phone TEXT');
+  }
+  if (!customerColumns.includes('referrer')) {
+    db.exec('ALTER TABLE customers ADD COLUMN referrer TEXT');
+  }
+  if (!customerColumns.includes('account_status')) {
+    db.exec('ALTER TABLE customers ADD COLUMN account_status TEXT');
+  }
+
+  db.exec(`
+    UPDATE customers
+    SET
+      first_name = COALESCE(NULLIF(first_name, ''), TRIM(CASE WHEN INSTR(name, ' ') > 0 THEN SUBSTR(name, 1, INSTR(name, ' ') - 1) ELSE name END)),
+      last_name = COALESCE(NULLIF(last_name, ''), TRIM(CASE WHEN INSTR(name, ' ') > 0 THEN SUBSTR(name, INSTR(name, ' ') + 1) ELSE '' END))
+    WHERE first_name IS NULL OR first_name = '' OR last_name IS NULL
   `);
 
   // Create invoices table

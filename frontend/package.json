@@ -10,6 +10,7 @@
   "dependencies": {
     "@heroicons/vue": "^2.0.18",
     "axios": "^1.5.0",
+    "chart.js": "^4.5.1",
     "persian-date": "^1.1.0",
     "pinia": "^2.1.6",
     "vue": "^3.3.4",

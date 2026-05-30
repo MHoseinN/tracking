@@ -22,6 +22,18 @@ const routes = [
     props: true
   },
   {
+    path: '/reports',
+    name: 'Reports',
+    component: () => import('./pages/Reports.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/users',
+    name: 'UsersManagement',
+    component: () => import('./pages/UsersManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/',
     redirect: '/home'
   },

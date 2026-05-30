@@ -30,34 +30,82 @@
     <!-- Main content -->
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <!-- Controls row -->
-      <div class="bg-white rounded-xl shadow p-4 flex flex-wrap items-center justify-between gap-4">
-        <!-- Month selector -->
-        <MonthSelector @change="handleMonthChange" />
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+          <!-- Month selector -->
+          <MonthSelector @change="handleMonthChange" />
 
-        <!-- Quick search by single Persian date -->
-        <div class="flex items-center gap-2">
-          <div class="w-48">
-            <JalaliDatePicker v-model="searchDate" />
+          <!-- Add invoice button -->
+          <button @click="openAddModal"
+            class="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            افزودن حساب جدید
+          </button>
+
+          <!-- Charts button -->
+          <button @click="navigateToCharts"
+            class="flex items-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-purple-700 transition shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            نمودارها
+          </button>
+
+          <button @click="navigateToUsers"
+            class="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            کاربران
+          </button>
+        </div>
+
+        <!-- Search row -->
+        <div class="flex flex-wrap items-end gap-3">
+          <!-- Customer name search -->
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm font-medium text-gray-700 mb-1">جستجو: نام مشتری</label>
+            <input
+              v-model="searchCustomerName"
+              type="text"
+              placeholder="نام یا نام‌خانوادگی مشتری..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              @keydown.enter="performSearch"
+            />
           </div>
-          <button @click="performSearch" class="bg-blue-600 text-white px-3 py-2 rounded-lg">جستجو</button>
-          <button @click="clearSearch" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg">پاک کردن</button>
+
+          <!-- Date search -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">جستجو: تاریخ (شمسی)</label>
+            <div class="w-48">
+              <JalaliDatePicker v-model="searchDate" />
+            </div>
+          </div>
+
+          <!-- Search and reset buttons -->
+          <button @click="performSearch" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">جستجو</button>
+          <button @click="clearSearch" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">پاک کردن</button>
+
+          <!-- Unshipped-only button -->
           <button
-            :class="unsettledOnly ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700'"
+            :class="showNotShippedOnly ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700'"
+            @click="toggleNotShippedMain"
+            class="px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            ارسال نشده
+          </button>
+
+          <!-- Unsettled-only button -->
+          <button
+            :class="showUnsettledOnly ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700'"
             @click="toggleUnsettledMain"
-            class="px-3 py-2 rounded-lg ml-2"
+            class="px-4 py-2 rounded-lg text-sm font-medium"
           >
             تسویه‌نشده
           </button>
         </div>
-
-        <!-- Add invoice button -->
-        <button @click="openAddModal"
-          class="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          افزودن حساب جدید
-        </button>
       </div>
 
       <!-- Summary stats -->
@@ -90,7 +138,7 @@
           <h2 class="font-semibold text-gray-700">
             حساب‌های {{ currentMonthLabel }}
           </h2>
-          <span class="text-sm text-gray-400">{{ invoiceStore.currentInvoices.length }} حساب</span>
+          <span class="text-sm text-gray-400">{{ displayedInvoices.length }} حساب</span>
         </div>
 
         <!-- Loading state -->
@@ -104,7 +152,7 @@
           </div>
         </div>
 
-        <InvoiceTable v-else :invoices="invoiceStore.currentInvoices" :show-customer-column="true" :show-actions="true"
+        <InvoiceTable v-else :invoices="displayedInvoices" :show-customer-column="true" :show-actions="true"
           @edit="openEditModal" @delete="openDeleteModal" @status-change="handleStatusChange"
           @customer-click="navigateToCustomer" />
       </div>
@@ -127,7 +175,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/authStore';
 import { useInvoiceStore } from '../stores/invoiceStore';
-import { PERSIAN_MONTHS, getPersianMonthGregorianRange } from '../utils/dateConverter';
+import { PERSIAN_MONTHS, getPersianMonthGregorianRange, getPersianYearGregorianRange } from '../utils/dateConverter';
 
 import MonthSelector from '../components/MonthSelector.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
@@ -149,7 +197,9 @@ const deleteTargetId = ref(null);
 const deleting = ref(false);
 const currentFilter = ref({ persianYear: null, persianMonth: null });
 const searchDate = ref('');
-const unsettledOnly = ref(false);
+const searchCustomerName = ref('');
+const showUnsettledOnly = ref(false);
+const showNotShippedOnly = ref(false);
 
 // Computed stats
 const totalAccountsCount = computed(() => invoiceStore.allInvoices.length);
@@ -182,8 +232,23 @@ const remainingAmountFormatted = computed(() =>
   remainingAmount.value.toLocaleString('fa-IR') + ' تومان'
 );
 
+const displayedInvoices = computed(() => {
+  let invoices = invoiceStore.currentInvoices;
+
+  if (showNotShippedOnly.value) {
+    invoices = invoices.filter((invoice) => !invoice.is_shipped);
+  }
+
+  if (showUnsettledOnly.value) {
+    invoices = invoices.filter((invoice) => !invoice.is_settled);
+  }
+
+  return invoices;
+});
+
 const currentMonthLabel = computed(() => {
-  if (!currentFilter.value.persianMonth) return 'جاری';
+  if (!currentFilter.value.persianYear) return 'جاری';
+  if (!currentFilter.value.persianMonth) return `همه ماه‌های ${currentFilter.value.persianYear}`;
   const monthName = PERSIAN_MONTHS[currentFilter.value.persianMonth - 1];
   return `${monthName} ${currentFilter.value.persianYear}`;
 });
@@ -199,12 +264,14 @@ onMounted(async () => {
 // Handle month change from MonthSelector
 async function handleMonthChange({ persianYear, persianMonth }) {
   currentFilter.value = { persianYear, persianMonth };
-  await loadInvoicesForPersianMonth(persianYear, persianMonth);
+  await loadInvoicesForPersianPeriod(persianYear, persianMonth);
 }
 
-async function loadInvoicesForPersianMonth(persianYear, persianMonth) {
+async function loadInvoicesForPersianPeriod(persianYear, persianMonth) {
   try {
-    const { startDate, endDate } = getPersianMonthGregorianRange(persianYear, persianMonth);
+    const { startDate, endDate } = persianMonth
+      ? getPersianMonthGregorianRange(persianYear, persianMonth)
+      : getPersianYearGregorianRange(persianYear);
 
     if (startDate && endDate) {
       // Use search API to filter by date range
@@ -222,33 +289,44 @@ async function loadInvoicesForPersianMonth(persianYear, persianMonth) {
 }
 
 async function performSearch() {
-  if (!searchDate.value) {
-    // No date: reset to current filter or all
+  const params = {};
+
+  if (searchCustomerName.value.trim()) {
+    params.q = searchCustomerName.value.trim();
+  }
+
+  if (searchDate.value) {
+    const greg = toGregorianDate(searchDate.value);
+    if (!greg) {
+      toast.error('تاریخ انتخاب شده معتبر نیست');
+      return;
+    }
+    params.start_date = greg;
+    params.end_date = greg;
+  }
+
+  // If no search criteria, return to current filter
+  if (!searchCustomerName.value.trim() && !searchDate.value) {
     if (currentFilter.value.persianYear) {
-      await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
+      await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
     } else {
       await invoiceStore.fetchInvoices();
     }
     return;
   }
 
-  const greg = toGregorianDate(searchDate.value);
-  if (!greg) {
-    toast.error('تاریخ انتخاب شده معتبر نیست');
-    return;
-  }
-
   try {
-    await invoiceStore.searchInvoices({ start_date: greg, end_date: greg });
+    await invoiceStore.searchInvoices(params);
   } catch (err) {
     toast.error('خطا در جستجو');
   }
 }
 
 async function clearSearch() {
+  searchCustomerName.value = '';
   searchDate.value = '';
   if (currentFilter.value.persianYear) {
-    await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
+    await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
   } else {
     await invoiceStore.fetchInvoices();
   }
@@ -256,19 +334,12 @@ async function clearSearch() {
 
 // Toggle unsettled-only view on main dashboard (all invoices)
 async function toggleUnsettledMain() {
-  unsettledOnly.value = !unsettledOnly.value;
-  if (unsettledOnly.value) {
-    // ensure all invoices are loaded then filter
-    await invoiceStore.fetchAllInvoices();
-    invoiceStore.currentInvoices = invoiceStore.allInvoices.filter(i => !i.is_settled);
-  } else {
-    // reset to current month filter or all
-    if (currentFilter.value.persianYear) {
-      await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
-    } else {
-      await invoiceStore.fetchInvoices();
-    }
-  }
+  showUnsettledOnly.value = !showUnsettledOnly.value;
+}
+
+// Toggle not-shipped-only view on main dashboard
+async function toggleNotShippedMain() {
+  showNotShippedOnly.value = !showNotShippedOnly.value;
 }
 
 // Modal handlers
@@ -318,7 +389,7 @@ async function handleSaveInvoice({ data, isEdit }) {
   await invoiceStore.fetchAllInvoices();
   // Reload invoices for current month
   if (currentFilter.value.persianYear) {
-    await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
+    await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
   } else {
     await invoiceStore.fetchInvoices();
   }
@@ -339,7 +410,7 @@ async function handleDeleteInvoice() {
     await invoiceStore.fetchAllInvoices();
     // Reload
     if (currentFilter.value.persianYear) {
-      await loadInvoicesForPersianMonth(currentFilter.value.persianYear, currentFilter.value.persianMonth);
+      await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
     } else {
       await invoiceStore.fetchInvoices();
     }
@@ -355,6 +426,16 @@ async function handleStatusChange() {
 // Navigate to customer detail page
 function navigateToCustomer(customerId) {
   router.push(`/customer/${customerId}`);
+}
+
+// Navigate to charts page
+function navigateToCharts() {
+  router.push('/reports');
+}
+
+// Navigate to users management page
+function navigateToUsers() {
+  router.push('/users');
 }
 
 // Logout

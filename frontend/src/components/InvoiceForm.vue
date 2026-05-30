@@ -17,7 +17,7 @@
         </div>
 
         <!-- Body -->
-        <form @submit.prevent class="p-5 space-y-4">
+        <form @submit.prevent="handleSubmit" class="p-5 space-y-4">
           <!-- Customer dropdown (only shown when not in customer-specific mode) -->
           <div v-if="!customerId">
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -31,7 +31,7 @@
                   @input="onCustomerInput"
                   @keydown.down.prevent="focusNext()"
                   @keydown.up.prevent="focusPrev()"
-                  @keydown.enter.prevent="confirmHighlighted()"
+                  @keydown.enter.prevent="handleCustomerEnter()"
                   @blur="onBlur"
                   type="text"
                   placeholder="جستجو یا انتخاب مشتری"
@@ -93,7 +93,7 @@
 
           <!-- Buttons -->
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="handleSubmit" @keydown="handleSubmit()" :disabled="saving"
+            <button type="submit" :disabled="saving"
               class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50">
               <span v-if="saving" class="flex items-center justify-center gap-2">
                 <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -204,6 +204,9 @@ function resetForm() {
   form.persianDate = '';
   form.price = '';
   form.description = '';
+  customerSearch.value = '';
+  showDropdown.value = false;
+  highlightedIndex.value = -1;
   errors.customer_id = '';
   errors.date = '';
   errors.price = '';
@@ -280,6 +283,16 @@ function focusPrev() {
 function confirmHighlighted() {
   const idx = highlightedIndex.value;
   if (idx >= 0 && idx < filteredCustomers.value.length) selectCustomer(filteredCustomers.value[idx]);
+}
+
+function handleCustomerEnter() {
+  const hasHighlighted = highlightedIndex.value >= 0 && highlightedIndex.value < filteredCustomers.value.length;
+  if (hasHighlighted) {
+    confirmHighlighted();
+    return;
+  }
+
+  handleSubmit();
 }
 
 async function addNewCustomer() {

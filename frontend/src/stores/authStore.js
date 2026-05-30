@@ -1,13 +1,14 @@
-import { defineStore } from 'pinia';
-import api from '../utils/api';
 
-export const useAuthStore = defineStore('auth', {
+import { defineStore } from "pinia";
+import api from "../utils/api";
+
+export const useAuthStore = defineStore("auth", {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
-    isAuthenticated: !!localStorage.getItem('token'),
+    user: JSON.parse(localStorage.getItem("user")) || null,
+    token: localStorage.getItem("token") || null,
+    isAuthenticated: !!localStorage.getItem("token"),
     loading: false,
-    error: null
+    error: null,
   }),
 
   actions: {
@@ -16,7 +17,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
 
       try {
-        const response = await api.post('/auth/login', { username, password });
+        const response = await api.post("/auth/login", { username, password });
         const { token, user } = response.data;
 
         this.token = token;
@@ -24,12 +25,12 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true;
 
         // Persist to localStorage
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
 
         return { success: true };
       } catch (err) {
-        const message = err.response?.data?.message || 'خطا در ورود به سیستم';
+        const message = err.response?.data?.message || "خطا در ورود به سیستم";
         this.error = message;
         return { success: false, message };
       } finally {
@@ -42,19 +43,19 @@ export const useAuthStore = defineStore('auth', {
       this.user = null;
       this.isAuthenticated = false;
 
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
 
     checkAuth() {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
         this.token = token;
-        this.user = JSON.parse(localStorage.getItem('user'));
+        this.user = JSON.parse(localStorage.getItem("user"));
         this.isAuthenticated = true;
       } else {
         this.isAuthenticated = false;
       }
-    }
-  }
+    },
+  },
 });
