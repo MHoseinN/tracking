@@ -109,6 +109,24 @@ function hasStagedChanges(cwd) {
   throw new Error((result.stderr || result.stdout || 'Could not determine staged changes').trim());
 }
 
+function ensureGitSyncPrerequisites(repoRoot) {
+  const hasOrigin = runGitCommand(['remote'], repoRoot)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .includes('origin');
+
+  if (!hasOrigin) {
+    throw new Error('Git remote origin is not configured.');
+  }
+
+  const userName = runGitCommand(['config', '--get', 'user.name'], repoRoot);
+  const userEmail = runGitCommand(['config', '--get', 'user.email'], repoRoot);
+
+  if (!userName || !userEmail) {
+    throw new Error('Git user.name or user.email is not configured.');
+  }
+}
+
 function syncBackupsToGitRepo(backupPath) {
   if (process.env.BACKUP_GIT_PUSH === 'false') {
     console.log('[backup] Git push is disabled by BACKUP_GIT_PUSH=false.');
@@ -128,6 +146,7 @@ function syncBackupsToGitRepo(backupPath) {
   }
 
   try {
+    ensureGitSyncPrerequisites(repoRoot);
     runGitCommand(['add', '-A', backupsRelativeDir], repoRoot);
 
     if (!hasStagedChanges(repoRoot)) {
