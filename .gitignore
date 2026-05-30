@@ -8,10 +8,11 @@ frontend/dist/
 frontend/.vite/
 
 # SQLite database
-backend/data/
+backend/data/*
+!backend/data/backups/
+!backend/data/backups/**
 *.db
 *.sqlite
-!backend/data/backups/
 !backend/data/backups/*.db
 
 # Environment files
