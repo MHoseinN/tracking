@@ -43,6 +43,9 @@ function initDatabase() {
   if (!customerColumns.includes('account_status')) {
     db.exec('ALTER TABLE customers ADD COLUMN account_status TEXT');
   }
+  if (!customerColumns.includes('notes')) {
+    db.exec('ALTER TABLE customers ADD COLUMN notes TEXT');
+  }
 
   db.exec(`
     UPDATE customers

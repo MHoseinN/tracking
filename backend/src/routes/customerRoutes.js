@@ -5,6 +5,8 @@ const {
   getCustomersOverview,
   createCustomer,
   updateCustomer,
+  updateCustomerProfile,
+  updateCustomerNotes,
   deleteCustomer
 } = require('../controllers/customerController');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -45,6 +47,20 @@ router.put('/:id', [
   }),
   body('account_status').optional().isIn(['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'])
 ], updateCustomer);
+
+// PATCH /api/customers/:id/profile
+router.patch('/:id/profile', [
+  body('first_name').optional().isString().isLength({ min: 1, max: 100 }),
+  body('last_name').optional().isString().isLength({ min: 1, max: 100 }),
+  body('phone').optional({ nullable: true }).isString().isLength({ max: 50 }),
+  body('referrer').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('account_status').optional({ nullable: true }).isIn(['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'])
+], updateCustomerProfile);
+
+// PATCH /api/customers/:id/notes
+router.patch('/:id/notes', [
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 })
+], updateCustomerNotes);
 
 
 // DELETE /api/customers/:id

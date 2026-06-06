@@ -43,7 +43,7 @@ import { PERSIAN_MONTHS, getCurrentPersianDate } from '../utils/dateConverter';
 const emit = defineEmits(['change']);
 
 const currentPersian = getCurrentPersianDate();
-const selectedMonth = ref(currentPersian.month);
+const selectedMonth = ref(0);
 const selectedYear = ref(currentPersian.year);
 
 function emitFilter() {

@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia';
 import api from '../utils/api';
 
+function customerErrorMessage(err, fallback) {
+  const message = err.response?.data?.message;
+  if (message === 'Customer with this phone already exists') {
+    return 'کاربری با این شماره تماس قبلا ثبت شده است';
+  }
+  if (message === 'Customer with this name already exists') {
+    return 'کاربری با این نام قبلا ثبت شده است';
+  }
+  return message || fallback;
+}
+
 export const useInvoiceStore = defineStore('invoice', {
   state: () => ({
     currentInvoices: [],
@@ -180,7 +191,7 @@ export const useInvoiceStore = defineStore('invoice', {
         if (allowExisting && err.response?.data?.id) {
           return { success: true, data: { id: err.response.data.id, name: customerData.name } };
         }
-        const message = err.response?.data?.message || 'خطا در افزودن مشتری';
+        const message = customerErrorMessage(err, 'خطا در افزودن مشتری');
         return { success: false, message };
       }
     },
@@ -193,7 +204,62 @@ export const useInvoiceStore = defineStore('invoice', {
         if (index !== -1) this.customers[index] = response.data;
         return { success: true, data: response.data };
       } catch (err) {
-        const message = err.response?.data?.message || 'خطا در ویرایش مشتری';
+        const message = customerErrorMessage(err, 'خطا در ویرایش مشتری');
+        return { success: false, message };
+      }
+    },
+
+    // Update customer profile fields (phone/referrer/account status)
+    async updateCustomerProfile(id, payload) {
+      try {
+        const response = await api.patch(`/customers/${id}/profile`, payload);
+
+        const customerIndex = this.customers.findIndex(c => c.id === id);
+        if (customerIndex !== -1) {
+          this.customers[customerIndex] = response.data;
+        }
+
+        const overviewIndex = this.customersOverview.findIndex(c => c.id === id);
+        if (overviewIndex !== -1) {
+          this.customersOverview[overviewIndex] = {
+            ...this.customersOverview[overviewIndex],
+            name: response.data.name || '',
+            first_name: response.data.first_name || '',
+            last_name: response.data.last_name || '',
+            phone: response.data.phone || '',
+            referrer: response.data.referrer || '',
+            account_status: response.data.account_status || ''
+          };
+        }
+
+        return { success: true, data: response.data };
+      } catch (err) {
+        const message = customerErrorMessage(err, 'خطا در ذخیره مشخصات مشتری');
+        return { success: false, message };
+      }
+    },
+
+    // Update customer notes
+    async updateCustomerNotes(id, notes) {
+      try {
+        const response = await api.patch(`/customers/${id}/notes`, { notes: notes || null });
+
+        const customerIndex = this.customers.findIndex(c => c.id === id);
+        if (customerIndex !== -1) {
+          this.customers[customerIndex] = response.data;
+        }
+
+        const overviewIndex = this.customersOverview.findIndex(c => c.id === id);
+        if (overviewIndex !== -1) {
+          this.customersOverview[overviewIndex] = {
+            ...this.customersOverview[overviewIndex],
+            notes: response.data.notes || ''
+          };
+        }
+
+        return { success: true, data: response.data };
+      } catch (err) {
+        const message = err.response?.data?.message || 'خطا در ذخیره توضیحات مشتری';
         return { success: false, message };
       }
     },

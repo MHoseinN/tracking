@@ -1,6 +1,7 @@
 {
   "name": "tracking-frontend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Invoice management system frontend",
   "scripts": {
     "dev": "vite",

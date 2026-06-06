@@ -5,10 +5,10 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const { initDatabase } = require('./db/init');
-const { backupDatabase } = require('./services/backupService');
 const authRoutes = require('./routes/authRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const customerRoutes = require('./routes/customerRoutes');
+const backupRoutes = require('./routes/backupRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,6 +49,7 @@ const apiLimiter = rateLimit({
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/invoices', apiLimiter, invoiceRoutes);
 app.use('/api/customers', apiLimiter, customerRoutes);
+app.use('/api/backups', apiLimiter, backupRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -69,14 +70,10 @@ app.use((err, req, res, next) => {
 function startServer() {
   initDatabase();
 
-  backupDatabase('startup').catch((error) => {
-    console.error('[backup] Startup backup failed:', error.message || error);
-  });
-
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log('Startup database backup is enabled.');
+    console.log('Manual database backup endpoint is enabled.');
   });
 }
 

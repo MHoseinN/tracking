@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- Overlay -->
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -23,8 +23,8 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">
               مشتری <span class="text-red-500">*</span>
             </label>
-            <div class="flex gap-2">
-              <div class="relative flex-1">
+            <div class="relative">
+              <div class="relative">
                 <input
                   v-model="customerSearch"
                   @focus="showDropdown = true"
@@ -51,23 +51,8 @@
 
                 <p v-if="showDropdown && !filteredCustomers.length" class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-500">موردی یافت نشد</p>
               </div>
-              <!-- Quick add customer button -->
-              <button type="button" @click="showNewCustomerInput = !showNewCustomerInput"
-                class="bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm hover:bg-green-200 transition whitespace-nowrap">
-                + مشتری جدید
-              </button>
+              <p v-if="errors.customer_id" class="text-red-500 text-xs mt-1">{{ errors.customer_id }}</p>
             </div>
-            <!-- Quick add customer input -->
-            <div v-if="showNewCustomerInput" class="mt-2 flex gap-2">
-              <input v-model="newCustomerName" type="text" placeholder="نام مشتری جدید"
-                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                @keydown.enter.prevent="addNewCustomer" />
-              <button type="button" @click="addNewCustomer" :disabled="addingCustomer"
-                class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700 transition disabled:opacity-50">
-                {{ addingCustomer ? '...' : 'افزودن' }}
-              </button>
-            </div>
-            <p v-if="errors.customer_id" class="text-red-500 text-xs mt-1">{{ errors.customer_id }}</p>
           </div>
 
           <!-- Date (Persian picker) -->
@@ -119,8 +104,6 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
-import { useToast } from 'vue-toastification';
-import { useInvoiceStore } from '../stores/invoiceStore';
 import { toPersianDate, toGregorianDate } from '../utils/dateConverter';
 import JalaliDatePicker from './JalaliDatePicker.vue';
 
@@ -132,14 +115,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['save', 'close']);
-const toast = useToast();
-const invoiceStore = useInvoiceStore();
 
 const isEditMode = computed(() => !!props.invoiceData);
 const saving = ref(false);
-const showNewCustomerInput = ref(false);
-const newCustomerName = ref('');
-const addingCustomer = ref(false);
 
 // Searchable customer UI state
 const customerSearch = ref('');
@@ -210,8 +188,6 @@ function resetForm() {
   errors.customer_id = '';
   errors.date = '';
   errors.price = '';
-  showNewCustomerInput.value = false;
-  newCustomerName.value = '';
 }
 
 function validate() {
@@ -295,25 +271,6 @@ function handleCustomerEnter() {
   handleSubmit();
 }
 
-async function addNewCustomer() {
-  if (!newCustomerName.value.trim()) return;
-
-  addingCustomer.value = true;
-  const result = await invoiceStore.addCustomer({ name: newCustomerName.value.trim() });
-  addingCustomer.value = false;
-
-  if (result.success) {
-    // Refresh customers list by re-fetching
-    await invoiceStore.fetchCustomers();
-    form.customer_id = result.data.id;
-    newCustomerName.value = '';
-    showNewCustomerInput.value = false;
-    toast.success('مشتری جدید اضافه شد');
-  } else {
-    toast.error(result.message);
-  }
-}
-
 async function handleSubmit() {
   if (!validate()) return;
 
@@ -339,3 +296,4 @@ async function handleSubmit() {
   saving.value = false;
 }
 </script>
+

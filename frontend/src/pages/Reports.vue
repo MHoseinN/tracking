@@ -3,65 +3,34 @@
     <header class="bg-white shadow-sm sticky top-0 z-10">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          <button @click="goBack" class="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            <span class="text-sm font-medium">بازگشت</span>
-          </button>
-
-          <div class="w-px h-6 bg-gray-300"></div>
-
           <div>
             <h1 class="text-xl font-bold text-gray-800">نمودارها و آمار</h1>
-            <p class="text-xs text-gray-500">نمایش درآمد و تعداد فاکتورها به تفکیک سال</p>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-          <div class="min-w-[180px]">
-            <label class="block text-xs font-medium text-gray-500 mb-1">انتخاب سال</label>
-            <select
-              v-model="selectedYear"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">همه سال‌ها</option>
-              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
-            </select>
-          </div>
+
 
           <div class="text-right hidden sm:block">
             <p class="text-xs text-gray-500">آخرین بروزرسانی</p>
-            <p class="text-sm font-medium text-gray-700">{{ lastUpdatedLabel }}</p>
+            <p class="text-sm font-medium text-gray-500">{{ lastUpdatedLabel }}</p>
           </div>
 
-          <button
-            @click="refreshStats"
-            :disabled="refreshing"
-            class="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60"
-          >
+          <button @click="refreshStats" :disabled="refreshing"
+            class="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60">
             <svg class="w-4 h-4" :class="refreshing ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24">
-              <path
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8 8 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.001 8.001 0 004.582 15m15.356 2H15"
-              />
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8 8 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.001 8.001 0 004.582 15m15.356 2H15" />
             </svg>
             بروزرسانی
           </button>
 
-          <button @click="handleLogout" class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
+          <button @click="goBack"
+            class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+            <span>بازگشت</span>
+            <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-            خروج
           </button>
         </div>
       </div>
@@ -84,12 +53,18 @@
         </div>
 
         <section class="bg-white rounded-xl shadow p-5 space-y-5">
+
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 class="text-lg font-semibold text-gray-800">{{ sectionTitle }}</h2>
-              <p class="text-sm text-gray-500">{{ sectionSubtitle }}</p>
             </div>
-            <div class="text-sm text-gray-500">{{ sectionHint }}</div>
+            <div class="min-w-[180px]">
+              <select v-model="selectedYear"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="all">همه سال‌ها</option>
+                <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
+              </select>
+            </div>
           </div>
 
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -134,12 +109,14 @@
               </thead>
               <tbody>
                 <tr v-for="stat in activeRows" :key="stat.period" class="border-b border-gray-100 hover:bg-gray-50">
-                  <td class="px-6 py-4 text-sm text-gray-700 font-medium">{{ formatPeriodLabel(stat.period, displayMode) }}</td>
+                  <td class="px-6 py-4 text-sm text-gray-700 font-medium">{{ formatPeriodLabel(stat.period, displayMode)
+                  }}</td>
                   <td class="px-6 py-4 text-sm text-gray-600">{{ formatNumber(stat.invoice_count) }}</td>
                   <td class="px-6 py-4 text-sm text-gray-600">{{ formatNumber(stat.total_income) }}</td>
                 </tr>
                 <tr v-if="!activeRows.length">
-                  <td colspan="3" class="px-6 py-10 text-center text-sm text-gray-400">داده‌ای برای نمایش وجود ندارد</td>
+                  <td colspan="3" class="px-6 py-10 text-center text-sm text-gray-400">داده‌ای برای نمایش وجود ندارد
+                  </td>
                 </tr>
               </tbody>
             </table>

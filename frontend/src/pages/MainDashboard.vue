@@ -4,141 +4,198 @@
     <header class="bg-white shadow-sm sticky top-0 z-10">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
           <div>
             <h1 class="text-xl font-bold text-gray-800">مدیریت حساب‌ها</h1>
             <p class="text-xs text-gray-500">صفحه اصلی</p>
           </div>
         </div>
 
-        <button @click="handleLogout"
-          class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          خروج
-        </button>
+        <div class="flex items-center gap-3">
+          <button @click="handleManualBackup" :disabled="backupLoading"
+            class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 text-sm font-semibold text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
+          </button>
+          <button @click="handleLogout"
+            class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            خروج
+          </button>
+        </div>
+
+
       </div>
     </header>
 
     <!-- Main content -->
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      <!-- Controls row -->
-      <div class="bg-white rounded-xl shadow p-4">
-        <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
-          <!-- Month selector -->
-          <MonthSelector @change="handleMonthChange" />
+      <!-- Hero / controls -->
+      <section
+        class="relative overflow-visible rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-emerald-50 pointer-events-none"></div>
+        <div class="relative p-3 sm:p-5 space-y-5">
+          <div class="flex gap-4 justify-center">
+            <div
+              class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
+              <button @click="openAddModal"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                افزودن حساب جدید
+              </button>
 
-          <!-- Add invoice button -->
-          <button @click="openAddModal"
-            class="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            افزودن حساب جدید
-          </button>
+              <button @click="navigateToCharts"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                نمودارها
+              </button>
 
-          <!-- Charts button -->
-          <button @click="navigateToCharts"
-            class="flex items-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-purple-700 transition shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            نمودارها
-          </button>
+              <button @click="navigateToUsers"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                کاربران
+              </button>
 
-          <button @click="navigateToUsers"
-            class="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            کاربران
-          </button>
-        </div>
-
-        <!-- Search row -->
-        <div class="flex flex-wrap items-end gap-3">
-          <!-- Customer name search -->
-          <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm font-medium text-gray-700 mb-1">جستجو: نام مشتری</label>
-            <input
-              v-model="searchCustomerName"
-              type="text"
-              placeholder="نام یا نام‌خانوادگی مشتری..."
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              @keydown.enter="performSearch"
-            />
-          </div>
-
-          <!-- Date search -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">جستجو: تاریخ (شمسی)</label>
-            <div class="w-48">
-              <JalaliDatePicker v-model="searchDate" />
+              <button @click="openAddCustomerModal"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-600">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M18 7v3m0 0v3m0-3h3m-3 0h-3M6 20a4 4 0 018 0M10 4a4 4 0 110 8 4 4 0 010-8z" />
+                </svg>
+                افزودن کاربر
+              </button>
             </div>
           </div>
 
-          <!-- Search and reset buttons -->
-          <button @click="performSearch" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">جستجو</button>
-          <button @click="clearSearch" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">پاک کردن</button>
+          <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
+            <div
+              class="grid gap-4 xl:grid-cols-[minmax(280px,1.2fr)_minmax(260px,0.9fr)_minmax(360px,1.2fr)_auto_auto] xl:items-end">
+              <div class="space-y-2">
+                <label class="block text-sm font-semibold text-slate-700">جستجو</label>
+                <div class="relative">
+                  <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                  </svg>
+                  <input v-model="searchCustomerName" type="text" placeholder="نام یا نام‌خانوادگی مشتری..."
+                    class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+                </div>
+              </div>
 
-          <!-- Unshipped-only button -->
-          <button
-            :class="showNotShippedOnly ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700'"
-            @click="toggleNotShippedMain"
-            class="px-4 py-2 rounded-lg text-sm font-medium"
-          >
-            ارسال نشده
-          </button>
+              <div class="space-y-2">
+                <label class="block text-sm font-semibold text-slate-700">تاریخ </label>
+                <div
+                  class="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <JalaliDatePicker v-model="searchDate" />
+                  <button @click="clearSearch"
+                    class="h-10 shrink-0 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                    پاک کردن
+                  </button>
+                </div>
+              </div>
 
-          <!-- Unsettled-only button -->
-          <button
-            :class="showUnsettledOnly ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700'"
-            @click="toggleUnsettledMain"
-            class="px-4 py-2 rounded-lg text-sm font-medium"
-          >
-            تسویه‌نشده
-          </button>
-        </div>
-      </div>
 
-      <!-- Summary stats -->
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
-        <div class="bg-white rounded-xl shadow p-4 text-center">
-          <p class="text-2xl font-bold text-blue-600">{{ totalAccountsCount }}</p>
-          <p class="text-sm text-gray-500 mt-1">تعداد حساب‌ها</p>
+              <div class="space-y-2">
+                <div
+                  class="min-h-12 rounded-2xl border border-slate-200 bg-white px-2 py-1 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <MonthSelector @change="handleMonthChange" />
+                </div>
+              </div>
+
+
+              <button
+                :class="showNotShippedOnly ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/15' : 'bg-sky-50 text-sky-700 border border-sky-200'"
+                @click="toggleNotShippedMain"
+                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
+                ارسال نشده
+              </button>
+
+              <button
+                :class="showUnsettledOnly ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/15' : 'bg-amber-50 text-amber-700 border border-amber-200'"
+                @click="toggleUnsettledMain"
+                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
+                تسویه‌نشده
+              </button>
+            </div>
+          </div>
+
+          <div class="grid gap-2 sm:grid-cols-1 xl:grid-cols-5">
+            <div
+              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <p class="text-sm text-slate-500">تعداد حساب‌ها</p>
+              <div class="mt-2 flex items-end justify-between gap-3">
+                <p class="text-4xl font-black text-blue-600">{{ totalAccountsCount }}</p>
+                <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">کل</span>
+              </div>
+            </div>
+
+            <div
+              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <p class="text-sm text-slate-500">ارسال شده</p>
+              <div class="mt-2 flex items-end justify-between gap-3">
+                <p class="text-4xl font-black text-emerald-600">{{ shippedCount }}</p>
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">ارسالی</span>
+              </div>
+            </div>
+
+            <div
+              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <p class="text-sm text-slate-500">تسویه شده</p>
+              <div class="mt-2 flex items-end justify-between gap-3">
+                <p class="text-4xl font-black text-violet-600">{{ settledCount }}</p>
+                <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">تسویه</span>
+              </div>
+            </div>
+
+            <div
+              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <p class="text-sm text-slate-500">مبلغ تسویه شده</p>
+              <div class="mt-4 flex justify-center">
+                <p class="text-2xl font-black leading-7 text-emerald-600">{{ settledAmountFormatted }}</p>
+              </div>
+            </div>
+
+            <div
+              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <p class="text-sm text-slate-500">مبلغ تسویه نشده</p>
+              <div class="mt-4 flex justify-center">
+                <p class="text-2xl font-black leading-7 text-rose-600">{{ remainingAmountFormatted }}</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="bg-white rounded-xl shadow p-4 text-center">
-          <p class="text-2xl font-bold text-green-600">{{ shippedCount }}</p>
-          <p class="text-sm text-gray-500 mt-1">ارسال شده</p>
-        </div>
-        <div class="bg-white rounded-xl shadow p-4 text-center">
-          <p class="text-2xl font-bold text-purple-600">{{ settledCount }}</p>
-          <p class="text-sm text-gray-500 mt-1"> تسویه شده‌</p>
-        </div>
-        <div class="bg-white rounded-xl shadow p-4 text-center">
-          <p class="text-lg font-bold text-green-600">{{ settledAmountFormatted }}</p>
-          <p class="text-sm text-gray-500 mt-1"> مبلغ تسویه شده </p>
-        </div>
-        <div class="bg-white rounded-xl shadow p-4 text-center">
-          <p class="text-lg font-bold text-rose-600">{{ remainingAmountFormatted }}</p>
-          <p class="text-sm text-gray-500 mt-1"> مبلغ تسویه نشده </p>
-        </div>
-      </div>
+      </section>
 
       <!-- Invoice table -->
       <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
           <h2 class="font-semibold text-gray-700">
             حساب‌های {{ currentMonthLabel }}
           </h2>
-          <span class="text-sm text-gray-400">{{ displayedInvoices.length }} حساب</span>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-400">{{ totalRows }} حساب</span>
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+              <select v-model.number="pageSize"
+                class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size.toLocaleString('fa-IR') }}
+                </option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <!-- Loading state -->
@@ -152,15 +209,47 @@
           </div>
         </div>
 
-        <InvoiceTable v-else :invoices="displayedInvoices" :show-customer-column="true" :show-actions="true"
+        <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="true" :show-actions="true"
           @edit="openEditModal" @delete="openDeleteModal" @status-change="handleStatusChange"
           @customer-click="navigateToCustomer" />
+
+        <div v-if="!invoiceStore.loading && totalRows > 0"
+          class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+          <p class="text-sm text-gray-500">
+            نمایش
+            <span class="font-medium text-gray-700">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
+            تا
+            <span class="font-medium text-gray-700">{{ Math.min(rowStartIndex + pageSize,
+              totalRows).toLocaleString('fa-IR') }}</span>
+            از
+            <span class="font-medium text-gray-700">{{ totalRows.toLocaleString('fa-IR') }}</span>
+          </p>
+
+          <div class="flex items-center gap-2">
+            <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
+              class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              قبلی
+            </button>
+
+            <span class="text-sm text-gray-600">
+              صفحه {{ currentPage.toLocaleString('fa-IR') }} از {{ totalPages.toLocaleString('fa-IR') }}
+            </span>
+
+            <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
+              class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              بعدی
+            </button>
+          </div>
+        </div>
       </div>
     </main>
 
     <!-- Invoice Form Modal -->
     <InvoiceForm :is-open="showInvoiceForm" :customer-id="null" :invoice-data="selectedInvoice"
       :customers-list="invoiceStore.customers" @save="handleSaveInvoice" @close="closeInvoiceForm" />
+
+    <CustomerFormModal :is-open="showCustomerForm" :existing-customers="invoiceStore.customers"
+      @close="closeCustomerForm" @saved="handleCustomerSaved" />
 
     <!-- Confirm Delete Modal -->
     <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
@@ -170,7 +259,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/authStore';
@@ -182,7 +271,9 @@ import InvoiceTable from '../components/InvoiceTable.vue';
 import InvoiceForm from '../components/InvoiceForm.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import JalaliDatePicker from '../components/JalaliDatePicker.vue';
+import CustomerFormModal from '../components/CustomerFormModal.vue';
 import { toGregorianDate } from '../utils/dateConverter';
+import api from '../utils/api';
 
 const router = useRouter();
 const toast = useToast();
@@ -191,6 +282,7 @@ const invoiceStore = useInvoiceStore();
 
 // State
 const showInvoiceForm = ref(false);
+const showCustomerForm = ref(false);
 const selectedInvoice = ref(null);
 const showConfirmDelete = ref(false);
 const deleteTargetId = ref(null);
@@ -200,6 +292,11 @@ const searchDate = ref('');
 const searchCustomerName = ref('');
 const showUnsettledOnly = ref(false);
 const showNotShippedOnly = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(15);
+const pageSizeOptions = [10, 15, 20, 50, 100];
+const backupLoading = ref(false);
+let searchDebounceTimer = null;
 
 // Computed stats
 const totalAccountsCount = computed(() => invoiceStore.allInvoices.length);
@@ -225,11 +322,11 @@ const remainingAmount = computed(() =>
 );
 
 const settledAmountFormatted = computed(() =>
-  settledAmount.value.toLocaleString('fa-IR') + ' تومان'
+  settledAmount.value.toLocaleString('fa-IR')
 );
 
 const remainingAmountFormatted = computed(() =>
-  remainingAmount.value.toLocaleString('fa-IR') + ' تومان'
+  remainingAmount.value.toLocaleString('fa-IR')
 );
 
 const displayedInvoices = computed(() => {
@@ -244,6 +341,27 @@ const displayedInvoices = computed(() => {
   }
 
   return invoices;
+});
+
+const totalRows = computed(() => displayedInvoices.value.length);
+const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)));
+const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
+const paginatedInvoices = computed(() =>
+  displayedInvoices.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value)
+);
+
+watch(pageSize, () => {
+  currentPage.value = 1;
+});
+
+watch([displayedInvoices, totalPages], () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value;
+  }
+
+  if (currentPage.value < 1) {
+    currentPage.value = 1;
+  }
 });
 
 const currentMonthLabel = computed(() => {
@@ -264,14 +382,19 @@ onMounted(async () => {
 // Handle month change from MonthSelector
 async function handleMonthChange({ persianYear, persianMonth }) {
   currentFilter.value = { persianYear, persianMonth };
-  await loadInvoicesForPersianPeriod(persianYear, persianMonth);
+  currentPage.value = 1;
+  await performSearch({ silentInvalidDate: true });
+}
+
+function getPersianPeriodRange(persianYear, persianMonth) {
+  return persianMonth
+    ? getPersianMonthGregorianRange(persianYear, persianMonth)
+    : getPersianYearGregorianRange(persianYear);
 }
 
 async function loadInvoicesForPersianPeriod(persianYear, persianMonth) {
   try {
-    const { startDate, endDate } = persianMonth
-      ? getPersianMonthGregorianRange(persianYear, persianMonth)
-      : getPersianYearGregorianRange(persianYear);
+    const { startDate, endDate } = getPersianPeriodRange(persianYear, persianMonth);
 
     if (startDate && endDate) {
       // Use search API to filter by date range
@@ -288,7 +411,9 @@ async function loadInvoicesForPersianPeriod(persianYear, persianMonth) {
   }
 }
 
-async function performSearch() {
+async function performSearch(options = {}) {
+  const { silentInvalidDate = false } = options;
+  currentPage.value = 1;
   const params = {};
 
   if (searchCustomerName.value.trim()) {
@@ -298,20 +423,27 @@ async function performSearch() {
   if (searchDate.value) {
     const greg = toGregorianDate(searchDate.value);
     if (!greg) {
-      toast.error('تاریخ انتخاب شده معتبر نیست');
+      if (!silentInvalidDate) {
+        toast.error('تاریخ انتخاب شده معتبر نیست');
+      }
       return;
     }
     params.start_date = greg;
     params.end_date = greg;
+  } else if (currentFilter.value.persianYear) {
+    const { startDate, endDate } = getPersianPeriodRange(
+      currentFilter.value.persianYear,
+      currentFilter.value.persianMonth
+    );
+
+    if (startDate && endDate) {
+      params.start_date = startDate;
+      params.end_date = endDate;
+    }
   }
 
-  // If no search criteria, return to current filter
-  if (!searchCustomerName.value.trim() && !searchDate.value) {
-    if (currentFilter.value.persianYear) {
-      await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
-    } else {
-      await invoiceStore.fetchInvoices();
-    }
+  if (Object.keys(params).length === 0) {
+    await invoiceStore.fetchInvoices();
     return;
   }
 
@@ -322,7 +454,23 @@ async function performSearch() {
   }
 }
 
+function scheduleRealtimeSearch() {
+  currentPage.value = 1;
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
+
+  searchDebounceTimer = setTimeout(async () => {
+    await performSearch({ silentInvalidDate: true });
+  }, 300);
+}
+
 async function clearSearch() {
+  currentPage.value = 1;
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
   searchCustomerName.value = '';
   searchDate.value = '';
   if (currentFilter.value.persianYear) {
@@ -335,11 +483,18 @@ async function clearSearch() {
 // Toggle unsettled-only view on main dashboard (all invoices)
 async function toggleUnsettledMain() {
   showUnsettledOnly.value = !showUnsettledOnly.value;
+  currentPage.value = 1;
 }
 
 // Toggle not-shipped-only view on main dashboard
 async function toggleNotShippedMain() {
   showNotShippedOnly.value = !showNotShippedOnly.value;
+  currentPage.value = 1;
+}
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
 }
 
 // Modal handlers
@@ -356,6 +511,18 @@ function openEditModal(invoice) {
 function closeInvoiceForm() {
   showInvoiceForm.value = false;
   selectedInvoice.value = null;
+}
+
+function openAddCustomerModal() {
+  showCustomerForm.value = true;
+}
+
+function closeCustomerForm() {
+  showCustomerForm.value = false;
+}
+
+async function handleCustomerSaved() {
+  await invoiceStore.fetchCustomers();
 }
 
 function openDeleteModal(invoiceId) {
@@ -387,12 +554,7 @@ async function handleSaveInvoice({ data, isEdit }) {
 
   closeInvoiceForm();
   await invoiceStore.fetchAllInvoices();
-  // Reload invoices for current month
-  if (currentFilter.value.persianYear) {
-    await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
-  } else {
-    await invoiceStore.fetchInvoices();
-  }
+  await performSearch({ silentInvalidDate: true });
 }
 
 // Delete invoice
@@ -408,12 +570,7 @@ async function handleDeleteInvoice() {
     showConfirmDelete.value = false;
     deleteTargetId.value = null;
     await invoiceStore.fetchAllInvoices();
-    // Reload
-    if (currentFilter.value.persianYear) {
-      await loadInvoicesForPersianPeriod(currentFilter.value.persianYear, currentFilter.value.persianMonth);
-    } else {
-      await invoiceStore.fetchInvoices();
-    }
+    await performSearch({ silentInvalidDate: true });
   } else {
     toast.error(result.message);
   }
@@ -438,9 +595,33 @@ function navigateToUsers() {
   router.push('/users');
 }
 
+async function handleManualBackup() {
+  if (backupLoading.value) return;
+
+  backupLoading.value = true;
+  try {
+    const response = await api.post('/backups/manual');
+    const fileName = response?.data?.fileName;
+    toast.success(fileName ? `بکاپ با موفقیت گرفته شد: ${fileName}` : 'بکاپ با موفقیت گرفته شد');
+  } catch (err) {
+    const message = err.response?.data?.message || 'خطا در گرفتن بکاپ';
+    toast.error(message);
+  } finally {
+    backupLoading.value = false;
+  }
+}
+
 // Logout
 function handleLogout() {
   authStore.logout();
   router.push('/login');
 }
+
+watch(searchCustomerName, () => {
+  scheduleRealtimeSearch();
+});
+
+watch(searchDate, () => {
+  scheduleRealtimeSearch();
+});
 </script>
