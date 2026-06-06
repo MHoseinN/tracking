@@ -7,24 +7,7 @@
             <h1 class="text-xl font-bold text-gray-800">نمودارها و آمار</h1>
           </div>
         </div>
-
         <div class="flex flex-wrap items-center gap-3">
-
-
-          <div class="text-right hidden sm:block">
-            <p class="text-xs text-gray-500">آخرین بروزرسانی</p>
-            <p class="text-sm font-medium text-gray-500">{{ lastUpdatedLabel }}</p>
-          </div>
-
-          <button @click="refreshStats" :disabled="refreshing"
-            class="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60">
-            <svg class="w-4 h-4" :class="refreshing ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8 8 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.001 8.001 0 004.582 15m15.356 2H15" />
-            </svg>
-            بروزرسانی
-          </button>
-
           <button @click="goBack"
             class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             <span>بازگشت</span>
@@ -58,12 +41,30 @@
             <div>
               <h2 class="text-lg font-semibold text-gray-800">{{ sectionTitle }}</h2>
             </div>
-            <div class="min-w-[180px]">
-              <select v-model="selectedYear"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="all">همه سال‌ها</option>
-                <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
-              </select>
+            <div class="flex gap-3">
+              <div class="flex justify-between text-right">
+                <div class="py-2">
+                  <p class="text-xs text-gray-500">آخرین بروزرسانی</p>
+                  <p class="text-xs font-medium text-gray-500">{{ lastUpdatedLabel }}</p>
+                </div>
+                <div class="mr-2">
+                  <button @click="refreshStats" :disabled="refreshing"
+                    class="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60">
+                    <svg class="w-4 h-4" :class="refreshing ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24">
+                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8 8 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.001 8.001 0 004.582 15m15.356 2H15" />
+                    </svg>
+                    بروزرسانی
+                  </button>
+                </div>
+              </div>
+              <div class="min-w-[180px]">
+                <select v-model="selectedYear"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="all">همه سال‌ها</option>
+                  <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
+                </select>
+              </div>
             </div>
           </div>
 

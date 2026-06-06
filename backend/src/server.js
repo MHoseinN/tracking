@@ -70,10 +70,22 @@ app.use((err, req, res, next) => {
 function startServer() {
   initDatabase();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log('Manual database backup endpoint is enabled.');
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use.`);
+      console.error(`Close the process using port ${PORT}, or start the server with a different PORT value.`);
+      console.error(`PowerShell: Get-NetTCPConnection -LocalPort ${PORT} | Select-Object LocalPort,OwningProcess,State`);
+      process.exit(1);
+    }
+
+    console.error('Server failed to start:', error);
+    process.exit(1);
   });
 }
 

@@ -9,14 +9,6 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button @click="openAddModal"
-            class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            افزودن کاربر
-          </button>
-git pull origin main --allow-unrelated-histories
           <button @click="goBack"
             class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             <span>بازگشت</span>
@@ -33,14 +25,59 @@ git pull origin main --allow-unrelated-histories
         {{ errorMessage }}
       </div>
 
+      <form class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden" @submit.prevent>
+        <div class="px-5 py-4 border-b border-gray-100 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1  class="font-semibold text-gray-800"> کاربران</h1>
+          </div>
+
+          <button type="button" @click="openAddModal"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            افزودن کاربر
+          </button>
+        </div>
+
+        <div class="p-5 space-y-4">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p class="text-xs font-medium text-slate-500">تمامی کاربران</p>
+              <p class="mt-2 text-2xl font-bold text-slate-800">{{ formatNumber(totalCustomers) }}</p>
+            </div>
+
+            <div v-for="item in statusSummary" :key="item.label"
+              :class="['rounded-lg border px-4 py-3', item.containerClass]">
+              <p :class="['text-xs font-medium', item.labelClass]">{{ item.label }}</p>
+              <p :class="['mt-2 text-2xl font-bold', item.valueClass]">{{ formatNumber(item.count) }}</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div class="relative flex-1">
+              <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35m1.1-5.4a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
+              </svg>
+              <input v-model="searchQuery" type="search"
+                placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
+                class="w-full border border-gray-300 rounded-lg bg-white py-2.5 pr-10 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 lg:min-w-[170px]">
+              <span>نتیجه جستجو</span>
+              <span class="font-semibold text-gray-700">{{ formatNumber(totalRows) }}</span>
+            </div>
+          </div>
+        </div>
+      </form>
+
       <div class="bg-white rounded-xl shadow overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 class="font-semibold text-gray-700">جدول کاربران</h2>
-          </div>
-          <div class="px-5 py-4 w-[600px] border-b border-gray-100 bg-gray-50/60">
-            <input v-model="searchQuery" type="text" placeholder="نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
-              class="w-full  border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div class="flex items-center gap-3">
             <span class="text-sm text-gray-400">{{ totalRows }} کاربر</span>
@@ -103,8 +140,10 @@ git pull origin main --allow-unrelated-histories
                 </td>
               </tr>
 
-              <tr v-if="!rows.length">
-                <td colspan="9" class="px-4 py-10 text-center text-sm text-gray-400">کاربری ثبت نشده است</td>
+              <tr v-if="!filteredRows.length">
+                <td colspan="9" class="px-4 py-10 text-center text-sm text-gray-400">
+                  {{ rows.length ? 'کاربری با این جستجو پیدا نشد' : 'کاربری ثبت نشده است' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -255,6 +294,43 @@ const rows = computed(() => invoiceStore.customersOverview);
 const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(15);
+
+const totalCustomers = computed(() => rows.value.length);
+
+function countCustomersByStatus(status) {
+  return rows.value.filter((row) => row.account_status === status).length;
+}
+
+const statusSummary = computed(() => [
+  {
+    label: 'خوش حساب',
+    count: countCustomersByStatus('خوش حساب'),
+    containerClass: 'border-emerald-200 bg-emerald-50',
+    labelClass: 'text-emerald-600',
+    valueClass: 'text-emerald-700'
+  },
+  {
+    label: 'بد حساب',
+    count: countCustomersByStatus('بد حساب'),
+    containerClass: 'border-rose-200 bg-rose-50',
+    labelClass: 'text-rose-600',
+    valueClass: 'text-rose-700'
+  },
+  {
+    label: 'پرداخت نقدی',
+    count: countCustomersByStatus('پرداخت نقدی'),
+    containerClass: 'border-blue-200 bg-blue-50',
+    labelClass: 'text-blue-600',
+    valueClass: 'text-blue-700'
+  },
+  {
+    label: 'هماهنگی با مدیر',
+    count: countCustomersByStatus('هماهنگی با مدیر'),
+    containerClass: 'border-amber-200 bg-amber-50',
+    labelClass: 'text-amber-600',
+    valueClass: 'text-amber-700'
+  }
+]);
 
 function normalizeForSearch(value) {
   return String(value ?? '')

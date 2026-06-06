@@ -80,59 +80,6 @@
             </div>
           </div>
 
-          <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
-            <div
-              class="grid gap-4 xl:grid-cols-[minmax(280px,1.2fr)_minmax(260px,0.9fr)_minmax(360px,1.2fr)_auto_auto] xl:items-end">
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-slate-700">جستجو</label>
-                <div class="relative">
-                  <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-                  </svg>
-                  <input v-model="searchCustomerName" type="text" placeholder="نام یا نام‌خانوادگی مشتری..."
-                    class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-                </div>
-              </div>
-
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-slate-700">تاریخ </label>
-                <div
-                  class="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-                  <JalaliDatePicker v-model="searchDate" />
-                  <button @click="clearSearch"
-                    class="h-10 shrink-0 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
-                    پاک کردن
-                  </button>
-                </div>
-              </div>
-
-
-              <div class="space-y-2">
-                <div
-                  class="min-h-12 rounded-2xl border border-slate-200 bg-white px-2 py-1 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-                  <MonthSelector @change="handleMonthChange" />
-                </div>
-              </div>
-
-
-              <button
-                :class="showNotShippedOnly ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/15' : 'bg-sky-50 text-sky-700 border border-sky-200'"
-                @click="toggleNotShippedMain"
-                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
-                ارسال نشده
-              </button>
-
-              <button
-                :class="showUnsettledOnly ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/15' : 'bg-amber-50 text-amber-700 border border-amber-200'"
-                @click="toggleUnsettledMain"
-                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
-                تسویه‌نشده
-              </button>
-            </div>
-          </div>
-
           <div class="grid gap-2 sm:grid-cols-1 xl:grid-cols-5">
             <div
               class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -177,6 +124,59 @@
               </div>
             </div>
           </div>
+
+          <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
+            <div
+              class="grid gap-4 xl:grid-cols-[minmax(280px,1.2fr)_minmax(260px,0.9fr)_minmax(360px,1.2fr)_auto_auto] xl:items-end">
+              <div class="space-y-2">
+                <div class="relative">
+                  <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                  </svg>
+                  <input v-model="searchCustomerName" type="text" placeholder="نام یا نام‌خانوادگی مشتری..."
+                    class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div
+                  class="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <JalaliDatePicker v-model="searchDate" />
+                  <button @click="clearSearch"
+                    class="h-10 shrink-0 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                    پاک کردن
+                  </button>
+                </div>
+              </div>
+
+
+              <div class="space-y-2">
+                <div
+                  class="min-h-12 rounded-2xl border border-slate-200 bg-white px-2 py-1 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <MonthSelector @change="handleMonthChange" />
+                </div>
+              </div>
+
+
+              <button
+                :class="showNotShippedOnly ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/15' : 'bg-sky-50 text-sky-700 border border-sky-200'"
+                @click="toggleNotShippedMain"
+                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
+                ارسال نشده
+              </button>
+
+              <button
+                :class="showUnsettledOnly ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/15' : 'bg-amber-50 text-amber-700 border border-amber-200'"
+                @click="toggleUnsettledMain"
+                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
+                تسویه‌نشده
+              </button>
+            </div>
+          </div>
+
+
         </div>
       </section>
 
