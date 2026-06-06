@@ -16,8 +16,7 @@
             </svg>
             افزودن کاربر
           </button>
-
-https://github.com/MHoseinN/tracking.git
+git pull origin main --allow-unrelated-histories
           <button @click="goBack"
             class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             <span>بازگشت</span>
