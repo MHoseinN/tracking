@@ -26,20 +26,6 @@
       </div>
 
       <form class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden" @submit.prevent>
-        <div class="px-5 py-4 border-b border-gray-100 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1  class="font-semibold text-gray-800"> کاربران</h1>
-          </div>
-
-          <button type="button" @click="openAddModal"
-            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            افزودن کاربر
-          </button>
-        </div>
-
         <div class="p-5 space-y-4">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
@@ -53,9 +39,13 @@
               <p :class="['mt-2 text-2xl font-bold', item.valueClass]">{{ formatNumber(item.count) }}</p>
             </div>
           </div>
+        </div>
+      </form>
 
+      <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-center">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div class="relative flex-1">
+            <div class="relative flex-1 w-[600px]">
               <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -65,31 +55,15 @@
                 placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
                 class="w-full border border-gray-300 rounded-lg bg-white py-2.5 pr-10 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-
-            <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 lg:min-w-[170px]">
-              <span>نتیجه جستجو</span>
-              <span class="font-semibold text-gray-700">{{ formatNumber(totalRows) }}</span>
-            </div>
+            <button type="button" @click="openAddModal"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto">
+              افزودن کاربر
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           </div>
         </div>
-      </form>
-
-      <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 class="font-semibold text-gray-700">جدول کاربران</h2>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-400">{{ totalRows }} کاربر</span>
-            <div class="flex items-center gap-2 text-sm text-gray-500">
-              <select v-model.number="pageSize"
-                class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ formatNumber(size) }}</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
 
         <div v-if="loading" class="flex items-center justify-center py-16 text-gray-500">در حال بارگذاری...</div>
 
@@ -150,6 +124,7 @@
 
           <div v-if="totalRows"
             class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+
             <p class="text-sm text-gray-500">
               نمایش
               <span class="font-medium text-gray-700">{{ formatNumber(rowStartIndex + 1) }}</span>
@@ -158,6 +133,12 @@
               }}</span>
               از
               <span class="font-medium text-gray-700">{{ formatNumber(totalRows) }}</span>
+
+              <select v-model.number="pageSize"
+                class="border border-gray-300 rounded-md px-2 py-1 mr-4 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ formatNumber(size) }}</option>
+              </select>
+
             </p>
 
             <div class="flex items-center gap-2">

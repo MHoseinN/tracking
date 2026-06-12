@@ -18,6 +18,57 @@
         </div>
       </div>
     </header>
+    <section
+      class="max-w-7xl mx-auto mt-4 px-4 relative overflow-visible rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+      <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-emerald-100 pointer-events-none rounded-2xl">
+      </div>
+      <div class="relative p-3 sm:p-5 space-y-5">
+        <div class="grid gap-2 sm:grid-cols-1 xl:grid-cols-5">
+          <div
+            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <p class="text-sm text-slate-500">تعداد حساب‌ها</p>
+            <div class="mt-2 flex items-end justify-between gap-3">
+              <p class="text-4xl font-black text-blue-600">{{ totalAccountsCount }}</p>
+              <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">کل</span>
+            </div>
+          </div>
+
+          <div
+            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <p class="text-sm text-slate-500">ارسال شده</p>
+            <div class="mt-2 flex items-end justify-between gap-3">
+              <p class="text-4xl font-black text-emerald-600">{{ shippedCount }}</p>
+              <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">ارسالی</span>
+            </div>
+          </div>
+
+          <div
+            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <p class="text-sm text-slate-500">تسویه شده</p>
+            <div class="mt-2 flex items-end justify-between gap-3">
+              <p class="text-4xl font-black text-violet-600">{{ settledCount }}</p>
+              <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">تسویه</span>
+            </div>
+          </div>
+
+          <div
+            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <p class="text-sm text-slate-500">مبلغ تسویه شده</p>
+            <div class="mt-4 flex justify-center">
+              <p class="text-2xl font-black leading-7 text-emerald-600">{{ settledAmountFormatted }}</p>
+            </div>
+          </div>
+
+          <div
+            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <p class="text-sm text-slate-500">مبلغ تسویه نشده</p>
+            <div class="mt-4 flex justify-center">
+              <p class="text-2xl font-black leading-7 text-rose-600">{{ remainingAmountFormatted }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <div v-if="loading" class="flex items-center justify-center py-24">
@@ -47,16 +98,7 @@
                   <p class="text-xs text-gray-500">آخرین بروزرسانی</p>
                   <p class="text-xs font-medium text-gray-500">{{ lastUpdatedLabel }}</p>
                 </div>
-                <div class="mr-2">
-                  <button @click="refreshStats" :disabled="refreshing"
-                    class="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60">
-                    <svg class="w-4 h-4" :class="refreshing ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24">
-                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 4v5h.582m15.356 2A8 8 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.001 8.001 0 004.582 15m15.356 2H15" />
-                    </svg>
-                    بروزرسانی
-                  </button>
-                </div>
+                
               </div>
               <div class="min-w-[180px]">
                 <select v-model="selectedYear"
@@ -132,6 +174,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import { useInvoiceStore } from '../stores/invoiceStore';
 import api from '../utils/api';
 import Chart from 'chart.js/auto';
 import {
@@ -143,6 +186,40 @@ import {
 
 const router = useRouter();
 const authStore = useAuthStore();
+const invoiceStore = useInvoiceStore();
+
+// Computed stats
+const totalAccountsCount = computed(() => invoiceStore.allInvoices.length);
+
+const shippedCount = computed(() =>
+  invoiceStore.allInvoices.filter(i => i.is_shipped).length
+);
+
+const settledCount = computed(() =>
+  invoiceStore.allInvoices.filter(i => i.is_settled).length
+);
+
+const settledAmount = computed(() =>
+  invoiceStore.allInvoices
+    .filter(i => i.is_settled)
+    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
+);
+
+const remainingAmount = computed(() =>
+  invoiceStore.allInvoices
+    .filter(i => !i.is_settled)
+    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
+);
+
+const settledAmountFormatted = computed(() =>
+  settledAmount.value.toLocaleString('fa-IR')
+);
+
+const remainingAmountFormatted = computed(() =>
+  remainingAmount.value.toLocaleString('fa-IR')
+);
+
+
 
 const loading = ref(true);
 const refreshing = ref(false);
@@ -458,6 +535,13 @@ watch(selectedYear, async () => {
   } finally {
     refreshing.value = false;
   }
+});
+
+onMounted(async () => {
+  await Promise.all([
+    invoiceStore.fetchCustomers(),
+    invoiceStore.fetchAllInvoices()
+  ]);
 });
 
 onMounted(() => {

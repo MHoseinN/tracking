@@ -1,46 +1,32 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div>
-            <h1 class="text-xl font-bold text-gray-800">مدیریت حساب‌ها</h1>
-            <p class="text-xs text-gray-500">صفحه اصلی</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button @click="handleManualBackup" :disabled="backupLoading"
-            class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 text-sm font-semibold text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
-          </button>
-          <button @click="handleLogout"
-            class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            خروج
-          </button>
-        </div>
-
-
-      </div>
-    </header>
-
-    <!-- Main content -->
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      <!-- Hero / controls -->
+    <header class="max-w-7xl mx-auto bg-white shadow-sm sticky top-4 z-10 rounded-lg">
       <section
-        class="relative overflow-visible rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-emerald-50 pointer-events-none"></div>
+        class="relative overflow-visible border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] rounded-lg">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-emerald-100 pointer-events-none rounded-lg">
+        </div>
         <div class="relative p-3 sm:p-5 space-y-5">
-          <div class="flex gap-4 justify-center">
+          <div class="flex gap-4 items-center justify-between">
+            <div
+              class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
+              <button @click="navigateToCharts"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                نمودارها
+              </button>
+              <button @click="navigateToUsers"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                کاربران
+              </button>
+            </div>
             <div
               class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
               <button @click="openAddModal"
@@ -50,25 +36,6 @@
                 </svg>
                 افزودن حساب جدید
               </button>
-
-              <button @click="navigateToCharts"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                نمودارها
-              </button>
-
-              <button @click="navigateToUsers"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                کاربران
-              </button>
-
               <button @click="openAddCustomerModal"
                 class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-600">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,122 +45,80 @@
                 افزودن کاربر
               </button>
             </div>
-          </div>
-
-          <div class="grid gap-2 sm:grid-cols-1 xl:grid-cols-5">
             <div
-              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <p class="text-sm text-slate-500">تعداد حساب‌ها</p>
-              <div class="mt-2 flex items-end justify-between gap-3">
-                <p class="text-4xl font-black text-blue-600">{{ totalAccountsCount }}</p>
-                <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">کل</span>
-              </div>
-            </div>
-
-            <div
-              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <p class="text-sm text-slate-500">ارسال شده</p>
-              <div class="mt-2 flex items-end justify-between gap-3">
-                <p class="text-4xl font-black text-emerald-600">{{ shippedCount }}</p>
-                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">ارسالی</span>
-              </div>
-            </div>
-
-            <div
-              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <p class="text-sm text-slate-500">تسویه شده</p>
-              <div class="mt-2 flex items-end justify-between gap-3">
-                <p class="text-4xl font-black text-violet-600">{{ settledCount }}</p>
-                <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">تسویه</span>
-              </div>
-            </div>
-
-            <div
-              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <p class="text-sm text-slate-500">مبلغ تسویه شده</p>
-              <div class="mt-4 flex justify-center">
-                <p class="text-2xl font-black leading-7 text-emerald-600">{{ settledAmountFormatted }}</p>
-              </div>
-            </div>
-
-            <div
-              class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <p class="text-sm text-slate-500">مبلغ تسویه نشده</p>
-              <div class="mt-4 flex justify-center">
-                <p class="text-2xl font-black leading-7 text-rose-600">{{ remainingAmountFormatted }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
-            <div
-              class="grid gap-4 xl:grid-cols-[minmax(280px,1.2fr)_minmax(260px,0.9fr)_minmax(360px,1.2fr)_auto_auto] xl:items-end">
-              <div class="space-y-2">
-                <div class="relative">
-                  <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-                  </svg>
-                  <input v-model="searchCustomerName" type="text" placeholder="نام یا نام‌خانوادگی مشتری..."
-                    class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-                </div>
-              </div>
-
-              <div class="space-y-2">
-                <div
-                  class="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-                  <JalaliDatePicker v-model="searchDate" />
-                  <button @click="clearSearch"
-                    class="h-10 shrink-0 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
-                    پاک کردن
-                  </button>
-                </div>
-              </div>
-
-
-              <div class="space-y-2">
-                <div
-                  class="min-h-12 rounded-2xl border border-slate-200 bg-white px-2 py-1 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-                  <MonthSelector @change="handleMonthChange" />
-                </div>
-              </div>
-
-
-              <button
-                :class="showNotShippedOnly ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/15' : 'bg-sky-50 text-sky-700 border border-sky-200'"
-                @click="toggleNotShippedMain"
-                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
-                ارسال نشده
+              class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
+              <button @click="handleManualBackup" :disabled="backupLoading"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-200 px-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
               </button>
-
-              <button
-                :class="showUnsettledOnly ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/15' : 'bg-amber-50 text-amber-700 border border-amber-200'"
-                @click="toggleUnsettledMain"
-                class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
-                تسویه‌نشده
+              <button @click="handleLogout"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-red-700 px-3 text-sm font-semibold text-white transition hover:bg-red-600 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 ">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                خروج
               </button>
             </div>
           </div>
-
-
         </div>
       </section>
+    </header>
 
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <!-- Invoice table -->
       <div class="bg-white rounded-xl shadow overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-          <h2 class="font-semibold text-gray-700">
-            حساب‌های {{ currentMonthLabel }}
-          </h2>
-          <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-400">{{ totalRows }} حساب</span>
-            <div class="flex items-center gap-2 text-sm text-gray-500">
-              <select v-model.number="pageSize"
-                class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size.toLocaleString('fa-IR') }}
-                </option>
-              </select>
+          <div>
+            <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
+              <div
+                class="grid gap-4 xl:grid-cols-[minmax(280px,1.2fr)_minmax(260px,0.9fr)_minmax(360px,1.2fr)_auto_auto] xl:items-end">
+                <div class="space-y-2">
+                  <div class="relative">
+                    <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                    </svg>
+                    <input v-model="searchCustomerName" type="text" placeholder="نام یا نام‌خانوادگی مشتری..."
+                      class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  <div class="flex h-12 items-center gap-2 rounded-2xl bg-white px-2 focus:ring-blue-100">
+                    <JalaliDatePicker v-model="searchDate" />
+                    <button @click="clearSearch"
+                      class="h-10 shrink-0 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                      -
+                    </button>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div
+                    class="min-h-12 rounded-2xl border border-slate-200 bg-white px-2 py-1 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                    <MonthSelector @change="handleMonthChange" />
+                  </div>
+                </div>
+                <button
+                  :class="showNotShippedOnly ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/15' : 'bg-sky-50 text-sky-700 border border-sky-200'"
+                  @click="toggleNotShippedMain"
+                  class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
+                  ارسال نشده
+                </button>
+
+                <button
+                  :class="showUnsettledOnly ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/15' : 'bg-amber-50 text-amber-700 border border-amber-200'"
+                  @click="toggleUnsettledMain"
+                  class="h-12 whitespace-nowrap rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5">
+                  تسویه‌نشده
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -215,16 +140,29 @@
 
         <div v-if="!invoiceStore.loading && totalRows > 0"
           class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
-          <p class="text-sm text-gray-500">
-            نمایش
-            <span class="font-medium text-gray-700">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
-            تا
-            <span class="font-medium text-gray-700">{{ Math.min(rowStartIndex + pageSize,
-              totalRows).toLocaleString('fa-IR') }}</span>
-            از
-            <span class="font-medium text-gray-700">{{ totalRows.toLocaleString('fa-IR') }}</span>
-          </p>
+          <div class="flex items-center justify-between gap-8">
+            <div>
+              <p class="text-sm text-gray-500">
+                نمایش
+                <span class="font-medium text-gray-700">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
+                تا
+                <span class="font-medium text-gray-700">{{ Math.min(rowStartIndex + pageSize,
+                  totalRows).toLocaleString('fa-IR') }}</span>
+                از
+                <span class="font-medium text-gray-700">{{ totalRows.toLocaleString('fa-IR') }}</span>
+              </p>
+            </div>
 
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-sm text-gray-500">
+                <select v-model.number="pageSize"
+                  class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size.toLocaleString('fa-IR') }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
           <div class="flex items-center gap-2">
             <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
               class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -298,36 +236,6 @@ const pageSizeOptions = [10, 15, 20, 50, 100];
 const backupLoading = ref(false);
 let searchDebounceTimer = null;
 
-// Computed stats
-const totalAccountsCount = computed(() => invoiceStore.allInvoices.length);
-
-const shippedCount = computed(() =>
-  invoiceStore.allInvoices.filter(i => i.is_shipped).length
-);
-
-const settledCount = computed(() =>
-  invoiceStore.allInvoices.filter(i => i.is_settled).length
-);
-
-const settledAmount = computed(() =>
-  invoiceStore.allInvoices
-    .filter(i => i.is_settled)
-    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-);
-
-const remainingAmount = computed(() =>
-  invoiceStore.allInvoices
-    .filter(i => !i.is_settled)
-    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-);
-
-const settledAmountFormatted = computed(() =>
-  settledAmount.value.toLocaleString('fa-IR')
-);
-
-const remainingAmountFormatted = computed(() =>
-  remainingAmount.value.toLocaleString('fa-IR')
-);
 
 const displayedInvoices = computed(() => {
   let invoices = invoiceStore.currentInvoices;
