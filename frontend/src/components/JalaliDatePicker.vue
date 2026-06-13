@@ -1,14 +1,27 @@
 <template>
   <div ref="pickerRoot" class="relative">
     <input
+      v-if="triggerMode === 'input'"
       v-model="displayValue"
       @focus="openCalendar"
       readonly
-      placeholder="تاریخ(شمسی)"
+      :placeholder="placeholder"
       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-      :class="{ 'border-red-500': error }
-      "
+      :class="[inputClass, { 'border-red-500': error }]"
     />
+    <button
+      v-else
+      type="button"
+      @click="toggleCalendar"
+      class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition"
+      :class="buttonClass"
+    >
+      <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" />
+      </svg>
+      <span>{{ displayValue || buttonPlaceholder }}</span>
+    </button>
 
     <div v-if="show" class="absolute z-30 mt-2 bg-white border rounded-md shadow-lg p-3 w-64">
       <div class="flex items-center justify-between mb-2">
@@ -48,7 +61,12 @@ import { PERSIAN_MONTHS } from '../utils/dateConverter';
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
-  error: { type: Boolean, default: false }
+  error: { type: Boolean, default: false },
+  triggerMode: { type: String, default: 'input' },
+  placeholder: { type: String, default: 'تاریخ(شمسی)' },
+  buttonPlaceholder: { type: String, default: 'انتخاب تاریخ' },
+  inputClass: { type: String, default: '' },
+  buttonClass: { type: String, default: '' }
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -140,6 +158,9 @@ const blanks = computed(() => {
 
 function openCalendar() {
   show.value = true;
+}
+function toggleCalendar() {
+  show.value = !show.value;
 }
 function closeCalendar() {
   show.value = false;

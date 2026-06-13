@@ -53,10 +53,10 @@
               </svg>
               <input v-model="searchQuery" type="search"
                 placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
-                class="w-full border border-gray-300 rounded-lg bg-white py-2.5 pr-10 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full border border-gray-300 rounded-lg bg-white p-4  pr-10 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <button type="button" @click="openAddModal"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto">
+              class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 p-4 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto">
               افزودن کاربر
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -122,25 +122,31 @@
             </tbody>
           </table>
 
-          <div v-if="totalRows"
+          <div v-if="!invoiceStore.loading && totalRows > 0"
             class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+            <div class="flex items-center justify-between gap-8">
+              <div>
+                <p class="text-sm text-gray-500">
+                  نمایش
+                  <span class="font-medium text-gray-700">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
+                  تا
+                  <span class="font-medium text-gray-700">{{ Math.min(rowStartIndex + pageSize,
+                    totalRows).toLocaleString('fa-IR') }}</span>
+                  از
+                  <span class="font-medium text-gray-700">{{ totalRows.toLocaleString('fa-IR') }}</span>
+                </p>
+              </div>
 
-            <p class="text-sm text-gray-500">
-              نمایش
-              <span class="font-medium text-gray-700">{{ formatNumber(rowStartIndex + 1) }}</span>
-              تا
-              <span class="font-medium text-gray-700">{{ formatNumber(Math.min(rowStartIndex + pageSize, totalRows))
-              }}</span>
-              از
-              <span class="font-medium text-gray-700">{{ formatNumber(totalRows) }}</span>
-
-              <select v-model.number="pageSize"
-                class="border border-gray-300 rounded-md px-2 py-1 mr-4 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ formatNumber(size) }}</option>
-              </select>
-
-            </p>
-
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                  <select v-model.number="pageSize"
+                    class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size.toLocaleString('fa-IR') }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
             <div class="flex items-center gap-2">
               <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
                 class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -148,7 +154,7 @@
               </button>
 
               <span class="text-sm text-gray-600">
-                صفحه {{ formatNumber(currentPage) }} از {{ formatNumber(totalPages) }}
+                صفحه {{ currentPage.toLocaleString('fa-IR') }} از {{ totalPages.toLocaleString('fa-IR') }}
               </span>
 
               <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"

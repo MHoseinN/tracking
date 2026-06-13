@@ -19,11 +19,11 @@ function getInvoicesByMonth(req, res) {
       // Filter by Gregorian year/month
       const paddedMonth = String(month).padStart(2, '0');
       const datePrefix = `${year}-${paddedMonth}`;
-      query = `${invoiceQuery} WHERE i.date LIKE ? ORDER BY i.date ASC`;
+      query = `${invoiceQuery} WHERE i.date LIKE ? ORDER BY i.date DESC, i.id DESC`;
       rows = db.prepare(query).all(`${datePrefix}%`);
     } else {
       // Return all invoices if no filter provided
-      query = `${invoiceQuery} ORDER BY i.date ASC`;
+      query = `${invoiceQuery} ORDER BY i.date DESC, i.id DESC`;
       rows = db.prepare(query).all();
     }
 
@@ -44,7 +44,7 @@ function getCustomerInvoices(req, res) {
       return res.status(404).json({ message: 'Customer not found' });
     }
 
-    const rows = db.prepare(`${invoiceQuery} WHERE i.customer_id = ? ORDER BY i.date ASC`).all(customerId);
+    const rows = db.prepare(`${invoiceQuery} WHERE i.customer_id = ? ORDER BY i.date DESC, i.id DESC`).all(customerId);
     res.json({ customer, invoices: rows });
   } catch (err) {
     console.error('Get customer invoices error:', err);
@@ -81,7 +81,7 @@ function searchInvoices(req, res) {
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const query = `${invoiceQuery} ${whereClause} ORDER BY i.date ASC`;
+    const query = `${invoiceQuery} ${whereClause} ORDER BY i.date DESC, i.id DESC`;
 
     const rows = db.prepare(query).all(...params);
     res.json(rows);
