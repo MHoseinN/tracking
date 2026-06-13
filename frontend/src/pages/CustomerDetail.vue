@@ -3,9 +3,9 @@
     <header class="sticky top-0 z-10 bg-white shadow-sm">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
         <div class="min-w-0">
-          <p class="text-xs font-medium text-slate-500">صفحه اختصاصی مشتری</p>
+          <p class="text-xs font-medium text-slate-500">صفحه اختصاصی کاربر</p>
           <h1 class="truncate text-xl font-black text-slate-800 sm:text-2xl">
-            {{ customer?.name || 'مشتری' }}
+            {{ customer?.name || 'کاربر' }}
           </h1>
         </div>
 
@@ -27,8 +27,7 @@
         <button type="button" @click="isCustomerInfoOpen = !isCustomerInfoOpen"
           class="flex w-full items-center justify-between border-b border-slate-100 bg-slate-50/70 px-5 py-4 text-right transition hover:bg-slate-100/80 sm:px-6">
           <div>
-            <h2 class="text-lg font-bold text-slate-800">فرم اطلاعات مشتری</h2>
-            <p class="mt-1 text-sm text-slate-500">برای مشاهده و ویرایش اطلاعات، این بخش را باز کنید.</p>
+            <h2 class="text-lg font-bold text-slate-800"> اطلاعات کاربر</h2>
           </div>
           <span
             class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200">
@@ -41,19 +40,22 @@
 
         <div v-if="isCustomerInfoOpen" class="space-y-5 px-5 py-5 sm:px-6">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
+            <div class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
               <p class="text-sm text-slate-500">تعداد فاکتورها</p>
               <p class="mt-2 text-3xl font-black text-blue-600">{{ totalInvoicesCount.toLocaleString('fa-IR') }}</p>
             </div>
-            <div class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-green-50 p-4">
+            <div
+              class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-emerald-50 to-green-50 p-4">
               <p class="text-sm text-slate-500">فاکتورهای تسویه شده</p>
               <p class="mt-2 text-3xl font-black text-emerald-600">{{ settledCount.toLocaleString('fa-IR') }}</p>
             </div>
-            <div class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-lime-50 p-4">
+            <div
+              class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-emerald-50 to-lime-50 p-4">
               <p class="text-sm text-slate-500">مبلغ تسویه شده</p>
               <p class="mt-2 text-2xl font-black text-emerald-700">{{ settledAmountFormatted }}</p>
             </div>
-            <div class="rounded-3xl border border-slate-200 bg-gradient-to-br from-rose-50 to-orange-50 p-4">
+            <div
+              class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-rose-50 to-orange-50 p-4">
               <p class="text-sm text-slate-500">مبلغ تسویه نشده</p>
               <p class="mt-2 text-2xl font-black text-rose-600">{{ remainingAmountFormatted }}</p>
             </div>
@@ -113,7 +115,7 @@
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
-                {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات مشتری' }}
+                {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات کاربر' }}
               </button>
             </div>
           </div>
@@ -128,15 +130,19 @@
             @clear="clearSearch" />
 
           <div class="flex items-center gap-3">
-            <button @click="exportCustomerInvoices"
-              class="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
-              خروجی فاکتورها
-            </button>
             <button @click="openAddModal"
               class="inline-flex items-center gap-2 rounded-2xl bg-blue-600 p-4 text-sm font-semibold text-white transition hover:bg-blue-700">
               <span>افزودن حساب</span>
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button @click="exportCustomerInvoices"
+              class="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+              گزارش
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
             </button>
           </div>
@@ -184,10 +190,9 @@
               قبلی
             </button>
 
-            <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)"
-              :class="page === currentPage
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+            <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)" :class="page === currentPage
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+              : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
               class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
               {{ page.toLocaleString('fa-IR') }}
             </button>
@@ -207,8 +212,8 @@
     <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
       message="آیا از حذف این فاکتور مطمئن هستید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
       @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
-    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message"
-      @undo="handleUndo" @close="clearUndo" />
+    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+      @close="clearUndo" />
   </div>
 </template>
 <script setup>

@@ -49,7 +49,11 @@
               class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
               <button @click="exportInvoices"
                 class="inline-flex h-12 items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
-                خروجی فاکتورها
+                گزارش
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
               </button>
               <button @click="handleManualBackup" :disabled="backupLoading"
                 class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-200 px-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
@@ -132,10 +136,9 @@
               قبلی
             </button>
 
-            <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)"
-              :class="page === currentPage
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+            <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)" :class="page === currentPage
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+              : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
               class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
               {{ page.toLocaleString('fa-IR') }}
             </button>
@@ -161,8 +164,8 @@
       message="آیا از حذف این فاکتور اطمینان دارید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
       @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
 
-    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message"
-      @undo="handleUndo" @close="clearUndo" />
+    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+      @close="clearUndo" />
   </div>
 </template>
 

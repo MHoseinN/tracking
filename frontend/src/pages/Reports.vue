@@ -36,19 +36,24 @@
 
         <section
           class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
-          <div class="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/70 pointer-events-none"></div>
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/70 pointer-events-none">
+          </div>
           <div class="relative flex flex-wrap items-start justify-between gap-4">
             <div class="space-y-2">
               <div>
                 <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
-                <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-500">{{ reportLeadText }}</p>
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <button @click="exportReports"
                 class="inline-flex items-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
-                خروجی گزارش
-              </button>              
+                گزارش
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </button>
               <div class="min-w-[180px]">
                 <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
                   trigger-class="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
@@ -59,38 +64,35 @@
 
           <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <article v-for="card in reportSummaryCards" :key="card.label"
-              class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm text-slate-500">{{ card.label }}</p>
-                  <p class="mt-3 text-3xl font-black" :class="card.valueClass">{{ card.value }}</p>
-                </div>
-                <span class="rounded-2xl px-3 py-1 text-xs font-semibold" :class="card.badgeClass">{{ card.badge }}</span>
+              class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md">
+              <div class="flex flex-col items-center justify-center gap-4">
+                <p class="text-sm text-slate-500">{{ card.label }}</p>
+                <p class="mt-3 text-2xl font-black" :class="card.valueClass">{{ card.value }}</p>
               </div>
-              <p class="mt-4 text-xs leading-6 text-slate-500">{{ card.hint }}</p>
             </article>
           </div>
 
           <div class="relative grid gap-6">
             <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
-                  <div class="mb-4 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
-                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">درآمد</span>
-                  </div>
-                  <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
+              <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+                <div class="mb-4 flex items-center justify-between">
+                  <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
+                  <span
+                    class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">درآمد</span>
                 </div>
+                <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
+              </div>
 
-                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
-                  <div class="mb-4 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
-                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
-                  </div>
-                  <canvas ref="countChartCanvas" class="w-full h-[380px]"></canvas>
+              <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+                <div class="mb-4 flex items-center justify-between">
+                  <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
+                  <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
                 </div>
+                <canvas ref="countChartCanvas" class="w-full h-[380px]"></canvas>
+              </div>
             </div>
 
-            <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] mt-8">
               <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white">
                 <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                   <div>
@@ -105,19 +107,24 @@
                   <table class="w-full">
                     <thead class="border-b border-slate-100 bg-slate-50">
                       <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">{{ periodHeader }}</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">تعداد فاکتورها</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">{{ periodHeader }}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">تعداد فاکتورها
+                        </th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">درآمد</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="stat in activeRows" :key="stat.period" class="border-b border-slate-100 hover:bg-slate-50">
-                        <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period, displayMode) }}</td>
+                      <tr v-for="stat in activeRows" :key="stat.period"
+                        class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period,
+                          displayMode) }}</td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.invoice_count) }}</td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.total_income) }}</td>
                       </tr>
                       <tr v-if="!activeRows.length">
-                        <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود ندارد</td>
+                        <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود
+                          ندارد</td>
                       </tr>
                     </tbody>
                   </table>
@@ -131,8 +138,7 @@
                     <span class="text-xs text-slate-500">ارسال و تسویه</span>
                   </div>
                   <div class="space-y-3">
-                    <div v-for="item in operationalStatusRows" :key="item.label"
-                      class="rounded-2xl bg-white px-4 py-3">
+                    <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-2xl bg-white px-4 py-3">
                       <div class="mb-2 flex items-center justify-between">
                         <p class="font-semibold text-slate-700">{{ item.label }}</p>
                         <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
@@ -159,7 +165,8 @@
                       <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
                     </div>
                   </div>
-                  <p v-else class="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای نمایش نیست</p>
+                  <p v-else class="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
+                    نمایش نیست</p>
                 </div>
 
                 <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -274,43 +281,30 @@ const reportSummaryCards = computed(() => ([
   {
     label: 'درآمد کل',
     value: formatNumber(activeSummary.value.totalIncome),
-    badge: 'مالی',
-    badgeClass: 'bg-emerald-100 text-emerald-700',
     valueClass: 'text-emerald-600',
-    hint: 'جمع درآمد ثبت‌شده در بازه انتخابی'
+  },
+   {
+    label: 'مبلغ تسویه نشده',
+    value: formatNumber(advancedSummary.value.unsettledAmount),
+    valueClass: 'text-rose-600',
   },
   {
     label: 'تعداد فاکتورها',
     value: formatNumber(activeSummary.value.totalInvoices),
-    badge: 'حجم',
-    badgeClass: 'bg-blue-100 text-blue-700',
     valueClass: 'text-blue-600',
-    hint: 'تعداد همه فاکتورهای موجود در این بازه'
-  },
-  {
-    label: 'بهترین مشتری',
-    value: advancedSummary.value.topCustomerName,
-    badge: 'برترین',
-    badgeClass: 'bg-amber-100 text-amber-700',
-    valueClass: 'text-amber-600',
-    hint: 'مشتری با بیشترین مبلغ فاکتور در بازه انتخابی'
   },
   {
     label: 'میانگین مبلغ فاکتور',
     value: formatNumber(advancedSummary.value.averageTicket),
-    badge: 'میانگین',
-    badgeClass: 'bg-violet-100 text-violet-700',
     valueClass: 'text-violet-600',
-    hint: 'میانگین مبلغ هر فاکتور در بازه انتخابی'
   },
   {
-    label: 'مبلغ تسویه نشده',
-    value: formatNumber(advancedSummary.value.unsettledAmount),
-    badge: 'مطالبات',
-    badgeClass: 'bg-rose-100 text-rose-700',
-    valueClass: 'text-rose-600',
-    hint: 'جمع مبلغ فاکتورهایی که هنوز تسویه نشده‌اند'
-  }
+    label: 'بهترین مشتری',
+    value: advancedSummary.value.topCustomerName,
+    valueClass: 'text-amber-600',
+  },
+  
+ 
 ]));
 
 const scopedInvoices = computed(() => {

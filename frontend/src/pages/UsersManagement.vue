@@ -30,8 +30,8 @@
         <div class="absolute inset-0 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/70 pointer-events-none">
         </div>
         <div class="relative p-5 space-y-5">
-          <div class="flex flex-col gap-4 xl:flex-row-reverse xl:items-start xl:justify-between">
-            <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[340px]">
+          <div class="flex items-center gap-4 flex-row-reverse justify-between">
+            <div class="flex gap-3 items-center justify-between">
               <button type="button" @click="openAddModal"
                 class="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700">
                 افزودن کاربر
@@ -40,28 +40,33 @@
                 </svg>
               </button>
               <button type="button" @click="exportCustomers"
-                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
-                خروجی کاربران
+                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50  px-4 py-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
+                گزارش‌
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </button>
+            </div>
+            <div class="grid grid-cols-5 gap-3">
+              <div class="rounded-3xl border text-center border-slate-200 bg-white/90 px-12 py-4 shadow-sm">
+                <p class="text-xs font-medium text-slate-500">تمامی کاربران</p>
+                <p class="mt-3 text-3xl font-black text-slate-800">{{ formatNumber(totalCustomers) }}</p>
+              </div>
+
+              <button v-for="item in statusSummary" :key="item.label" type="button"
+                @click="statusFilter = item.filterValue" :class="[
+                  'rounded-3xl border px-4 py-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
+                  item.containerClass,
+                  statusFilter === item.filterValue ? 'ring-2 ring-offset-2 ring-slate-300' : ''
+                ]">
+                <p :class="['text-xs font-medium', item.labelClass]">{{ item.label }}</p>
+                <p :class="['mt-3 text-3xl font-black', item.valueClass]">{{ formatNumber(item.count) }}</p>
               </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <div class="rounded-3xl border border-slate-200 bg-white/90 px-4 py-4 shadow-sm">
-              <p class="text-xs font-medium text-slate-500">تمامی کاربران</p>
-              <p class="mt-3 text-3xl font-black text-slate-800">{{ formatNumber(totalCustomers) }}</p>
-            </div>
 
-            <button v-for="item in statusSummary" :key="item.label" type="button"
-              @click="statusFilter = item.filterValue" :class="[
-                'rounded-3xl border px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
-                item.containerClass,
-                statusFilter === item.filterValue ? 'ring-2 ring-offset-2 ring-slate-300' : ''
-              ]">
-              <p :class="['text-xs font-medium', item.labelClass]">{{ item.label }}</p>
-              <p :class="['mt-3 text-3xl font-black', item.valueClass]">{{ formatNumber(item.count) }}</p>
-            </button>
-          </div>
 
           <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
             <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_240px_auto] xl:items-center">
@@ -91,9 +96,6 @@
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <h3 class="text-base font-bold text-slate-800">لیست کاربران</h3>
-            <p class="mt-1 text-xs text-slate-500">
-              {{ filteredRows.length.toLocaleString('fa-IR') }} کاربر در نتیجه فعلی نمایش داده می‌شود
-            </p>
           </div>
           <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
             {{ currentStatusFilterLabel }}
@@ -182,10 +184,9 @@
                 قبلی
               </button>
 
-              <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)"
-                :class="page === currentPage
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+              <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)" :class="page === currentPage
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
                 class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
                 {{ page.toLocaleString('fa-IR') }}
               </button>

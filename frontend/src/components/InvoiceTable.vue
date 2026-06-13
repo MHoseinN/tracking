@@ -51,8 +51,7 @@
           <td class="px-4 py-3 text-center">
             <button @click="handleStatusChange(invoice, 'is_shipped')" :class="invoice.is_shipped
               ? getStatusBadgeClass(true)
-              : getStatusBadgeClass(false)"
-              class="px-3 py-1 rounded-full text-xs font-medium transition min-w-[80px]"
+              : getStatusBadgeClass(false)" class="px-3 py-1 rounded-full text-xs font-medium transition min-w-[80px]"
               :disabled="loadingStatus[`${invoice.id}_is_shipped`]">
               <span v-if="loadingStatus[`${invoice.id}_is_shipped`]" class="flex items-center justify-center">
                 <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
@@ -68,8 +67,7 @@
           <td class="px-4 py-3 text-center">
             <button @click="handleStatusChange(invoice, 'is_settled')" :class="invoice.is_settled
               ? getStatusBadgeClass(true)
-              : getStatusBadgeClass(false)"
-              class="px-3 py-1 rounded-full text-xs font-medium transition min-w-[80px]"
+              : getStatusBadgeClass(false)" class="px-3 py-1 rounded-full text-xs font-medium transition min-w-[80px]"
               :disabled="loadingStatus[`${invoice.id}_is_settled`]">
               <span v-if="loadingStatus[`${invoice.id}_is_settled`]" class="flex items-center justify-center">
                 <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
@@ -84,17 +82,13 @@
           <!-- Actions -->
           <td v-if="showActions" class="px-4 py-3">
             <div class="flex items-center justify-center gap-2">
-              <button
-                v-if="hasInvoiceNotes(invoice)"
-                type="button"
-                @click="openNotesModal(invoice)"
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200"
-                title="مشاهده توضیحات"
-              >
-                <span class="text-base font-black leading-none">!</span>
-              </button>
 
               <!-- Edit button -->
+              <button v-if="hasInvoiceNotes(invoice)" type="button" @click="openNotesModal(invoice)"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200"
+                title="مشاهده توضیحات">
+                <span class="text-base font-black leading-none">!</span>
+              </button>
               <button @click="$emit('edit', invoice)"
                 class="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded-lg text-xs font-medium transition"
                 title="ویرایش">
@@ -122,20 +116,14 @@
     </table>
 
     <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showStatusConfirm"
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+        enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100"
+        leave-to-class="opacity-0">
+        <div v-if="showStatusConfirm"
           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4"
-          @click.self="closeStatusConfirm"
-        >
-          <div class="w-full max-w-md rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)] overflow-hidden">
+          @click.self="closeStatusConfirm">
+          <div
+            class="w-full max-w-md rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)] overflow-hidden">
             <div class="bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-5 text-white">
               <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center">
@@ -155,26 +143,21 @@
               <p class="text-gray-600 leading-7">{{ statusConfirmMeta.message }}</p>
 
               <div class="mt-6 flex gap-3">
-                <button
-                  @click="confirmStatusChange"
-                  :disabled="confirmingStatus"
-                  class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
+                <button @click="confirmStatusChange" :disabled="confirmingStatus"
+                  class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
                   <span v-if="confirmingStatus" class="flex items-center justify-center gap-2">
                     <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                      </path>
                     </svg>
                     در حال ثبت...
                   </span>
                   <span v-else>{{ statusConfirmMeta.confirmLabel }}</span>
                 </button>
 
-                <button
-                  @click="closeStatusConfirm"
-                  :disabled="confirmingStatus"
-                  class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-200 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
+                <button @click="closeStatusConfirm" :disabled="confirmingStatus"
+                  class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-200 transition disabled:opacity-60 disabled:cursor-not-allowed">
                   انصراف
                 </button>
               </div>
@@ -185,20 +168,14 @@
     </Teleport>
 
     <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showNotesModal"
+      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+        enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100"
+        leave-to-class="opacity-0">
+        <div v-if="showNotesModal"
           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4"
-          @click.self="closeNotesModal"
-        >
-          <div class="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)]">
+          @click.self="closeNotesModal">
+          <div
+            class="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)]">
             <div class="bg-gradient-to-r from-amber-400 to-yellow-500 px-6 py-5 text-slate-900">
               <div class="flex items-center gap-3">
                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/60">
@@ -215,11 +192,8 @@
               <p class="whitespace-pre-wrap break-words text-sm leading-8 text-slate-700">{{ activeInvoiceNotes }}</p>
 
               <div class="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  @click="closeNotesModal"
-                  class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-                >
+                <button type="button" @click="closeNotesModal"
+                  class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
                   بستن
                 </button>
               </div>
