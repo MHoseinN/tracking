@@ -43,13 +43,15 @@
           </td>
 
           <!-- Price -->
-          <td class="px-4 py-3 text-gray-700 font-medium">{{ formatPrice(invoice.price) }}</td>
+          <td class="px-4 py-3 text-gray-700 font-medium">
+            <span>{{ formatPrice(invoice.price) }}</span>
+          </td>
 
           <!-- Shipping status -->
           <td class="px-4 py-3 text-center">
             <button @click="handleStatusChange(invoice, 'is_shipped')" :class="invoice.is_shipped
-              ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
-              : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'"
+              ? getStatusBadgeClass(true)
+              : getStatusBadgeClass(false)"
               class="px-3 py-1 rounded-full text-xs font-medium transition min-w-[80px]"
               :disabled="loadingStatus[`${invoice.id}_is_shipped`]">
               <span v-if="loadingStatus[`${invoice.id}_is_shipped`]" class="flex items-center justify-center">
@@ -65,8 +67,8 @@
           <!-- Settlement status -->
           <td class="px-4 py-3 text-center">
             <button @click="handleStatusChange(invoice, 'is_settled')" :class="invoice.is_settled
-              ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
-              : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'"
+              ? getStatusBadgeClass(true)
+              : getStatusBadgeClass(false)"
               class="px-3 py-1 rounded-full text-xs font-medium transition min-w-[80px]"
               :disabled="loadingStatus[`${invoice.id}_is_settled`]">
               <span v-if="loadingStatus[`${invoice.id}_is_settled`]" class="flex items-center justify-center">
@@ -82,6 +84,16 @@
           <!-- Actions -->
           <td v-if="showActions" class="px-4 py-3">
             <div class="flex items-center justify-center gap-2">
+              <button
+                v-if="hasInvoiceNotes(invoice)"
+                type="button"
+                @click="openNotesModal(invoice)"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200"
+                title="مشاهده توضیحات"
+              >
+                <span class="text-base font-black leading-none">!</span>
+              </button>
+
               <!-- Edit button -->
               <button @click="$emit('edit', invoice)"
                 class="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded-lg text-xs font-medium transition"
@@ -171,6 +183,51 @@
         </div>
       </Transition>
     </Teleport>
+
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="showNotesModal"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4"
+          @click.self="closeNotesModal"
+        >
+          <div class="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)]">
+            <div class="bg-gradient-to-r from-amber-400 to-yellow-500 px-6 py-5 text-slate-900">
+              <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/60">
+                  <span class="text-xl font-black leading-none">!</span>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold">توضیحات فاکتور</h3>
+                  <p class="text-sm text-slate-700">{{ notesModalInvoiceLabel }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-6 py-6">
+              <p class="whitespace-pre-wrap break-words text-sm leading-8 text-slate-700">{{ activeInvoiceNotes }}</p>
+
+              <div class="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  @click="closeNotesModal"
+                  class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                >
+                  بستن
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -179,6 +236,7 @@ import { computed, reactive, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import { toPersianDate, formatPrice } from '../utils/dateConverter';
+import { getStatusBadgeClass } from '../utils/statusStyles';
 
 const props = defineProps({
   invoices: { type: Array, default: () => [] },
@@ -196,6 +254,8 @@ const loadingStatus = reactive({});
 const showStatusConfirm = ref(false);
 const confirmingStatus = ref(false);
 const pendingStatusChange = ref({ invoice: null, field: '' });
+const showNotesModal = ref(false);
+const activeNotesInvoice = ref(null);
 
 // Calculate column count for empty state colspan
 const colCount = computed(() => {
@@ -229,6 +289,30 @@ const statusConfirmMeta = computed(() => {
     confirmLabel: 'بله، تغییر بده'
   };
 });
+
+const activeInvoiceNotes = computed(() => getInvoiceNotes(activeNotesInvoice.value));
+const notesModalInvoiceLabel = computed(() => {
+  if (!activeNotesInvoice.value) return '';
+  return `فاکتور ${toPersianDate(activeNotesInvoice.value.date)}`;
+});
+
+function getInvoiceNotes(invoice) {
+  return String(invoice?.notes || invoice?.description || '').trim();
+}
+
+function hasInvoiceNotes(invoice) {
+  return Boolean(getInvoiceNotes(invoice));
+}
+
+function openNotesModal(invoice) {
+  activeNotesInvoice.value = invoice;
+  showNotesModal.value = true;
+}
+
+function closeNotesModal() {
+  showNotesModal.value = false;
+  activeNotesInvoice.value = null;
+}
 
 function handleStatusChange(invoice, field) {
   pendingStatusChange.value = { invoice, field };

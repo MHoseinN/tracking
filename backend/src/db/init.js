@@ -63,12 +63,18 @@ function initDatabase() {
       date TEXT NOT NULL,
       price REAL NOT NULL,
       description TEXT,
+      notes TEXT,
       is_shipped INTEGER DEFAULT 0,
       is_settled INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
     )
   `);
+
+  const invoiceColumns = db.prepare('PRAGMA table_info(invoices)').all().map((c) => c.name);
+  if (!invoiceColumns.includes('notes')) {
+    db.exec('ALTER TABLE invoices ADD COLUMN notes TEXT');
+  }
 
   // Create default admin user if not exists
   const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get('1010');

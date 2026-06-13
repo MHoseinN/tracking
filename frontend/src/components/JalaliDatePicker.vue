@@ -25,9 +25,9 @@
 
     <div v-if="show" class="absolute z-30 mt-2 bg-white border rounded-md shadow-lg p-3 w-64">
       <div class="flex items-center justify-between mb-2">
-        <button @click="prevMonth" class="px-2">‹</button>
+        <button type="button" @click="prevMonth" class="px-2">‹</button>
         <div class="text-sm font-medium">{{ monthLabel }} {{ currentYear }}</div>
-        <button @click="nextMonth" class="px-2">›</button>
+        <button type="button" @click="nextMonth" class="px-2">›</button>
       </div>
 
       <div class="grid grid-cols-7 gap-1 text-xs text-center text-gray-600 mb-2">
@@ -40,6 +40,7 @@
         <button
           v-for="day in daysInMonth"
           :key="day"
+          type="button"
           @click="selectDay(day)"
           :class="['h-8 rounded-md', selectedDay === day ? 'bg-blue-600 text-white' : 'hover:bg-blue-50']"
         >
@@ -48,7 +49,7 @@
       </div>
 
       <div class="flex justify-end mt-3">
-        <button @click="closeCalendar" class="text-md text-rose-600 px-2 py-1">بستن</button>
+        <button type="button" @click="closeCalendar" class="text-md text-rose-600 px-2 py-1">بستن</button>
       </div>
     </div>
   </div>

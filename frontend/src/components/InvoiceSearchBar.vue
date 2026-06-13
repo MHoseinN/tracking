@@ -39,18 +39,18 @@
       </button>
     </div>
 
-    <select
-      :value="filterModelValue"
-      @change="$emit('update:filterModelValue', $event.target.value)"
-      class="h-14 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-    >
-      <option v-for="option in filterOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-    </select>
+    <CustomSelect
+      :model-value="filterModelValue"
+      :options="filterOptions"
+      trigger-class="h-14 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
+      @update:model-value="$emit('update:filterModelValue', $event)"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import CustomSelect from './CustomSelect.vue';
 import JalaliDatePicker from './JalaliDatePicker.vue';
 
 const props = defineProps({

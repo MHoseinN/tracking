@@ -1,6 +1,16 @@
 const db = require('../db/database');
 const { validationResult } = require('express-validator');
 
+function normalizeInvoiceNotesValue(invoice) {
+  if (!invoice) return invoice;
+  const normalizedNotes = invoice.notes || invoice.description || null;
+  return {
+    ...invoice,
+    description: normalizedNotes,
+    notes: normalizedNotes
+  };
+}
+
 // Helper: join invoices with customer name
 const invoiceQuery = `
   SELECT i.*, c.name as customer_name
@@ -27,7 +37,7 @@ function getInvoicesByMonth(req, res) {
       rows = db.prepare(query).all();
     }
 
-    res.json(rows);
+    res.json(rows.map(normalizeInvoiceNotesValue));
   } catch (err) {
     console.error('Get invoices error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -45,7 +55,7 @@ function getCustomerInvoices(req, res) {
     }
 
     const rows = db.prepare(`${invoiceQuery} WHERE i.customer_id = ? ORDER BY i.date DESC, i.id DESC`).all(customerId);
-    res.json({ customer, invoices: rows });
+    res.json({ customer, invoices: rows.map(normalizeInvoiceNotesValue) });
   } catch (err) {
     console.error('Get customer invoices error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -66,8 +76,8 @@ function searchInvoices(req, res) {
     }
 
     if (q) {
-      conditions.push('(i.description LIKE ? OR c.name LIKE ?)');
-      params.push(`%${q}%`, `%${q}%`);
+      conditions.push('(i.description LIKE ? OR i.notes LIKE ? OR c.name LIKE ?)');
+      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
     }
 
     if (start_date) {
@@ -84,7 +94,7 @@ function searchInvoices(req, res) {
     const query = `${invoiceQuery} ${whereClause} ORDER BY i.date DESC, i.id DESC`;
 
     const rows = db.prepare(query).all(...params);
-    res.json(rows);
+    res.json(rows.map(normalizeInvoiceNotesValue));
   } catch (err) {
     console.error('Search invoices error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -98,7 +108,11 @@ function createInvoice(req, res) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { customer_id, date, price, description } = req.body;
+  const { customer_id, date, price, description, notes } = req.body;
+  const normalizedNotes = notes !== undefined
+    ? (notes ? String(notes).trim() : null)
+    : (description ? String(description).trim() : null);
+  const normalizedDescription = normalizedNotes;
 
   try {
     // Verify customer exists
@@ -108,11 +122,11 @@ function createInvoice(req, res) {
     }
 
     const result = db.prepare(
-      'INSERT INTO invoices (customer_id, date, price, description) VALUES (?, ?, ?, ?)'
-    ).run(customer_id, date, price, description || null);
+      'INSERT INTO invoices (customer_id, date, price, description, notes) VALUES (?, ?, ?, ?, ?)'
+    ).run(customer_id, date, price, normalizedDescription, normalizedNotes);
 
     const invoice = db.prepare(`${invoiceQuery} WHERE i.id = ?`).get(result.lastInsertRowid);
-    res.status(201).json(invoice);
+    res.status(201).json(normalizeInvoiceNotesValue(invoice));
   } catch (err) {
     console.error('Create invoice error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -127,7 +141,7 @@ function updateInvoice(req, res) {
   }
 
   const { id } = req.params;
-  const { customer_id, date, price, description } = req.body;
+  const { customer_id, date, price, description, notes } = req.body;
 
   try {
     const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
@@ -143,18 +157,26 @@ function updateInvoice(req, res) {
       }
     }
 
+    const nextNotes = notes !== undefined
+      ? (notes ? String(notes).trim() : null)
+      : description !== undefined
+        ? (description ? String(description).trim() : null)
+        : (invoice.notes || invoice.description || null);
+    const nextDescription = nextNotes;
+
     db.prepare(
-      'UPDATE invoices SET customer_id = ?, date = ?, price = ?, description = ? WHERE id = ?'
+      'UPDATE invoices SET customer_id = ?, date = ?, price = ?, description = ?, notes = ? WHERE id = ?'
     ).run(
       customer_id || invoice.customer_id,
       date || invoice.date,
       price !== undefined ? price : invoice.price,
-      description !== undefined ? description : invoice.description,
+      nextDescription,
+      nextNotes,
       id
     );
 
     const updated = db.prepare(`${invoiceQuery} WHERE i.id = ?`).get(id);
-    res.json(updated);
+    res.json(normalizeInvoiceNotesValue(updated));
   } catch (err) {
     console.error('Update invoice error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -198,7 +220,7 @@ function updateInvoiceStatus(req, res) {
     db.prepare(`UPDATE invoices SET ${field} = ? WHERE id = ?`).run(value ? 1 : 0, id);
 
     const updated = db.prepare(`${invoiceQuery} WHERE i.id = ?`).get(id);
-    res.json(updated);
+    res.json(normalizeInvoiceNotesValue(updated));
   } catch (err) {
     console.error('Update invoice status error:', err);
     res.status(500).json({ message: 'Server error' });

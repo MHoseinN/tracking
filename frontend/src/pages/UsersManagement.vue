@@ -21,47 +21,82 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-5">
-      <div v-if="errorMessage" class="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-4">
+      <div v-if="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">
         {{ errorMessage }}
       </div>
 
-      <form class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden" @submit.prevent>
-        <div class="p-5 space-y-4">
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+      <section
+        class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/70 pointer-events-none">
+        </div>
+        <div class="relative p-5 space-y-5">
+          <div class="flex flex-col gap-4 xl:flex-row-reverse xl:items-start xl:justify-between">
+            <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[340px]">
+              <button type="button" @click="openAddModal"
+                class="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700">
+                افزودن کاربر
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+              <button type="button" @click="exportCustomers"
+                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
+                خروجی کاربران
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="rounded-3xl border border-slate-200 bg-white/90 px-4 py-4 shadow-sm">
               <p class="text-xs font-medium text-slate-500">تمامی کاربران</p>
-              <p class="mt-2 text-2xl font-bold text-slate-800">{{ formatNumber(totalCustomers) }}</p>
+              <p class="mt-3 text-3xl font-black text-slate-800">{{ formatNumber(totalCustomers) }}</p>
             </div>
 
-            <div v-for="item in statusSummary" :key="item.label"
-              :class="['rounded-lg border px-4 py-3', item.containerClass]">
+            <button v-for="item in statusSummary" :key="item.label" type="button"
+              @click="statusFilter = item.filterValue" :class="[
+                'rounded-3xl border px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
+                item.containerClass,
+                statusFilter === item.filterValue ? 'ring-2 ring-offset-2 ring-slate-300' : ''
+              ]">
               <p :class="['text-xs font-medium', item.labelClass]">{{ item.label }}</p>
-              <p :class="['mt-2 text-2xl font-bold', item.valueClass]">{{ formatNumber(item.count) }}</p>
+              <p :class="['mt-3 text-3xl font-black', item.valueClass]">{{ formatNumber(item.count) }}</p>
+            </button>
+          </div>
+
+          <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
+            <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_240px_auto] xl:items-center">
+              <div class="relative">
+                <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-4.35-4.35m1.1-5.4a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
+                </svg>
+                <input v-model="searchQuery" type="search"
+                  placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pr-10 pl-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <CustomSelect :model-value="statusFilter" :options="accountStatusFilterOptions"
+                trigger-class="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                @update:model-value="statusFilter = $event" />
+              <button type="button" @click="clearFilters"
+                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                پاک کردن فیلترها
+              </button>
             </div>
           </div>
         </div>
-      </form>
+      </section>
 
-      <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-center">
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div class="relative flex-1 w-[600px]">
-              <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-4.35-4.35m1.1-5.4a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
-              </svg>
-              <input v-model="searchQuery" type="search"
-                placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
-                class="w-full border border-gray-300 rounded-lg bg-white p-4  pr-10 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <button type="button" @click="openAddModal"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 p-4 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto">
-              افزودن کاربر
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
+      <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">لیست کاربران</h3>
+            <p class="mt-1 text-xs text-slate-500">
+              {{ filteredRows.length.toLocaleString('fa-IR') }} کاربر در نتیجه فعلی نمایش داده می‌شود
+            </p>
+          </div>
+          <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {{ currentStatusFilterLabel }}
           </div>
         </div>
 
@@ -91,13 +126,9 @@
                 <td class="px-4 py-3 text-sm text-gray-700 font-medium">{{ row.last_name }}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">
                   <div @click.stop @mousedown.stop>
-                    <select :value="row.account_status || ''" :disabled="statusSavingId === row.id" :class="[
-                      'w-full min-w-[180px] border rounded-lg px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
-                      row.account_status ? accountStatusSelectClass(row.account_status) : 'border-gray-300 text-gray-400'
-                    ]" @click.stop @change="handleStatusChange(row, $event.target.value)">
-                      <option value="">وضعیت حساب</option>
-                      <option v-for="option in accountStatusOptions" :key="option" :value="option">{{ option }}</option>
-                    </select>
+                    <CustomSelect :model-value="row.account_status || ''" :options="accountStatusSelectOptions"
+                      :disabled="statusSavingId === row.id" :trigger-class="statusTriggerClass(row.account_status)"
+                      @update:model-value="handleStatusChange(row, $event)" />
                   </div>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ formatNumber(row.invoice_count) }}</td>
@@ -139,26 +170,28 @@
 
               <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2 text-sm text-gray-500">
-                  <select v-model.number="pageSize"
-                    class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size.toLocaleString('fa-IR') }}
-                    </option>
-                  </select>
+                  <CustomSelect :model-value="pageSize" :options="pageSizeSelectOptions"
+                    trigger-class="min-w-[92px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                    @update:model-value="pageSize = Number($event)" />
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center justify-center gap-2">
               <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-                class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
                 قبلی
               </button>
 
-              <span class="text-sm text-gray-600">
-                صفحه {{ currentPage.toLocaleString('fa-IR') }} از {{ totalPages.toLocaleString('fa-IR') }}
-              </span>
+              <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)"
+                :class="page === currentPage
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+                class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
+                {{ page.toLocaleString('fa-IR') }}
+              </button>
 
               <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-                class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
                 بعدی
               </button>
             </div>
@@ -169,6 +202,11 @@
 
     <CustomerFormModal :is-open="showForm" :customer="selectedCustomer"
       :existing-customers="invoiceStore.customersOverview" @close="closeModal" @saved="handleCustomerSaved" />
+
+    <ConfirmModal :is-open="showDeleteConfirm" title="حذف کاربر" :message="deleteConfirmMessage"
+      :loading="deletingCustomer" @confirm="confirmDeleteCustomer" @cancel="closeDeleteModal" />
+    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+      @close="clearUndo" />
 
     <Teleport to="body">
       <div v-if="false && showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -246,6 +284,12 @@ import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/authStore';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import CustomerFormModal from '../components/CustomerFormModal.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import CustomSelect from '../components/CustomSelect.vue';
+import UndoBar from '../components/UndoBar.vue';
+import api from '../utils/api';
+import { exportRowsToExcel } from '../utils/exportToExcel';
+import { getAccountStatusTone } from '../utils/statusStyles';
 
 const router = useRouter();
 const toast = useToast();
@@ -260,6 +304,16 @@ const errorMessage = ref('');
 const showForm = ref(false);
 const editingId = ref(null);
 const selectedCustomer = ref(null);
+const showDeleteConfirm = ref(false);
+const deletingCustomer = ref(false);
+const deleteTargetCustomer = ref(null);
+const undoState = ref({
+  visible: false,
+  title: '',
+  message: '',
+  handler: null,
+  timerId: null
+});
 
 const form = reactive({
   first_name: '',
@@ -276,13 +330,34 @@ const errors = reactive({
 
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
 const pageSizeOptions = [10, 15, 20, 50, 100];
+const accountStatusSelectOptions = computed(() => ([
+  { label: 'وضعیت حساب', value: '' },
+  ...accountStatusOptions.map((option) => ({ label: option, value: option }))
+]));
+const accountStatusFilterOptions = computed(() => ([
+  { label: 'همه وضعیت‌ها', value: 'all' },
+  ...accountStatusOptions.map((option) => ({ label: option, value: option }))
+]));
+const pageSizeSelectOptions = computed(() => pageSizeOptions.map((size) => ({
+  label: size.toLocaleString('fa-IR'),
+  value: size
+})));
 
 const rows = computed(() => invoiceStore.customersOverview);
 const searchQuery = ref('');
+const statusFilter = ref('all');
 const currentPage = ref(1);
 const pageSize = ref(15);
 
 const totalCustomers = computed(() => rows.value.length);
+const deleteConfirmMessage = computed(() => {
+  const customer = deleteTargetCustomer.value;
+  if (!customer) {
+    return 'آیا از حذف این کاربر اطمینان دارید؟ این عملیات قابل بازگشت نیست.';
+  }
+
+  return `آیا از حذف کاربر ${customer.first_name} ${customer.last_name} مطمئن هستید؟ این عملیات قابل بازگشت نیست.`;
+});
 
 function countCustomersByStatus(status) {
   return rows.value.filter((row) => row.account_status === status).length;
@@ -291,6 +366,7 @@ function countCustomersByStatus(status) {
 const statusSummary = computed(() => [
   {
     label: 'خوش حساب',
+    filterValue: 'خوش حساب',
     count: countCustomersByStatus('خوش حساب'),
     containerClass: 'border-emerald-200 bg-emerald-50',
     labelClass: 'text-emerald-600',
@@ -298,6 +374,7 @@ const statusSummary = computed(() => [
   },
   {
     label: 'بد حساب',
+    filterValue: 'بد حساب',
     count: countCustomersByStatus('بد حساب'),
     containerClass: 'border-rose-200 bg-rose-50',
     labelClass: 'text-rose-600',
@@ -305,6 +382,7 @@ const statusSummary = computed(() => [
   },
   {
     label: 'پرداخت نقدی',
+    filterValue: 'پرداخت نقدی',
     count: countCustomersByStatus('پرداخت نقدی'),
     containerClass: 'border-blue-200 bg-blue-50',
     labelClass: 'text-blue-600',
@@ -312,12 +390,16 @@ const statusSummary = computed(() => [
   },
   {
     label: 'هماهنگی با مدیر',
+    filterValue: 'هماهنگی با مدیر',
     count: countCustomersByStatus('هماهنگی با مدیر'),
     containerClass: 'border-amber-200 bg-amber-50',
     labelClass: 'text-amber-600',
     valueClass: 'text-amber-700'
   }
 ]);
+const currentStatusFilterLabel = computed(() => statusFilter.value === 'all'
+  ? 'نمایش همه وضعیت‌ها'
+  : `فیلتر فعال: ${statusFilter.value}`);
 
 function normalizeForSearch(value) {
   return String(value ?? '')
@@ -331,9 +413,11 @@ function normalizeForSearch(value) {
 
 const filteredRows = computed(() => {
   const query = normalizeForSearch(searchQuery.value);
-  if (!query) return rows.value;
+  const statusMatches = (row) => statusFilter.value === 'all' || row.account_status === statusFilter.value;
+  if (!query) return rows.value.filter(statusMatches);
 
   return rows.value.filter((row) => {
+    if (!statusMatches(row)) return false;
     const searchable = [
       row.first_name,
       row.last_name,
@@ -350,12 +434,22 @@ const totalRows = computed(() => filteredRows.value.length);
 const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)));
 const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
 const paginatedRows = computed(() => filteredRows.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value));
+const visiblePageNumbers = computed(() => {
+  const start = Math.max(1, currentPage.value - 1);
+  const end = Math.min(totalPages.value, start + 2);
+  const adjustedStart = Math.max(1, end - 2);
+  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
+});
 
 watch(pageSize, () => {
   currentPage.value = 1;
 });
 
 watch(searchQuery, () => {
+  currentPage.value = 1;
+});
+
+watch(statusFilter, () => {
   currentPage.value = 1;
 });
 
@@ -382,19 +476,20 @@ function goToPage(page) {
   currentPage.value = page;
 }
 
+function clearFilters() {
+  searchQuery.value = '';
+  statusFilter.value = 'all';
+}
+
 function accountStatusSelectClass(status) {
-  switch (status) {
-    case 'خوش حساب':
-      return 'border-emerald-300 text-emerald-700 bg-emerald-50';
-    case 'بد حساب':
-      return 'border-rose-300 text-rose-700 bg-rose-50';
-    case 'پرداخت نقدی':
-      return 'border-blue-300 text-blue-700 bg-blue-50';
-    case 'هماهنگی با مدیر':
-      return 'border-amber-300 text-amber-700 bg-amber-50';
-    default:
-      return 'border-gray-300 text-gray-500';
-  }
+  return getAccountStatusTone(status);
+}
+
+function statusTriggerClass(status) {
+  return [
+    'min-w-[180px] rounded-2xl border px-3 py-2.5 text-sm font-medium shadow-sm transition hover:shadow-md',
+    status ? accountStatusSelectClass(status) : 'border-gray-300 bg-white text-gray-400 hover:border-slate-300'
+  ];
 }
 
 function resetForm() {
@@ -464,6 +559,12 @@ function closeModal() {
   resetForm();
 }
 
+function closeDeleteModal() {
+  if (deletingCustomer.value) return;
+  showDeleteConfirm.value = false;
+  deleteTargetCustomer.value = null;
+}
+
 async function handleCustomerSaved() {
   await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
 }
@@ -522,21 +623,133 @@ async function handleStatusChange(row, value) {
   }
 
   toast.success('وضعیت حساب با موفقیت ثبت شد');
+  showUndo({
+    title: 'وضعیت حساب تغییر کرد',
+    message: 'در صورت نیاز، بازگردانی کن.',
+    handler: async () => {
+      const revertResult = await invoiceStore.updateCustomer(row.id, {
+        first_name: row.first_name || '',
+        last_name: row.last_name || '',
+        phone: row.phone || null,
+        referrer: row.referrer || null,
+        account_status: previousStatus || null
+      });
+      if (!revertResult.success) {
+        throw new Error(revertResult.message);
+      }
+      await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
+      toast.success('وضعیت حساب بازگردانی شد');
+    }
+  });
   await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
 }
 
 async function handleDelete(row) {
-  const accepted = window.confirm(`آیا از حذف کاربر ${row.first_name} ${row.last_name} مطمئن هستید؟`);
-  if (!accepted) return;
+  deleteTargetCustomer.value = row;
+  showDeleteConfirm.value = true;
+}
 
-  const result = await invoiceStore.deleteCustomer(row.id);
-  if (!result.success) {
-    toast.error(result.message || 'حذف کاربر با خطا مواجه شد');
-    return;
+async function confirmDeleteCustomer() {
+  if (!deleteTargetCustomer.value?.id) return;
+
+  try {
+    const customerSnapshotResponse = await api.get(`/invoices/customer/${deleteTargetCustomer.value.id}`);
+    const customerSnapshot = customerSnapshotResponse.data?.customer;
+    const invoiceSnapshots = customerSnapshotResponse.data?.invoices || [];
+
+    deletingCustomer.value = true;
+    const result = await invoiceStore.deleteCustomer(deleteTargetCustomer.value.id);
+    deletingCustomer.value = false;
+
+    if (!result.success) {
+      toast.error(result.message || 'حذف کاربر با خطا مواجه شد');
+      return;
+    }
+
+    toast.success('کاربر با موفقیت حذف شد');
+    closeDeleteModal();
+    if (customerSnapshot) {
+      showUndo({
+        title: 'کاربر حذف شد',
+        message: 'در 5 ثانیه آینده می‌توانی او را برگردانی.',
+        handler: async () => {
+          const restoredCustomer = await invoiceStore.addCustomer({
+            first_name: customerSnapshot.first_name || '',
+            last_name: customerSnapshot.last_name || '',
+            phone: customerSnapshot.phone || null,
+            referrer: customerSnapshot.referrer || null,
+            notes: customerSnapshot.notes || null,
+            account_status: customerSnapshot.account_status || null
+          }, { allowExisting: false });
+
+          if (!restoredCustomer.success || !restoredCustomer.data?.id) {
+            throw new Error(restoredCustomer.message || 'بازگردانی کاربر ممکن نشد');
+          }
+
+          for (const invoice of invoiceSnapshots) {
+            const invoiceResult = await invoiceStore.addInvoice({
+              customer_id: restoredCustomer.data.id,
+              date: invoice.date,
+              price: invoice.price,
+              description: invoice.description || null,
+              notes: invoice.notes || null
+            });
+            if (!invoiceResult.success) {
+              throw new Error(invoiceResult.message || 'بازگردانی یکی از فاکتورها با خطا مواجه شد');
+            }
+          }
+
+          await Promise.all([loadOverview(), invoiceStore.fetchCustomers(), invoiceStore.fetchAllInvoices()]);
+          toast.success('کاربر و فاکتورهایش بازگردانی شدند');
+        }
+      });
+    }
+    await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
+  } catch (error) {
+    deletingCustomer.value = false;
+    toast.error(error.response?.data?.message || error.message || 'حذف کاربر با خطا مواجه شد');
   }
+}
 
-  toast.success('کاربر با موفقیت حذف شد');
-  await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
+function exportCustomers() {
+  exportRowsToExcel({
+    fileName: 'customers-export',
+    sheetTitle: 'فهرست کاربران',
+    headers: ['نام', 'نام خانوادگی', 'وضعیت حساب', 'تعداد فاکتور', 'مبلغ کل', 'شماره تماس', 'معرف'],
+    rows: filteredRows.value.map((row) => [
+      row.first_name || '',
+      row.last_name || '',
+      row.account_status || '',
+      formatNumber(row.invoice_count),
+      formatCurrency(row.total_invoices_amount),
+      row.phone || '',
+      row.referrer || ''
+    ])
+  });
+}
+
+function clearUndo() {
+  if (undoState.value.timerId) {
+    window.clearTimeout(undoState.value.timerId);
+  }
+  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
+}
+
+function showUndo({ title, message, handler }) {
+  clearUndo();
+  const timerId = window.setTimeout(() => clearUndo(), 5000);
+  undoState.value = { visible: true, title, message, handler, timerId };
+}
+
+async function handleUndo() {
+  if (!undoState.value.handler) return;
+  const undoHandler = undoState.value.handler;
+  clearUndo();
+  try {
+    await undoHandler();
+  } catch (error) {
+    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
+  }
 }
 
 function goBack() {

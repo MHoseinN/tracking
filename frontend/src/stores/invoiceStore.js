@@ -120,10 +120,11 @@ export const useInvoiceStore = defineStore('invoice', {
     // Delete an invoice
     async deleteInvoice(id) {
       try {
+        const removedInvoice = this.currentInvoices.find(inv => inv.id === id) || this.allInvoices.find(inv => inv.id === id) || null;
         await api.delete(`/invoices/${id}`);
         this.currentInvoices = this.currentInvoices.filter(inv => inv.id !== id);
         this.allInvoices = this.allInvoices.filter(inv => inv.id !== id);
-        return { success: true };
+        return { success: true, data: removedInvoice };
       } catch (err) {
         const message = err.response?.data?.message || 'خطا در حذف حساب';
         return { success: false, message };
@@ -267,9 +268,11 @@ export const useInvoiceStore = defineStore('invoice', {
     // Delete a customer
     async deleteCustomer(id) {
       try {
+        const removedCustomer = this.customers.find(c => c.id === id) || this.customersOverview.find(c => c.id === id) || null;
         await api.delete(`/customers/${id}`);
         this.customers = this.customers.filter(c => c.id !== id);
-        return { success: true };
+        this.customersOverview = this.customersOverview.filter(c => c.id !== id);
+        return { success: true, data: removedCustomer };
       } catch (err) {
         const message = err.response?.data?.message || 'خطا در حذف مشتری';
         return { success: false, message };

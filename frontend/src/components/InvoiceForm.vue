@@ -76,6 +76,12 @@
             <p v-if="errors.price" class="text-red-500 text-xs mt-1">{{ errors.price }}</p>
           </div>
 
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">یادداشت فاکتور</label>
+            <textarea v-model="form.notes" rows="4" placeholder="توضیح یا یادداشت مرتبط با این فاکتور..."
+              class="w-full rounded-2xl border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+
           <!-- Buttons -->
           <div class="flex gap-3 pt-2">
             <button type="submit" :disabled="saving"
@@ -134,7 +140,8 @@ const form = reactive({
   customer_id: '',
   persianDate: '',
   price: '',
-  description: ''
+  description: '',
+  notes: ''
 });
 
 const errors = reactive({
@@ -154,16 +161,22 @@ const formattedPrice = computed(() => {
   }
 });
 
+function resolveInvoiceNotes(invoice) {
+  return String(invoice?.notes || invoice?.description || '').trim();
+}
+
 // Populate form when editing or when modal opens
 watch(() => props.isOpen, (open) => {
   if (open) {
     resetForm();
     if (props.invoiceData) {
+      const resolvedNotes = resolveInvoiceNotes(props.invoiceData);
       // Edit mode: populate fields
       form.customer_id = props.invoiceData.customer_id || '';
       form.persianDate = toPersianDate(props.invoiceData.date);
       form.price = props.invoiceData.price || '';
-      form.description = props.invoiceData.description || '';
+      form.description = resolvedNotes;
+      form.notes = resolvedNotes;
       // Set customerSearch to existing name if available
       customerSearch.value = props.invoiceData.customer_name || '';
     } else {
@@ -182,6 +195,7 @@ function resetForm() {
   form.persianDate = '';
   form.price = '';
   form.description = '';
+  form.notes = '';
   customerSearch.value = '';
   showDropdown.value = false;
   highlightedIndex.value = -1;
@@ -285,11 +299,13 @@ async function handleSubmit() {
     return;
   }
 
+  const normalizedNotes = String(form.notes || '').trim();
   const invoiceData = {
     customer_id: props.customerId || form.customer_id,
     date: gregorianDate,
     price: form.price,
-    description: form.description || null
+    description: normalizedNotes || null,
+    notes: normalizedNotes || null
   };
 
   emit('save', { data: invoiceData, isEdit: isEditMode.value });

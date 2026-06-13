@@ -73,7 +73,9 @@
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">شماره تماس</label>
               <input v-model="customerProfileDraft.phone" type="text" placeholder="شماره تماس"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+                class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                :class="{ 'border-rose-300 focus:border-rose-400 focus:ring-rose-100': phoneDuplicateError }" />
+              <p v-if="phoneDuplicateError" class="mt-1 text-xs text-rose-500">{{ phoneDuplicateError }}</p>
             </div>
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">معرف</label>
@@ -82,11 +84,10 @@
             </div>
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت حساب</label>
-              <select v-model="customerProfileDraft.account_status"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100">
-                <option value="">وضعیت حساب</option>
-                <option v-for="option in accountStatusOptions" :key="option" :value="option">{{ option }}</option>
-              </select>
+              <CustomSelect :model-value="customerProfileDraft.account_status" :options="accountStatusSelectOptions"
+                placeholder="وضعیت حساب"
+                trigger-class="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                @update:model-value="customerProfileDraft.account_status = $event" />
             </div>
           </div>
 
@@ -126,13 +127,19 @@
             @update:date-model-value="searchDate = $event" @update:filter-model-value="statusFilter = $event"
             @clear="clearSearch" />
 
-          <button @click="openAddModal"
-            class="inline-flex items-center gap-2 rounded-2xl bg-blue-600 p-4 text-sm font-semibold text-white transition hover:bg-blue-700">
-            <span>افزودن حساب</span>
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
+          <div class="flex items-center gap-3">
+            <button @click="exportCustomerInvoices"
+              class="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+              خروجی فاکتورها
+            </button>
+            <button @click="openAddModal"
+              class="inline-flex items-center gap-2 rounded-2xl bg-blue-600 p-4 text-sm font-semibold text-white transition hover:bg-blue-700">
+              <span>افزودن حساب</span>
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div v-if="invoiceStore.loading" class="flex items-center justify-center py-16">
@@ -165,26 +172,28 @@
 
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-2 text-sm text-gray-500">
-                <select v-model.number="pageSize"
-                  class="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size.toLocaleString('fa-IR') }}
-                  </option>
-                </select>
+                <CustomSelect :model-value="pageSize" :options="pageSizeSelectOptions"
+                  trigger-class="min-w-[92px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  @update:model-value="pageSize = Number($event)" />
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center justify-center gap-2">
             <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-              class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
               قبلی
             </button>
 
-            <span class="text-sm text-gray-600">
-              صفحه {{ currentPage.toLocaleString('fa-IR') }} از {{ totalPages.toLocaleString('fa-IR') }}
-            </span>
+            <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)"
+              :class="page === currentPage
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+              class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
+              {{ page.toLocaleString('fa-IR') }}
+            </button>
 
             <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-              class="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
               بعدی
             </button>
           </div>
@@ -198,6 +207,8 @@
     <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
       message="آیا از حذف این فاکتور مطمئن هستید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
       @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
+    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message"
+      @undo="handleUndo" @close="clearUndo" />
   </div>
 </template>
 <script setup>
@@ -210,7 +221,10 @@ import InvoiceTable from '../components/InvoiceTable.vue';
 import InvoiceForm from '../components/InvoiceForm.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import InvoiceSearchBar from '../components/InvoiceSearchBar.vue';
-import { toGregorianDate } from '../utils/dateConverter';
+import CustomSelect from '../components/CustomSelect.vue';
+import UndoBar from '../components/UndoBar.vue';
+import { exportRowsToExcel } from '../utils/exportToExcel';
+import { toGregorianDate, toPersianDate } from '../utils/dateConverter';
 
 const props = defineProps({
   id: { type: [String, Number], required: true }
@@ -238,12 +252,28 @@ const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت 
 const currentPage = ref(1);
 const pageSize = ref(15);
 const pageSizeOptions = [10, 15, 20, 50, 100];
+const accountStatusSelectOptions = computed(() => ([
+  { label: 'وضعیت حساب', value: '' },
+  ...accountStatusOptions.map((option) => ({ label: option, value: option }))
+]));
+const pageSizeSelectOptions = computed(() => pageSizeOptions.map((size) => ({
+  label: size.toLocaleString('fa-IR'),
+  value: size
+})));
 const customerProfileDraft = ref({
   first_name: '',
   last_name: '',
   phone: '',
   referrer: '',
   account_status: ''
+});
+const allCustomers = ref([]);
+const undoState = ref({
+  visible: false,
+  title: '',
+  message: '',
+  handler: null,
+  timerId: null
 });
 
 const profileChanged = computed(() => {
@@ -269,6 +299,12 @@ const notesChanged = computed(() => {
 });
 
 const customerFormChanged = computed(() => profileChanged.value || notesChanged.value);
+const phoneDuplicateError = computed(() => {
+  const normalized = normalizePhone(customerProfileDraft.value.phone);
+  if (!normalized) return '';
+  const duplicate = allCustomers.value.find((item) => String(item.id) !== String(customerId.value) && normalizePhone(item.phone) === normalized);
+  return duplicate ? 'کاربری با این شماره تماس قبلا ثبت شده است' : '';
+});
 
 const filteredInvoices = computed(() => {
   const gregorianDate = searchDate.value ? toGregorianDate(searchDate.value) : '';
@@ -289,6 +325,12 @@ const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
 const paginatedInvoices = computed(() =>
   filteredInvoices.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value)
 );
+const visiblePageNumbers = computed(() => {
+  const start = Math.max(1, currentPage.value - 1);
+  const end = Math.min(totalPages.value, start + 2);
+  const adjustedStart = Math.max(1, end - 2);
+  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
+});
 
 watch(pageSize, () => {
   currentPage.value = 1;
@@ -331,7 +373,7 @@ const remainingAmountFormatted = computed(() =>
 
 // Load customer invoices on mount
 onMounted(async () => {
-  await loadCustomerInvoices();
+  await Promise.all([loadCustomerInvoices(), loadCustomers()]);
 });
 
 async function loadCustomerInvoices() {
@@ -368,6 +410,10 @@ async function saveCustomerForm() {
         toast.error('نام و نام خانوادگی الزامی است');
         return;
       }
+      if (phoneDuplicateError.value) {
+        toast.error(phoneDuplicateError.value);
+        return;
+      }
 
       const profileResult = await invoiceStore.updateCustomerProfile(customerId.value, {
         first_name: firstName,
@@ -391,6 +437,7 @@ async function saveCustomerForm() {
         referrer: profileResult.data?.referrer || '',
         account_status: profileResult.data?.account_status || ''
       };
+      await loadCustomers();
     }
 
     if (notesChanged.value) {
@@ -491,19 +538,106 @@ async function handleDeleteInvoice() {
     toast.success('فاکتور با موفقیت حذف شد');
     showConfirmDelete.value = false;
     deleteTargetId.value = null;
+    if (result.data) {
+      showUndo({
+        title: 'فاکتور حذف شد',
+        message: 'در صورت نیاز، بازگردانی کن.',
+        handler: async () => {
+          const restoreResult = await invoiceStore.addInvoice({
+            customer_id: customerId.value,
+            date: result.data.date,
+            price: result.data.price,
+            description: result.data.description || null,
+            notes: result.data.notes || null
+          });
+          if (!restoreResult.success) {
+            throw new Error(restoreResult.message);
+          }
+          await loadCustomerInvoices();
+          toast.success('فاکتور بازگردانی شد');
+        }
+      });
+    }
     await loadCustomerInvoices();
   } else {
     toast.error(result.message);
   }
 }
 
-async function handleStatusChange() {
+async function loadCustomers() {
+  try {
+    await invoiceStore.fetchCustomers();
+    allCustomers.value = [...invoiceStore.customers];
+  } catch (error) {
+    allCustomers.value = [];
+  }
+}
+
+function normalizePhone(value) {
+  return String(value || '')
+    .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[\u06f0-\u06f9]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[^\d+]/g, '');
+}
+
+async function handleStatusChange({ id, field, value }) {
   await loadCustomerInvoices();
+  showUndo({
+    title: 'وضعیت فاکتور تغییر کرد',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const revertResult = await invoiceStore.updateStatus(id, field, !value);
+      if (!revertResult.success) {
+        throw new Error(revertResult.message);
+      }
+      await loadCustomerInvoices();
+      toast.success('وضعیت فاکتور بازگردانی شد');
+    }
+  });
 }
 
 // Navigate back
 function goBack() {
   router.push('/home');
+}
+
+function exportCustomerInvoices() {
+  exportRowsToExcel({
+    fileName: `customer-${customerId.value}-invoices`,
+    sheetTitle: `فاکتورهای ${customer.value?.name || 'مشتری'}`,
+    headers: ['تاریخ شمسی', 'مبلغ', 'وضعیت ارسال', 'وضعیت تسویه', 'یادداشت'],
+    rows: filteredInvoices.value.map((invoice) => [
+      toPersianDate(invoice.date),
+      Number(invoice.price || 0).toLocaleString('fa-IR'),
+      invoice.is_shipped ? 'ارسال شده' : 'ارسال نشده',
+      invoice.is_settled ? 'تسویه شده' : 'تسویه نشده',
+      invoice.notes || invoice.description || ''
+    ])
+  });
+}
+
+function clearUndo() {
+  if (undoState.value.timerId) {
+    window.clearTimeout(undoState.value.timerId);
+  }
+  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
+}
+
+function showUndo({ title, message, handler }) {
+  clearUndo();
+  const timerId = window.setTimeout(() => clearUndo(), 5000);
+  undoState.value = { visible: true, title, message, handler, timerId };
+}
+
+async function handleUndo() {
+  if (!undoState.value.handler) return;
+  const undoHandler = undoState.value.handler;
+  clearUndo();
+  try {
+    await undoHandler();
+  } catch (error) {
+    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
+  }
 }
 
 watch([searchDate, statusFilter], () => {

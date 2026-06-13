@@ -44,13 +44,15 @@ router.get('/', getInvoicesByMonth);
 router.post('/', [
   body('customer_id').notEmpty().withMessage('Customer is required'),
   body('date').notEmpty().withMessage('Date is required'),
-  body('price').isNumeric().withMessage('Price must be a number').custom(v => v > 0).withMessage('Price must be positive')
+  body('price').isNumeric().withMessage('Price must be a number').custom(v => v > 0).withMessage('Price must be positive'),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 })
 ], createInvoice);
 
 // PUT /api/invoices/:id
 router.put('/:id', [
   body('date').optional().notEmpty().withMessage('Date cannot be empty'),
-  body('price').optional().isNumeric().withMessage('Price must be a number').custom(v => v > 0).withMessage('Price must be positive')
+  body('price').optional().isNumeric().withMessage('Price must be a number').custom(v => v > 0).withMessage('Price must be positive'),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 })
 ], updateInvoice);
 
 // DELETE /api/invoices/:id

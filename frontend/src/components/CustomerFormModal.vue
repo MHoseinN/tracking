@@ -64,13 +64,13 @@
 
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت حساب</label>
-            <select
-              v-model="form.account_status"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">وضعیت حساب</option>
-              <option v-for="option in accountStatusOptions" :key="option" :value="option">{{ option }}</option>
-            </select>
+            <CustomSelect
+              :model-value="form.account_status"
+              :options="accountStatusSelectOptions"
+              placeholder="وضعیت حساب"
+              trigger-class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              @update:model-value="form.account_status = $event"
+            />
           </div>
 
           <div class="flex gap-3 pt-2">
@@ -99,6 +99,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
+import CustomSelect from './CustomSelect.vue';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -113,6 +114,10 @@ const invoiceStore = useInvoiceStore();
 const saving = ref(false);
 
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
+const accountStatusSelectOptions = computed(() => ([
+  { label: 'وضعیت حساب', value: '' },
+  ...accountStatusOptions.map((option) => ({ label: option, value: option }))
+]));
 
 const form = reactive({
   first_name: '',
@@ -136,6 +141,16 @@ watch(() => props.isOpen, (open) => {
   }
 });
 
+watch(() => form.phone, () => {
+  if (!props.isOpen) return;
+  validatePhoneDuplicate();
+});
+
+watch(() => props.existingCustomers, () => {
+  if (!props.isOpen) return;
+  validatePhoneDuplicate();
+}, { deep: true });
+
 function normalizePhone(value) {
   return String(value || '')
     .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
@@ -158,6 +173,24 @@ function clearErrors() {
   errors.phone = '';
 }
 
+function validatePhoneDuplicate() {
+  const normalizedPhone = normalizePhone(form.phone);
+  errors.phone = '';
+  if (!normalizedPhone) return true;
+
+  const duplicate = props.existingCustomers.find((customer) => {
+    if (String(customer.id) === String(props.customer?.id || '')) return false;
+    return normalizePhone(customer.phone) === normalizedPhone;
+  });
+
+  if (duplicate) {
+    errors.phone = 'کاربری با این شماره تماس قبلا ثبت شده است';
+    return false;
+  }
+
+  return true;
+}
+
 function validate() {
   clearErrors();
   let valid = true;
@@ -172,18 +205,7 @@ function validate() {
     valid = false;
   }
 
-  const normalizedPhone = normalizePhone(form.phone);
-  if (normalizedPhone) {
-    const duplicate = props.existingCustomers.find((customer) => {
-      if (String(customer.id) === String(props.customer?.id || '')) return false;
-      return normalizePhone(customer.phone) === normalizedPhone;
-    });
-
-    if (duplicate) {
-      errors.phone = 'کاربری با این شماره تماس قبلا ثبت شده است';
-      valid = false;
-    }
-  }
+  if (!validatePhoneDuplicate()) valid = false;
 
   return valid;
 }

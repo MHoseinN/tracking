@@ -4,7 +4,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <div>
-            <h1 class="text-xl font-bold text-gray-800">نمودارها و آمار</h1>
+            <h1 class="text-xl font-bold text-gray-800"> گزارش</h1>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -18,58 +18,6 @@
         </div>
       </div>
     </header>
-    <section
-      class="max-w-7xl mx-auto mt-4 px-4 relative overflow-visible rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-      <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-emerald-100 pointer-events-none rounded-2xl">
-      </div>
-      <div class="relative p-3 sm:p-5 space-y-5">
-        <div class="grid gap-2 sm:grid-cols-1 xl:grid-cols-5">
-          <div
-            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-            <p class="text-sm text-slate-500">تعداد حساب‌ها</p>
-            <div class="mt-2 flex items-end justify-between gap-3">
-              <p class="text-4xl font-black text-blue-600">{{ totalAccountsCount }}</p>
-              <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">کل</span>
-            </div>
-          </div>
-
-          <div
-            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-            <p class="text-sm text-slate-500">ارسال شده</p>
-            <div class="mt-2 flex items-end justify-between gap-3">
-              <p class="text-4xl font-black text-emerald-600">{{ shippedCount }}</p>
-              <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">ارسالی</span>
-            </div>
-          </div>
-
-          <div
-            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-            <p class="text-sm text-slate-500">تسویه شده</p>
-            <div class="mt-2 flex items-end justify-between gap-3">
-              <p class="text-4xl font-black text-violet-600">{{ settledCount }}</p>
-              <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">تسویه</span>
-            </div>
-          </div>
-
-          <div
-            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-            <p class="text-sm text-slate-500">مبلغ تسویه شده</p>
-            <div class="mt-4 flex justify-center">
-              <p class="text-2xl font-black leading-7 text-emerald-600">{{ settledAmountFormatted }}</p>
-            </div>
-          </div>
-
-          <div
-            class="min-h-[120px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-            <p class="text-sm text-slate-500">مبلغ تسویه نشده</p>
-            <div class="mt-4 flex justify-center">
-              <p class="text-2xl font-black leading-7 text-rose-600">{{ remainingAmountFormatted }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <div v-if="loading" class="flex items-center justify-center py-24">
         <div class="flex flex-col items-center gap-3">
@@ -86,83 +34,148 @@
           {{ errorMessage }}
         </div>
 
-        <section class="bg-white rounded-xl shadow p-5 space-y-5">
-
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-800">{{ sectionTitle }}</h2>
-            </div>
-            <div class="flex gap-3">
-              <div class="flex justify-between text-right">
-                <div class="py-2">
-                  <p class="text-xs text-gray-500">آخرین بروزرسانی</p>
-                  <p class="text-xs font-medium text-gray-500">{{ lastUpdatedLabel }}</p>
-                </div>
-                
+        <section
+          class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/70 pointer-events-none"></div>
+          <div class="relative flex flex-wrap items-start justify-between gap-4">
+            <div class="space-y-2">
+              <div>
+                <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-500">{{ reportLeadText }}</p>
               </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button @click="exportReports"
+                class="inline-flex items-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+                خروجی گزارش
+              </button>              
               <div class="min-w-[180px]">
-                <select v-model="selectedYear"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="all">همه سال‌ها</option>
-                  <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
-                </select>
+                <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
+                  trigger-class="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  @update:model-value="selectedYear = $event" />
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-gray-50 rounded-xl p-4 text-center">
-              <p class="text-2xl font-bold text-green-600">{{ formatNumber(activeSummary.totalIncome) }}</p>
-              <p class="text-sm text-gray-500 mt-1">کل درآمد</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-4 text-center">
-              <p class="text-2xl font-bold text-blue-600">{{ formatNumber(activeSummary.totalInvoices) }}</p>
-              <p class="text-sm text-gray-500 mt-1">کل فاکتورها</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-4 text-center">
-              <p class="text-2xl font-bold text-purple-600">{{ formatNumber(activeSummary.averageIncome) }}</p>
-              <p class="text-sm text-gray-500 mt-1">میانگین درآمد</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-4 text-center">
-              <p class="text-2xl font-bold text-orange-600">{{ formatNumber(activeSummary.averageInvoices) }}</p>
-              <p class="text-sm text-gray-500 mt-1">میانگین فاکتور</p>
-            </div>
+          <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <article v-for="card in reportSummaryCards" :key="card.label"
+              class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm text-slate-500">{{ card.label }}</p>
+                  <p class="mt-3 text-3xl font-black" :class="card.valueClass">{{ card.value }}</p>
+                </div>
+                <span class="rounded-2xl px-3 py-1 text-xs font-semibold" :class="card.badgeClass">{{ card.badge }}</span>
+              </div>
+              <p class="mt-4 text-xs leading-6 text-slate-500">{{ card.hint }}</p>
+            </article>
           </div>
 
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div class="bg-gray-50 rounded-xl p-4 h-[360px]">
-              <h3 class="font-semibold text-gray-700 mb-3">{{ incomeChartTitle }}</h3>
-              <canvas ref="incomeChartCanvas" class="w-full h-[300px]"></canvas>
+          <div class="relative grid gap-6">
+            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+                  <div class="mb-4 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
+                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">درآمد</span>
+                  </div>
+                  <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
+                </div>
+
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+                  <div class="mb-4 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
+                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
+                  </div>
+                  <canvas ref="countChartCanvas" class="w-full h-[380px]"></canvas>
+                </div>
             </div>
 
-            <div class="bg-gray-50 rounded-xl p-4 h-[360px]">
-              <h3 class="font-semibold text-gray-700 mb-3">{{ countChartTitle }}</h3>
-              <canvas ref="countChartCanvas" class="w-full h-[300px]"></canvas>
-            </div>
-          </div>
+            <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+                <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                  <div>
+                    <h3 class="text-base font-bold text-slate-800">جدول تحلیل دوره‌ای</h3>
+                    <p class="mt-1 text-xs text-slate-500">نمای ریزتر از روند تعداد فاکتورها و درآمد</p>
+                  </div>
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                    {{ activeRows.length.toLocaleString('fa-IR') }} ردیف
+                  </span>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full">
+                    <thead class="border-b border-slate-100 bg-slate-50">
+                      <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">{{ periodHeader }}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">تعداد فاکتورها</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">درآمد</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="stat in activeRows" :key="stat.period" class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period, displayMode) }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.invoice_count) }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.total_income) }}</td>
+                      </tr>
+                      <tr v-if="!activeRows.length">
+                        <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود ندارد</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-          <div class="overflow-x-auto rounded-xl border border-gray-100">
-            <table class="w-full">
-              <thead class="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase">{{ periodHeader }}</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase">تعداد فاکتورها</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase">درآمد (تومان)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="stat in activeRows" :key="stat.period" class="border-b border-gray-100 hover:bg-gray-50">
-                  <td class="px-6 py-4 text-sm text-gray-700 font-medium">{{ formatPeriodLabel(stat.period, displayMode)
-                  }}</td>
-                  <td class="px-6 py-4 text-sm text-gray-600">{{ formatNumber(stat.invoice_count) }}</td>
-                  <td class="px-6 py-4 text-sm text-gray-600">{{ formatNumber(stat.total_income) }}</td>
-                </tr>
-                <tr v-if="!activeRows.length">
-                  <td colspan="3" class="px-6 py-10 text-center text-sm text-gray-400">داده‌ای برای نمایش وجود ندارد
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+              <div class="grid gap-6">
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800">وضعیت عملیاتی</h3>
+                    <span class="text-xs text-slate-500">ارسال و تسویه</span>
+                  </div>
+                  <div class="space-y-3">
+                    <div v-for="item in operationalStatusRows" :key="item.label"
+                      class="rounded-2xl bg-white px-4 py-3">
+                      <div class="mb-2 flex items-center justify-between">
+                        <p class="font-semibold text-slate-700">{{ item.label }}</p>
+                        <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
+                      </div>
+                      <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800">برترین مشتری‌ها</h3>
+                    <span class="text-xs text-slate-500">بر اساس مبلغ فاکتور</span>
+                  </div>
+                  <div v-if="topCustomers.length" class="space-y-3">
+                    <div v-for="customer in topCustomers" :key="customer.name"
+                      class="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                      <div>
+                        <p class="font-semibold text-slate-800">{{ customer.name }}</p>
+                        <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
+                      </div>
+                      <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
+                    </div>
+                  </div>
+                  <p v-else class="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای نمایش نیست</p>
+                </div>
+
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800">مرور سریع</h3>
+                    <span class="text-xs text-slate-500">خلاصه کاربردی</span>
+                  </div>
+                  <div class="space-y-4">
+                    <div v-for="item in reportHighlights" :key="item.label" class="rounded-2xl bg-white px-4 py-4">
+                      <p class="text-xs text-slate-500">{{ item.label }}</p>
+                      <p class="mt-2 text-lg font-bold" :class="item.valueClass">{{ item.value }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -173,58 +186,18 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import api from '../utils/api';
+import CustomSelect from '../components/CustomSelect.vue';
+import { exportRowsToExcel } from '../utils/exportToExcel';
 import Chart from 'chart.js/auto';
-import {
-  getCurrentPersianDate,
-  getPersianYearGregorianRange,
-  PERSIAN_MONTHS,
-  toPersianDate
-} from '../utils/dateConverter';
+import { PERSIAN_MONTHS, toPersianDate } from '../utils/dateConverter';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const invoiceStore = useInvoiceStore();
 
-// Computed stats
-const totalAccountsCount = computed(() => invoiceStore.allInvoices.length);
-
-const shippedCount = computed(() =>
-  invoiceStore.allInvoices.filter(i => i.is_shipped).length
-);
-
-const settledCount = computed(() =>
-  invoiceStore.allInvoices.filter(i => i.is_settled).length
-);
-
-const settledAmount = computed(() =>
-  invoiceStore.allInvoices
-    .filter(i => i.is_settled)
-    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-);
-
-const remainingAmount = computed(() =>
-  invoiceStore.allInvoices
-    .filter(i => !i.is_settled)
-    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-);
-
-const settledAmountFormatted = computed(() =>
-  settledAmount.value.toLocaleString('fa-IR')
-);
-
-const remainingAmountFormatted = computed(() =>
-  remainingAmount.value.toLocaleString('fa-IR')
-);
-
-
-
 const loading = ref(true);
-const refreshing = ref(false);
 const errorMessage = ref('');
-const lastUpdated = ref(null);
 const selectedYear = ref('all');
 
 const annualRows = ref([]);
@@ -256,6 +229,10 @@ const availableYears = computed(() => {
   const arr = Array.from(set).sort((a, b) => b - a);
   return arr.map((y) => String(y));
 });
+const yearSelectOptions = computed(() => ([
+  { label: 'همه سال‌ها', value: 'all' },
+  ...availableYears.value.map((year) => ({ label: year, value: year }))
+]));
 
 const displayMode = computed(() => (selectedYear.value === 'all' ? 'year' : 'month'));
 const activeRows = computed(() => (selectedYear.value === 'all' ? annualRows.value : detailRows.value));
@@ -264,16 +241,10 @@ const sectionTitle = computed(() =>
   selectedYear.value === 'all' ? 'آمار سالانه' : `آمار سال ${selectedYear.value}`
 );
 
-const sectionSubtitle = computed(() =>
+const reportLeadText = computed(() =>
   selectedYear.value === 'all'
-    ? 'درآمد و تعداد فاکتورها برای هر سال نمایش داده می‌شود.'
-    : 'درآمد و تعداد فاکتورها به تفکیک ماه برای سال انتخاب‌شده نمایش داده می‌شود.'
-);
-
-const sectionHint = computed(() =>
-  selectedYear.value === 'all'
-    ? 'سال مورد نظر را از لیست بالا انتخاب کنید تا جزئیات همان سال نمایش داده شود.'
-    : 'برای دیدن مقایسه همه سال‌ها، گزینه همه سال‌ها را انتخاب کنید.'
+    ? 'خلاصه درآمد، تعداد فاکتور، نرخ ارسال و نرخ تسویه برای همه سال‌ها در یک نمای یکپارچه نمایش داده می‌شود.'
+    : `در این نما فقط داده‌های سال ${selectedYear.value} دیده می‌شود تا روند ماهانه و عملکرد مشتری‌ها شفاف‌تر بررسی شود.`
 );
 
 const incomeChartTitle = computed(() =>
@@ -299,14 +270,168 @@ const activeSummary = computed(() => {
   };
 });
 
-const lastUpdatedLabel = computed(() => {
-  if (!lastUpdated.value) return 'هنوز بروزرسانی نشده';
-  return lastUpdated.value.toLocaleTimeString('fa-IR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+const reportSummaryCards = computed(() => ([
+  {
+    label: 'درآمد کل',
+    value: formatNumber(activeSummary.value.totalIncome),
+    badge: 'مالی',
+    badgeClass: 'bg-emerald-100 text-emerald-700',
+    valueClass: 'text-emerald-600',
+    hint: 'جمع درآمد ثبت‌شده در بازه انتخابی'
+  },
+  {
+    label: 'تعداد فاکتورها',
+    value: formatNumber(activeSummary.value.totalInvoices),
+    badge: 'حجم',
+    badgeClass: 'bg-blue-100 text-blue-700',
+    valueClass: 'text-blue-600',
+    hint: 'تعداد همه فاکتورهای موجود در این بازه'
+  },
+  {
+    label: 'بهترین مشتری',
+    value: advancedSummary.value.topCustomerName,
+    badge: 'برترین',
+    badgeClass: 'bg-amber-100 text-amber-700',
+    valueClass: 'text-amber-600',
+    hint: 'مشتری با بیشترین مبلغ فاکتور در بازه انتخابی'
+  },
+  {
+    label: 'میانگین مبلغ فاکتور',
+    value: formatNumber(advancedSummary.value.averageTicket),
+    badge: 'میانگین',
+    badgeClass: 'bg-violet-100 text-violet-700',
+    valueClass: 'text-violet-600',
+    hint: 'میانگین مبلغ هر فاکتور در بازه انتخابی'
+  },
+  {
+    label: 'مبلغ تسویه نشده',
+    value: formatNumber(advancedSummary.value.unsettledAmount),
+    badge: 'مطالبات',
+    badgeClass: 'bg-rose-100 text-rose-700',
+    valueClass: 'text-rose-600',
+    hint: 'جمع مبلغ فاکتورهایی که هنوز تسویه نشده‌اند'
+  }
+]));
+
+const scopedInvoices = computed(() => {
+  if (selectedYear.value === 'all') return invoicesList.value;
+  return invoicesList.value.filter((invoice) => {
+    try {
+      return toPersianDate(invoice.date).startsWith(`${selectedYear.value}/`);
+    } catch (error) {
+      return false;
+    }
   });
 });
+
+const advancedSummary = computed(() => {
+  const invoices = scopedInvoices.value;
+  const totalInvoices = invoices.length || 1;
+  const shipped = invoices.filter((invoice) => invoice.is_shipped).length;
+  const settled = invoices.filter((invoice) => invoice.is_settled).length;
+  const unsettledAmount = invoices
+    .filter((invoice) => !invoice.is_settled)
+    .reduce((sum, invoice) => sum + (Number(invoice.price) || 0), 0);
+  const revenue = invoices.reduce((sum, invoice) => sum + (Number(invoice.price) || 0), 0);
+  const grouped = new Map();
+
+  for (const invoice of invoices) {
+    const key = invoice.customer_name || 'بدون نام';
+    const current = grouped.get(key) || { name: key, total: 0, invoiceCount: 0 };
+    current.total += Number(invoice.price) || 0;
+    current.invoiceCount += 1;
+    grouped.set(key, current);
+  }
+
+  const topCustomer = Array.from(grouped.values()).sort((a, b) => b.total - a.total)[0];
+
+  return {
+    averageTicket: Math.round(revenue / totalInvoices),
+    shippedRate: `${Math.round((shipped / totalInvoices) * 100)}%`,
+    settledRate: `${Math.round((settled / totalInvoices) * 100)}%`,
+    topCustomerName: topCustomer?.name || 'بدون داده',
+    unsettledAmount
+  };
+});
+
+const topCustomers = computed(() => {
+  const grouped = new Map();
+
+  for (const invoice of scopedInvoices.value) {
+    const key = invoice.customer_name || 'بدون نام';
+    const current = grouped.get(key) || { name: key, total: 0, invoiceCount: 0 };
+    current.total += Number(invoice.price) || 0;
+    current.invoiceCount += 1;
+    grouped.set(key, current);
+  }
+
+  return Array.from(grouped.values())
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+});
+
+const operationalStatusRows = computed(() => {
+  const invoices = scopedInvoices.value;
+  const total = invoices.length || 1;
+  const shipped = invoices.filter((invoice) => invoice.is_shipped).length;
+  const unshipped = invoices.length - shipped;
+  const settled = invoices.filter((invoice) => invoice.is_settled).length;
+  const unsettled = invoices.length - settled;
+
+  return [
+    {
+      label: 'ارسال شده',
+      value: `${shipped.toLocaleString('fa-IR')} فاکتور`,
+      percent: `${Math.round((shipped / total) * 100)}%`,
+      barClass: 'bg-cyan-500',
+      valueClass: 'text-cyan-700'
+    },
+    {
+      label: 'ارسال نشده',
+      value: `${unshipped.toLocaleString('fa-IR')} فاکتور`,
+      percent: `${Math.round((unshipped / total) * 100)}%`,
+      barClass: 'bg-rose-500',
+      valueClass: 'text-rose-700'
+    },
+    {
+      label: 'تسویه شده',
+      value: `${settled.toLocaleString('fa-IR')} فاکتور`,
+      percent: `${Math.round((settled / total) * 100)}%`,
+      barClass: 'bg-emerald-500',
+      valueClass: 'text-emerald-700'
+    },
+    {
+      label: 'تسویه نشده',
+      value: `${unsettled.toLocaleString('fa-IR')} فاکتور`,
+      percent: `${Math.round((unsettled / total) * 100)}%`,
+      barClass: 'bg-amber-500',
+      valueClass: 'text-amber-700'
+    }
+  ];
+});
+
+const reportHighlights = computed(() => ([
+  {
+    label: 'نرخ ارسال',
+    value: advancedSummary.value.shippedRate,
+    valueClass: 'text-cyan-700'
+  },
+  {
+    label: 'نرخ تسویه',
+    value: advancedSummary.value.settledRate,
+    valueClass: 'text-emerald-700'
+  },
+  {
+    label: 'میانگین تعداد فاکتور در هر دوره',
+    value: `${formatNumber(activeSummary.value.averageInvoices)} فاکتور`,
+    valueClass: 'text-slate-800'
+  },
+  {
+    label: 'بازه فعال',
+    value: selectedYear.value === 'all' ? 'همه سال‌ها' : `سال ${selectedYear.value}`,
+    valueClass: 'text-slate-700'
+  }
+]));
 
 function formatNumber(value) {
   return Math.round(Number(value) || 0).toLocaleString('fa-IR');
@@ -483,8 +608,6 @@ async function loadSelectedYearStats() {
 async function refreshStats(initialLoad = false) {
   if (initialLoad) {
     loading.value = true;
-  } else {
-    refreshing.value = true;
   }
 
   errorMessage.value = '';
@@ -497,8 +620,6 @@ async function refreshStats(initialLoad = false) {
     }
 
     await loadSelectedYearStats();
-    lastUpdated.value = new Date();
-
     await nextTick();
     destroyCharts();
     renderCharts();
@@ -507,7 +628,6 @@ async function refreshStats(initialLoad = false) {
     errorMessage.value = 'دریافت آمار نمودارها با خطا مواجه شد.';
   } finally {
     loading.value = false;
-    refreshing.value = false;
   }
 }
 
@@ -515,14 +635,21 @@ function goBack() {
   router.back();
 }
 
-function handleLogout() {
-  authStore.logout();
-  router.push('/login');
+function exportReports() {
+  exportRowsToExcel({
+    fileName: selectedYear.value === 'all' ? 'reports-all-years' : `reports-${selectedYear.value}`,
+    sheetTitle: sectionTitle.value,
+    headers: [periodHeader.value, 'تعداد فاکتور', 'درآمد (تومان)'],
+    rows: activeRows.value.map((row) => [
+      formatPeriodLabel(row.period, displayMode.value),
+      formatNumber(row.invoice_count),
+      formatNumber(row.total_income)
+    ])
+  });
 }
 
 watch(selectedYear, async () => {
   if (loading.value) return;
-  refreshing.value = true;
 
   try {
     await loadSelectedYearStats();
@@ -532,8 +659,6 @@ watch(selectedYear, async () => {
   } catch (err) {
     console.error('Failed to change selected year:', err);
     errorMessage.value = 'تغییر سال با خطا مواجه شد.';
-  } finally {
-    refreshing.value = false;
   }
 });
 
