@@ -159,7 +159,8 @@
         </div>
 
         <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="false" :show-actions="true"
-          @edit="openEditModal" @delete="openDeleteModal" @status-change="handleStatusChange" />
+          :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort" @edit="openEditModal"
+          @delete="openDeleteModal" @status-change="handleStatusChange" />
 
         <div v-if="!invoiceStore.loading && totalRows > 0"
           class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
@@ -249,6 +250,8 @@ const deleteTargetId = ref(null);
 const deleting = ref(false);
 const searchDate = ref('');
 const statusFilter = ref('all');
+const sortKey = ref('date');
+const sortDirection = ref('desc');
 const allCustomerInvoices = ref([]);
 const isCustomerInfoOpen = ref(false);
 const customerNotesDraft = ref('');
@@ -324,11 +327,32 @@ const filteredInvoices = computed(() => {
   });
 });
 
-const totalRows = computed(() => filteredInvoices.value.length);
+const sortedInvoices = computed(() => {
+  const invoices = [...filteredInvoices.value];
+
+  invoices.sort((left, right) => {
+    let comparison = 0;
+
+    if (sortKey.value === 'price') {
+      comparison = (Number(left.price) || 0) - (Number(right.price) || 0);
+    } else {
+      comparison = String(left.date || '').localeCompare(String(right.date || ''));
+      if (comparison === 0) {
+        comparison = (Number(left.id) || 0) - (Number(right.id) || 0);
+      }
+    }
+
+    return sortDirection.value === 'asc' ? comparison : -comparison;
+  });
+
+  return invoices;
+});
+
+const totalRows = computed(() => sortedInvoices.value.length);
 const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)));
 const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
 const paginatedInvoices = computed(() =>
-  filteredInvoices.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value)
+  sortedInvoices.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value)
 );
 const visiblePageNumbers = computed(() => {
   const start = Math.max(1, currentPage.value - 1);
@@ -482,6 +506,17 @@ function clearSearch() {
 function goToPage(page) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+}
+
+function toggleSort(column) {
+  if (sortKey.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = column;
+    sortDirection.value = column === 'price' ? 'asc' : 'desc';
+  }
+
+  currentPage.value = 1;
 }
 
 // Modal handlers

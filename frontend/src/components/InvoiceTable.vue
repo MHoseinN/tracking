@@ -5,8 +5,20 @@
         <tr class="bg-gray-50 border-b-2 border-gray-200">
           <th class="text-right px-4 py-3 font-semibold text-gray-600">#</th>
           <th v-if="showCustomerColumn" class="text-right px-4 py-3 font-semibold text-gray-600">نام مشتری</th>
-          <th class="text-right px-4 py-3 font-semibold text-gray-600">تاریخ</th>
-          <th class="text-right px-4 py-3 font-semibold text-gray-600">قیمت</th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-600">
+            <button type="button" class="inline-flex items-center gap-2 transition hover:text-blue-600"
+              @click="$emit('toggle-sort', 'date')">
+              <span>تاریخ</span>
+              <span class="text-xs">{{ getSortIndicator('date') }}</span>
+            </button>
+          </th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-600">
+            <button type="button" class="inline-flex items-center gap-2 transition hover:text-blue-600"
+              @click="$emit('toggle-sort', 'price')">
+              <span>قیمت</span>
+              <span class="text-xs">{{ getSortIndicator('price') }}</span>
+            </button>
+          </th>
           <th class="text-center px-4 py-3 font-semibold text-gray-600">وضعیت ارسال</th>
           <th class="text-center px-4 py-3 font-semibold text-gray-600">وضعیت تسویه</th>
           <th v-if="showActions" class="text-center px-4 py-3 font-semibold text-gray-600">عملیات</th>
@@ -82,7 +94,6 @@
           <!-- Actions -->
           <td v-if="showActions" class="px-4 py-3">
             <div class="flex items-center justify-center gap-2">
-
               <!-- Edit button -->
               <button v-if="hasInvoiceNotes(invoice)" type="button" @click="openNotesModal(invoice)"
                 class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200"
@@ -215,10 +226,12 @@ import { getStatusBadgeClass } from '../utils/statusStyles';
 const props = defineProps({
   invoices: { type: Array, default: () => [] },
   showCustomerColumn: { type: Boolean, default: true },
-  showActions: { type: Boolean, default: true }
+  showActions: { type: Boolean, default: true },
+  sortKey: { type: String, default: 'date' },
+  sortDirection: { type: String, default: 'desc' }
 });
 
-const emit = defineEmits(['edit', 'delete', 'status-change', 'customer-click']);
+const emit = defineEmits(['edit', 'delete', 'status-change', 'customer-click', 'toggle-sort']);
 
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
@@ -286,6 +299,11 @@ function openNotesModal(invoice) {
 function closeNotesModal() {
   showNotesModal.value = false;
   activeNotesInvoice.value = null;
+}
+
+function getSortIndicator(column) {
+  if (props.sortKey !== column) return '↕';
+  return props.sortDirection === 'asc' ? '↑' : '↓';
 }
 
 function handleStatusChange(invoice, field) {
