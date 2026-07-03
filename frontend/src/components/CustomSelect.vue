@@ -18,9 +18,9 @@
     </button>
 
     <Teleport to="body">
-      <div v-if="isOpen" class="fixed inset-0 z-[70]" @click="closeDropdown">
+      <div v-if="isOpen" class="fixed inset-0 z-[140]" @click="closeDropdown">
         <div
-          class="fixed z-[71] overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-sm"
+          class="fixed z-[141] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
           :style="dropdownStyle"
           @click.stop
         >

@@ -34,6 +34,36 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/inventory',
+    name: 'InventoryManagement',
+    component: () => import('./pages/InventoryManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/manage',
+    name: 'InventoryProductManagement',
+    component: () => import('./pages/InventoryProductManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/reservations/new',
+    name: 'InventoryReservationBuilder',
+    component: () => import('./pages/InventoryReservationBuilder.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/reservations/active',
+    name: 'InventoryReservedProducts',
+    component: () => import('./pages/InventoryReservedProducts.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/layout-lab',
+    name: 'InventoryLayoutLab',
+    component: () => import('./pages/InventoryLayoutLab.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/',
     redirect: '/home'
   },

@@ -26,6 +26,14 @@
                     d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </button>
+              <button @click="navigateToInventory"
+                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100">
+                رزرو و انبار
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m8-14l-8 4m0 10L4 17V7m8 14V11" />
+                </svg>
+              </button>
             </div>
             <div
               class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
@@ -441,6 +449,10 @@ function navigateToCharts() {
 // Navigate to users management page
 function navigateToUsers() {
   router.push('/users');
+}
+
+function navigateToInventory() {
+  router.push('/inventory');
 }
 
 
