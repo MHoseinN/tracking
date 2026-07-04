@@ -45,7 +45,7 @@
               type="button"
               :disabled="cartItems.length === 0"
               class="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="reservationCart.clear()"
+              @click="showClearCartConfirm = true"
             >
               خالی کردن سبد
             </button>
@@ -122,26 +122,33 @@
               سبد رزرو خالی است. از انبار یا همین جست‌وجو محصولات را اضافه کن.
             </div>
 
-            <div v-else class="space-y-3">
-              <article
-                v-for="item in cartItems"
-                :key="item.product_id"
-                class="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 px-3 py-3"
-              >
-                <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_auto] md:items-center">
+            <div v-else class="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+              <div class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
+                <span>محصول</span>
+                <span class="text-center">آزاد</span>
+                <span class="text-center">تعداد</span>
+                <span class="text-center">عملیات</span>
+              </div>
+
+              <div class="divide-y divide-slate-100">
+                <div
+                  v-for="item in cartItems"
+                  :key="item.product_id"
+                  class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] items-center gap-3 px-3 py-3"
+                >
                   <div class="min-w-0">
                     <p class="truncate text-sm font-bold text-slate-900">{{ item.product_name }}</p>
-                    <p class="mt-1 truncate text-xs text-slate-500">{{ item.category_name || 'بدون دسته‌بندی' }}</p>
-                    <p class="mt-1 text-xs" :class="isLineOverLimit(item) ? 'text-rose-600' : 'text-slate-500'">
-                      موجودی آزاد در این بازه:
-                      <span class="font-semibold">{{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}</span>
-                    </p>
+                    <p class="mt-1 truncate text-[11px] text-slate-500">{{ item.category_name || 'بدون دسته‌بندی' }}</p>
                   </div>
 
-                  <div class="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2">
+                  <div class="text-center text-xs font-semibold" :class="isLineOverLimit(item) ? 'text-rose-600' : 'text-slate-600'">
+                    {{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}
+                  </div>
+
+                  <div class="flex items-center justify-center gap-1 rounded-2xl bg-slate-50 px-2 py-2">
                     <button
                       type="button"
-                      class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                       @click="decrementCartItem(item)"
                     >
                       -
@@ -150,12 +157,12 @@
                       :value="item.quantity"
                       type="number"
                       min="1"
-                      class="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-sm outline-none transition focus:border-blue-400"
+                      class="h-8 w-14 rounded-xl border border-slate-200 bg-white px-2 text-center text-sm outline-none transition focus:border-blue-400"
                       @input="updateQuantity(item, $event.target.value)"
                     />
                     <button
                       type="button"
-                      class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                       :disabled="item.quantity >= getAvailableQuantity(item.product_id)"
                       @click="incrementCartItem(item)"
                     >
@@ -163,15 +170,17 @@
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    class="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
-                    @click="reservationCart.removeProduct(item.product_id)"
-                  >
-                    حذف از سبد
-                  </button>
+                  <div class="flex justify-center">
+                    <button
+                      type="button"
+                      class="inline-flex h-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                      @click="reservationCart.removeProduct(item.product_id)"
+                    >
+                      حذف
+                    </button>
+                  </div>
                 </div>
-              </article>
+              </div>
             </div>
           </div>
 
@@ -191,6 +200,26 @@
           </aside>
         </div>
       </section>
+
+      <ConfirmModal
+        :is-open="showClearCartConfirm"
+        title="خالی کردن سبد"
+        message="همه اقلام سبد رزرو حذف می‌شوند. ادامه می‌دهی؟"
+        confirm-text="بله، سبد خالی شود"
+        @confirm="confirmClearCart"
+        @cancel="showClearCartConfirm = false"
+      />
+
+      <ConfirmModal
+        :is-open="showSubmitConfirm"
+        title="ثبت نهایی رزرو"
+        message="اطلاعات این رزرو ثبت شود؟ بعد از ثبت، اقلام از سبد حذف می‌شوند."
+        :loading="saving"
+        confirm-text="بله، ثبت نهایی شود"
+        loading-text="در حال ثبت رزرو..."
+        @confirm="confirmSubmitReservation"
+        @cancel="showSubmitConfirm = false"
+      />
     </main>
   </div>
 </template>
@@ -199,6 +228,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import ConfirmModal from '../components/ConfirmModal.vue';
 import JalaliDatePicker from '../components/JalaliDatePicker.vue';
 import SearchableLookupInput from '../components/SearchableLookupInput.vue';
 import { useReservationCartStore } from '../stores/reservationCartStore';
@@ -220,6 +250,8 @@ const endDatePersian = ref(defaultDate);
 const saving = ref(false);
 const errorMessage = ref('');
 const productSearch = ref('');
+const showClearCartConfirm = ref(false);
+const showSubmitConfirm = ref(false);
 
 const cartItems = computed(() => reservationCart.items);
 const customerOptions = computed(() => inventoryStore.lookups.customers.map((customer) => ({
@@ -335,6 +367,7 @@ async function submitReservation() {
 
   if (!customerName.value.trim()) {
     errorMessage.value = 'نام مشتری را وارد کن';
+    toast.error('برای ثبت نهایی، نام مشتری را انتخاب یا وارد کن');
     return;
   }
 
@@ -354,6 +387,25 @@ async function submitReservation() {
     return;
   }
 
+  showSubmitConfirm.value = true;
+}
+
+function confirmClearCart() {
+  reservationCart.clear();
+  showClearCartConfirm.value = false;
+  toast.success('سبد رزرو خالی شد');
+}
+
+async function confirmSubmitReservation() {
+  errorMessage.value = '';
+
+  const startDate = toGregorianDate(startDatePersian.value);
+  const endDate = toGregorianDate(endDatePersian.value);
+  const items = cartItems.value.map((item) => ({
+    product_id: Number(item.product_id),
+    quantity: Number(item.quantity)
+  }));
+
   saving.value = true;
   const result = await inventoryStore.createReservation({
     customer_id: customerId.value ? Number(customerId.value) : null,
@@ -363,9 +415,11 @@ async function submitReservation() {
     items
   });
   saving.value = false;
+  showSubmitConfirm.value = false;
 
   if (!result.success) {
     errorMessage.value = result.message;
+    toast.error(result.message);
     return;
   }
 

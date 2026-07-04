@@ -38,10 +38,10 @@
     </header>
 
     <main class="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-      <aside class="space-y-5 xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
+      <aside class="space-y-5 xl:sticky xl:top-28 xl:h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
         <section
           class="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <div class="space-y-4">
+          <div class="flex min-h-0 flex-1 flex-col gap-4">
             <div class="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
               <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -75,14 +75,14 @@
                 پاک کردن
               </button>
             </div>
-            <div class="min-h-0 flex-1 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-3">
-              <div class="space-y-1">
+            <div class="flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-3">
+              <div class="flex min-h-0 flex-1 flex-col space-y-1">
                 <button type="button" class="w-full rounded-2xl px-3 py-2 text-right text-sm font-semibold transition"
                   :class="selectedCategoryId ? 'text-slate-700 hover:bg-white' : 'bg-blue-50 text-blue-700'"
                   @click="selectedCategoryId = null">
                   دسته بندی </button>
 
-                <div v-if="filteredTree.length" class="max-h-[320px] space-y-1 overflow-y-auto pl-1 pr-1 xl:max-h-[calc(100vh-24rem)]">
+                <div v-if="filteredTree.length" class="min-h-0 flex-1 space-y-1 overflow-y-auto pl-1 pr-1">
                   <CategoryTreeItem v-for="node in filteredTree" :key="node.id" :node="node"
                     :selected-id="selectedCategoryId" @select="selectedCategoryId = $event.id" />
                 </div>

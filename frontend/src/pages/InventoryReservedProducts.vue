@@ -48,17 +48,31 @@
         </article>
       </section>
 
+      <section class="mb-5 rounded-[1.5rem] border border-slate-200 bg-white/92 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+        <div class="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
+          <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+          </svg>
+          <input
+            v-model.trim="customerSearch"
+            type="text"
+            class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+            placeholder="جست‌وجوی لحظه‌ای بر اساس نام مشتری"
+          />
+        </div>
+      </section>
+
       <section v-if="inventoryStore.loading" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-16 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
         در حال بارگذاری رزروهای فعال...
       </section>
 
-      <section v-else-if="orders.length === 0" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-16 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
+      <section v-else-if="filteredOrders.length === 0" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-16 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
         فعلا محصول رزروشده‌ای وجود ندارد.
       </section>
 
       <section v-else class="space-y-3">
         <article
-          v-for="order in orders"
+          v-for="order in filteredOrders"
           :key="order.reservation_order_id"
           class="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
         >
@@ -73,7 +87,7 @@
                   {{ order.reservation_type === 'bulk' ? 'رزرو یک‌جا' : 'رزرو مستقیم' }}
                 </span>
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                  {{ order.items_count.toLocaleString('fa-IR') }} محصول
+                  {{ getGroupedOrderItems(order).length.toLocaleString('fa-IR') }} قلم
                 </span>
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                   {{ toPersianDate(order.start_date) }} تا {{ toPersianDate(order.end_date) }}
@@ -98,7 +112,7 @@
                 type="button"
                 :disabled="Boolean(releasingOrders[order.reservation_order_id])"
                 class="inline-flex h-10 items-center rounded-2xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                @click.stop="releaseOrder(order)"
+                @click.stop="pendingReleaseOrder = order"
               >
                 {{ releasingOrders[order.reservation_order_id] ? 'در حال آزادسازی...' : 'آزادسازی کل رزرو' }}
               </button>
@@ -111,28 +125,60 @@
           </button>
 
           <div v-if="expandedOrders[order.reservation_order_id]" class="border-t border-slate-100 px-4 py-4">
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <article
-                v-for="item in order.items"
-                :key="item.reservation_item_id"
-                class="rounded-[1.25rem] border border-rose-200 bg-rose-50/75 p-3"
-              >
-                <div class="flex items-start justify-between gap-3">
+            <div class="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+              <div class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
+                <span>محصول</span>
+                <span class="text-center">تعداد</span>
+                <span class="text-center">تغییر تعداد</span>
+                <span class="text-center">حذف</span>
+              </div>
+
+              <div class="divide-y divide-slate-100">
+                <div
+                  v-for="groupedItem in getGroupedOrderItems(order)"
+                  :key="`${order.reservation_order_id}-${groupedItem.product_id}`"
+                  class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] items-center gap-3 px-3 py-3"
+                >
                   <div class="min-w-0">
-                    <p class="truncate text-sm font-black text-slate-900">{{ item.product_name }}</p>
-                    <p class="mt-1 truncate text-xs text-slate-500">{{ item.category_name || 'بدون دسته‌بندی' }}</p>
-                    <p class="mt-2 text-xs font-semibold text-slate-700">واحد {{ item.unit_number.toLocaleString('fa-IR') }}</p>
+                    <p class="truncate text-sm font-black text-slate-900">{{ groupedItem.product_name }}</p>
+                    <p class="mt-1 truncate text-[11px] text-slate-500">{{ groupedItem.category_name || 'بدون دسته‌بندی' }}</p>
                   </div>
-                  <button
-                    type="button"
-                    :disabled="Boolean(releasingItems[item.reservation_item_id])"
-                    class="inline-flex h-9 items-center rounded-xl border border-white/70 bg-white px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    @click="releaseItem(item)"
-                  >
-                    {{ releasingItems[item.reservation_item_id] ? '...' : 'آزادسازی' }}
-                  </button>
+
+                  <div class="text-center text-sm font-bold text-slate-700">
+                    {{ groupedItem.quantity.toLocaleString('fa-IR') }}
+                  </div>
+
+                  <div class="flex items-center justify-center gap-1 rounded-2xl bg-slate-50 px-2 py-2">
+                    <button
+                      type="button"
+                      :disabled="Boolean(updatingOrders[order.reservation_order_id])"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="changeGroupedItemQuantity(order, groupedItem.product_id, -1)"
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      :disabled="Boolean(updatingOrders[order.reservation_order_id])"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="changeGroupedItemQuantity(order, groupedItem.product_id, 1)"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div class="flex justify-center">
+                    <button
+                      type="button"
+                      :disabled="Boolean(updatingOrders[order.reservation_order_id])"
+                      class="inline-flex h-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="removeGroupedItem(order, groupedItem.product_id)"
+                    >
+                      حذف
+                    </button>
+                  </div>
                 </div>
-              </article>
+              </div>
             </div>
           </div>
         </article>
@@ -158,6 +204,17 @@
         @confirm="confirmReleaseAll"
         @cancel="showReleaseAllConfirm = false"
       />
+
+      <ConfirmModal
+        :is-open="Boolean(pendingReleaseOrder)"
+        title="آزادسازی این رزرو"
+        :message="pendingReleaseOrder ? `رزرو مشتری «${pendingReleaseOrder.customer_name || 'بدون نام'}» آزاد شود؟` : ''"
+        :loading="pendingReleaseOrder ? Boolean(releasingOrders[pendingReleaseOrder.reservation_order_id]) : false"
+        confirm-text="بله، این رزرو آزاد شود"
+        loading-text="در حال آزادسازی رزرو..."
+        @confirm="pendingReleaseOrder ? releaseOrder(pendingReleaseOrder) : null"
+        @cancel="pendingReleaseOrder = null"
+      />
     </main>
   </div>
 </template>
@@ -178,15 +235,26 @@ const inventoryStore = useInventoryStore();
 const releasingItems = ref({});
 const releasingOrders = ref({});
 const releasingAll = ref(false);
+const updatingOrders = ref({});
 const expandedOrders = ref({});
 const showReleaseAllConfirm = ref(false);
 const showEditor = ref(false);
 const editingOrder = ref(null);
 const editorSaving = ref(false);
+const customerSearch = ref('');
+const pendingReleaseOrder = ref(null);
 
 const orders = computed(() => inventoryStore.activeReservations || []);
 const totalItems = computed(() => orders.value.reduce((sum, order) => sum + (order.items_count || 0), 0));
 const directReservations = computed(() => orders.value.filter((order) => order.reservation_type === 'direct').length);
+const filteredOrders = computed(() => {
+  const query = customerSearch.value.trim().toLowerCase();
+  if (!query) return orders.value;
+
+  return orders.value.filter((order) =>
+    String(order.customer_name || '').toLowerCase().includes(query)
+  );
+});
 const customerOptions = computed(() => inventoryStore.lookups.customers.map((customer) => ({
   label: customer.name,
   value: customer.id
@@ -232,10 +300,40 @@ function toggleOrder(reservationOrderId) {
 }
 
 function summarizeItems(items) {
-  return items
+  return getGroupedItems(items)
     .slice(0, 3)
-    .map((item) => `${item.product_name} ${item.unit_number.toLocaleString('fa-IR')}`)
+    .map((item) => `${item.product_name} ${item.quantity.toLocaleString('fa-IR')} عدد`)
     .join('، ');
+}
+
+function getGroupedItems(items = []) {
+  const grouped = new Map();
+
+  items.forEach((item) => {
+    const productId = Number(item.product_id);
+    const existing = grouped.get(productId);
+    if (existing) {
+      existing.quantity += 1;
+      existing.unit_ids.push(item.unit_id);
+      existing.reservation_item_ids.push(item.reservation_item_id);
+      return;
+    }
+
+    grouped.set(productId, {
+      product_id: productId,
+      product_name: item.product_name,
+      category_name: item.category_name || '',
+      quantity: 1,
+      unit_ids: [item.unit_id],
+      reservation_item_ids: [item.reservation_item_id]
+    });
+  });
+
+  return Array.from(grouped.values()).sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), 'fa'));
+}
+
+function getGroupedOrderItems(order) {
+  return getGroupedItems(order?.items || []);
 }
 
 async function openEditor(order) {
@@ -275,6 +373,7 @@ async function releaseOrder(order) {
   releasingOrders.value = { ...releasingOrders.value, [order.reservation_order_id]: true };
   const result = await inventoryStore.releaseReservationOrder(order.reservation_order_id);
   releasingOrders.value = { ...releasingOrders.value, [order.reservation_order_id]: false };
+  pendingReleaseOrder.value = null;
 
   if (!result.success) {
     toast.error(result.message);
@@ -313,5 +412,65 @@ async function saveReservationOrder(payload) {
   toast.success('رزرو با موفقیت ویرایش شد');
   closeEditor();
   await loadData();
+}
+
+function buildGroupedOrderPayload(order, groupedItems) {
+  return {
+    reservation_order_id: order.reservation_order_id,
+    customer_id: order.customer_id ? Number(order.customer_id) : null,
+    customer_name: order.customer_name || '',
+    start_date: order.start_date,
+    end_date: order.end_date,
+    items: groupedItems
+      .filter((item) => Number(item.quantity) > 0)
+      .map((item) => ({
+        product_id: Number(item.product_id),
+        quantity: Number(item.quantity)
+      }))
+  };
+}
+
+async function persistGroupedOrderChanges(order, groupedItems, successMessage) {
+  const payload = buildGroupedOrderPayload(order, groupedItems);
+  if (payload.items.length === 0) {
+    toast.error('حداقل یک محصول باید در رزرو باقی بماند');
+    return;
+  }
+
+  updatingOrders.value = { ...updatingOrders.value, [order.reservation_order_id]: true };
+  const result = await inventoryStore.updateReservationOrder(order.reservation_order_id, payload);
+  updatingOrders.value = { ...updatingOrders.value, [order.reservation_order_id]: false };
+
+  if (!result.success) {
+    toast.error(result.message);
+    return;
+  }
+
+  toast.success(successMessage);
+  await loadData();
+  expandedOrders.value = {
+    ...expandedOrders.value,
+    [order.reservation_order_id]: true
+  };
+}
+
+async function changeGroupedItemQuantity(order, productId, delta) {
+  const groupedItems = getGroupedOrderItems(order).map((item) => ({ ...item }));
+  const target = groupedItems.find((item) => Number(item.product_id) === Number(productId));
+  if (!target) return;
+
+  const nextQuantity = Number(target.quantity) + Number(delta);
+  if (nextQuantity <= 0) {
+    await removeGroupedItem(order, productId);
+    return;
+  }
+
+  target.quantity = nextQuantity;
+  await persistGroupedOrderChanges(order, groupedItems, 'تعداد محصول در رزرو به‌روزرسانی شد');
+}
+
+async function removeGroupedItem(order, productId) {
+  const groupedItems = getGroupedOrderItems(order).filter((item) => Number(item.product_id) !== Number(productId));
+  await persistGroupedOrderChanges(order, groupedItems, 'محصول از این رزرو حذف شد');
 }
 </script>
