@@ -25,174 +25,18 @@
     </header>
 
     <main class="mx-auto max-w-6xl px-4 py-6">
-      <section class="space-y-6">
-        <section class="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-          <div class="grid gap-5 md:grid-cols-3">
-            <label class="space-y-2 md:col-span-3">
-              <span class="text-sm font-semibold text-slate-700">مشتری</span>
-              <SearchableLookupInput
-                v-model="customerName"
-                :options="customerOptions"
-                header-text="مشتری‌ها"
-                no-results-text="مشتری‌ای پیدا نشد. می‌توانی نام جدید را دستی وارد کنی."
-                placeholder="نام مشتری را بنویس یا از لیست انتخاب کن"
-                @select="handleCustomerSelect"
-                @clear="customerId = null"
-              />
-            </label>
-
-            <label class="space-y-2">
-              <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
-              <JalaliDatePicker
-                :model-value="startDatePersian"
-                input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                @update:model-value="startDatePersian = $event"
-              />
-            </label>
-
-            <label class="space-y-2">
-              <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
-              <JalaliDatePicker
-                :model-value="endDatePersian"
-                input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                @update:model-value="endDatePersian = $event"
-              />
-            </label>
-
-            <label class="space-y-2">
-              <span class="text-sm font-semibold text-slate-700">مدت رزرو</span>
-              <div class="flex h-12 items-center rounded-2xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
-                {{ durationLabel }}
-              </div>
-            </label>
+      <section class="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">مشتری و اقلام سبد</h2>
+            <p class="mt-2 text-sm text-slate-500">هم مشتری را انتخاب کن، هم محصولات را با جست‌وجوی دراپ‌داونی اضافه کن و در همان بالا رزرو را ثبت نهایی بزن.</p>
           </div>
 
-          <label class="mt-5 block space-y-2">
-            <span class="text-sm font-semibold text-slate-700">یادداشت کلی رزرو</span>
-            <textarea
-              v-model.trim="notes"
-              rows="4"
-              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              placeholder="اگر توضیحی برای این رزرو داری اینجا بنویس"
-            ></textarea>
-          </label>
-        </section>
-
-        <section class="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">اقلام سبد</h2>
-              <p class="mt-2 text-sm text-slate-500">تعداد هر محصول را کم یا زیاد کن. بعد از ثبت نهایی، سبد خالی می‌شود.</p>
-            </div>
-            <div class="w-full max-w-md">
-              <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-3">
-                <div class="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
-                  <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-                  </svg>
-                  <input
-                    v-model.trim="productSearch"
-                    type="text"
-                    class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                    placeholder="جستجوی لحظه‌ای محصول برای افزودن به سبد"
-                  />
-                </div>
-
-                <div v-if="productSearch.trim()" class="mt-3 max-h-72 space-y-2 overflow-y-auto">
-                  <button
-                    v-for="product in searchableProducts"
-                    :key="product.id"
-                    type="button"
-                    class="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-right transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    :disabled="getProductRemaining(product.id) <= 0"
-                    @click="addProductToCart(product)"
-                  >
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-slate-900">{{ product.name }}</p>
-                      <p class="mt-1 truncate text-xs text-slate-500">{{ product.category_name || 'بدون دسته‌بندی' }}</p>
-                    </div>
-                    <span
-                      class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
-                      :class="getProductRemaining(product.id) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
-                    >
-                      {{ getProductRemaining(product.id).toLocaleString('fa-IR') }} آزاد
-                    </span>
-                  </button>
-
-                  <p v-if="searchableProducts.length === 0" class="rounded-2xl bg-white px-3 py-3 text-sm text-slate-500">
-                    محصول آزادی برای این جستجو پیدا نشد.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="cartItems.length === 0" class="mt-5 rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-            سبد رزرو خالی است. از صفحه انبار محصولات را به سبد اضافه کن.
-          </div>
-
-          <div v-else class="mt-5 space-y-3">
-            <article
-              v-for="item in cartItems"
-              :key="item.product_id"
-              class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4"
-            >
-              <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_160px_auto] md:items-center">
-                <div class="min-w-0">
-                  <p class="truncate font-semibold text-slate-900">{{ item.product_name }}</p>
-                  <p class="mt-1 truncate text-xs text-slate-500">{{ item.category_name || 'بدون دسته‌بندی' }}</p>
-                  <p class="mt-2 text-xs" :class="isLineOverLimit(item) ? 'text-rose-600' : 'text-slate-500'">
-                    موجودی آزاد در این بازه:
-                    <span class="font-semibold">{{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}</span>
-                  </p>
-                </div>
-
-                <div class="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2">
-                  <button
-                    type="button"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                    @click="decrementCartItem(item)"
-                  >
-                    -
-                  </button>
-                  <input
-                    :value="item.quantity"
-                    type="number"
-                    min="1"
-                    class="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-sm outline-none transition focus:border-blue-400"
-                    @input="updateQuantity(item, $event.target.value)"
-                  />
-                  <button
-                    type="button"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                    :disabled="item.quantity >= getAvailableQuantity(item.product_id)"
-                    @click="incrementCartItem(item)"
-                  >
-                    +
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  class="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
-                  @click="reservationCart.removeProduct(item.product_id)"
-                >
-                  حذف از سبد
-                </button>
-              </div>
-            </article>
-          </div>
-        </section>
-        <section class="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-          <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-            {{ errorMessage }}
-          </p>
-
-          <div class="flex flex-col gap-3 sm:flex-row">
+          <div class="flex flex-wrap gap-3">
             <button
               type="button"
               :disabled="saving || cartItems.length === 0"
-              class="inline-flex h-12 flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              class="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               @click="submitReservation"
             >
               {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
@@ -200,13 +44,152 @@
             <button
               type="button"
               :disabled="cartItems.length === 0"
-              class="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              class="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               @click="reservationCart.clear()"
             >
               خالی کردن سبد
             </button>
           </div>
-        </section>
+        </div>
+
+        <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(330px,0.8fr)]">
+          <div class="space-y-5">
+            <div class="grid gap-5 md:grid-cols-3">
+              <label class="space-y-2 md:col-span-3">
+                <span class="text-sm font-semibold text-slate-700">مشتری</span>
+                <SearchableLookupInput
+                  v-model="customerName"
+                  :options="customerOptions"
+                  header-text="مشتری‌ها"
+                  no-results-text="مشتری‌ای پیدا نشد. می‌توانی نام جدید را دستی وارد کنی."
+                  placeholder="نام مشتری را بنویس یا از لیست انتخاب کن"
+                  @select="handleCustomerSelect"
+                  @clear="customerId = null"
+                />
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
+                <JalaliDatePicker
+                  :model-value="startDatePersian"
+                  input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  @update:model-value="startDatePersian = $event"
+                />
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
+                <JalaliDatePicker
+                  :model-value="endDatePersian"
+                  input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  @update:model-value="endDatePersian = $event"
+                />
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700">مدت رزرو</span>
+                <div class="flex h-12 items-center rounded-2xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                  {{ durationLabel }}
+                </div>
+              </label>
+            </div>
+
+            <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-base font-black text-slate-900">افزودن محصول به سبد</h3>
+                  <p class="mt-1 text-xs text-slate-500">فقط محصولات آزاد این بازه نمایش داده می‌شوند.</p>
+                </div>
+                <div class="w-full max-w-md">
+                  <SearchableLookupInput
+                    v-model="productSearch"
+                    :options="productSearchOptions"
+                    header-text="محصولات آزاد"
+                    no-results-text="محصول آزادی برای این جستجو پیدا نشد."
+                    placeholder="محصول را جست‌وجو و از لیست انتخاب کن"
+                    @select="handleProductSelect"
+                    @clear="productSearch = ''"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {{ errorMessage }}
+            </p>
+
+            <div v-if="cartItems.length === 0" class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+              سبد رزرو خالی است. از انبار یا همین جست‌وجو محصولات را اضافه کن.
+            </div>
+
+            <div v-else class="space-y-3">
+              <article
+                v-for="item in cartItems"
+                :key="item.product_id"
+                class="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 px-3 py-3"
+              >
+                <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_auto] md:items-center">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-bold text-slate-900">{{ item.product_name }}</p>
+                    <p class="mt-1 truncate text-xs text-slate-500">{{ item.category_name || 'بدون دسته‌بندی' }}</p>
+                    <p class="mt-1 text-xs" :class="isLineOverLimit(item) ? 'text-rose-600' : 'text-slate-500'">
+                      موجودی آزاد در این بازه:
+                      <span class="font-semibold">{{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}</span>
+                    </p>
+                  </div>
+
+                  <div class="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2">
+                    <button
+                      type="button"
+                      class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                      @click="decrementCartItem(item)"
+                    >
+                      -
+                    </button>
+                    <input
+                      :value="item.quantity"
+                      type="number"
+                      min="1"
+                      class="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-sm outline-none transition focus:border-blue-400"
+                      @input="updateQuantity(item, $event.target.value)"
+                    />
+                    <button
+                      type="button"
+                      class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                      :disabled="item.quantity >= getAvailableQuantity(item.product_id)"
+                      @click="incrementCartItem(item)"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                    @click="reservationCart.removeProduct(item.product_id)"
+                  >
+                    حذف از سبد
+                  </button>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <aside class="space-y-4">
+            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <p class="text-sm font-semibold text-slate-500">تعداد آیتم‌های سبد</p>
+              <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.totalQuantity.toLocaleString('fa-IR') }}</p>
+            </article>
+            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <p class="text-sm font-semibold text-slate-500">محصولات متفاوت</p>
+              <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.uniqueProductsCount.toLocaleString('fa-IR') }}</p>
+            </article>
+            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <p class="text-sm font-semibold text-slate-500">بازه انتخابی</p>
+              <p class="mt-3 text-sm font-bold text-slate-900">{{ startDatePersian }} تا {{ endDatePersian }}</p>
+            </article>
+          </aside>
+        </div>
       </section>
     </main>
   </div>
@@ -234,7 +217,6 @@ const customerId = ref(null);
 const customerName = ref('');
 const startDatePersian = ref(defaultDate);
 const endDatePersian = ref(defaultDate);
-const notes = ref('');
 const saving = ref(false);
 const errorMessage = ref('');
 const productSearch = ref('');
@@ -244,18 +226,15 @@ const customerOptions = computed(() => inventoryStore.lookups.customers.map((cus
   label: customer.name,
   value: customer.id
 })));
-const searchableProducts = computed(() => {
-  const query = productSearch.value.trim().toLowerCase();
-  if (!query) return [];
-
-  return inventoryStore.lookups.products
-    .filter((product) => {
-      const matches = String(product.name || '').toLowerCase().includes(query)
-        || String(product.category_name || '').toLowerCase().includes(query);
-      return matches && getProductRemaining(product.id) > 0;
-    })
-    .slice(0, 10);
-});
+const productSearchOptions = computed(() =>
+  inventoryStore.lookups.products
+    .filter((product) => getProductRemaining(product.id) > 0)
+    .map((product) => ({
+      label: `${product.name}${product.category_name ? ` - ${product.category_name}` : ''}`,
+      value: product.id,
+      product
+    }))
+);
 const durationLabel = computed(() => {
   const startDate = toGregorianDate(startDatePersian.value);
   const endDate = toGregorianDate(endDatePersian.value);
@@ -338,6 +317,12 @@ function addProductToCart(product) {
   toast.success('محصول به سبد رزرو اضافه شد');
 }
 
+function handleProductSelect(option) {
+  const product = option?.product;
+  if (!product) return;
+  addProductToCart(product);
+}
+
 async function submitReservation() {
   errorMessage.value = '';
 
@@ -375,7 +360,6 @@ async function submitReservation() {
     customer_name: customerName.value.trim(),
     start_date: startDate,
     end_date: endDate,
-    notes: notes.value.trim() || null,
     items
   });
   saving.value = false;

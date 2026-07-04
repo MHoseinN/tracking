@@ -96,74 +96,6 @@ function syncLegacyCategoryMirror(categoryId, categoryName, createdAt = null) {
   `).run(categoryId, syntheticName, createdAt);
 }
 
-function ensureCategoryPath(pathSegments) {
-  let parentId = null;
-  let currentCategory = null;
-
-  pathSegments.forEach((segment) => {
-    const name = String(segment || '').trim();
-    if (!name) return;
-
-    const slug = slugifyCategoryName(name) || `cat-${Date.now()}`;
-    currentCategory = db.prepare(`
-      SELECT id, name, slug, parent_id
-      FROM inventory_categories
-      WHERE slug = ? AND ${parentId === null ? 'parent_id IS NULL' : 'parent_id = ?'}
-    `).get(...(parentId === null ? [slug] : [slug, parentId]));
-
-    if (!currentCategory) {
-      const result = db.prepare(`
-        INSERT INTO inventory_categories (name, slug, parent_id, created_at, updated_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `).run(name, slug, parentId);
-      currentCategory = db.prepare('SELECT id, name, slug, parent_id FROM inventory_categories WHERE id = ?').get(result.lastInsertRowid);
-      syncLegacyCategoryMirror(currentCategory.id, currentCategory.name);
-    }
-
-    parentId = currentCategory.id;
-  });
-
-  return currentCategory;
-}
-
-function seedInventoryTree() {
-  const seedDefinitions = [
-    { path: ['دوربین', 'سونی'], products: [['A7 III', 6], ['A7 IV', 4], ['FX3', 3]] },
-    { path: ['دوربین', 'کنون'], products: [['5D IV', 3], ['5D III', 3], ['80D', 3]] },
-    { path: ['لنز', 'سونی'], products: [['70.200', 5], ['24.70', 5]] },
-    { path: ['لنز', 'کنون'], products: [['70.200', 4], ['24.70', 2]] },
-    { path: ['پایه', 'دوربین'], products: [['ساچلر FSB4', 10], ['بنرو', 3]] },
-    { path: ['پایه', 'نور'], products: [['پایه نور 800', 30], ['پایه آرک', 4]] },
-    { path: ['نور', 'نورپردازی'], products: [['Forza 300B', 8], ['Forza 300C', 3]] },
-    { path: ['نور', 'سافت'], products: [['سافت باکس 300', 7], ['اکتاباکس 60', 8]] }
-  ];
-
-  seedDefinitions.forEach((entry) => {
-    const category = ensureCategoryPath(entry.path);
-    if (!category) return;
-
-    entry.products.forEach(([name, quantity]) => {
-      const existing = db.prepare(`
-        SELECT id
-        FROM inventory_products
-        WHERE category_id = ? AND LOWER(TRIM(name)) = LOWER(?)
-      `).get(category.id, name);
-
-      if (!existing) {
-        const result = db.prepare(`
-          INSERT INTO inventory_products (name, category_id, total_quantity, notes, created_at, updated_at)
-          VALUES (?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `).run(name, category.id, quantity);
-
-        const insertUnit = db.prepare('INSERT INTO inventory_units (product_id, unit_number, is_active) VALUES (?, ?, 1)');
-        for (let unitNumber = 1; unitNumber <= quantity; unitNumber += 1) {
-          insertUnit.run(result.lastInsertRowid, unitNumber);
-        }
-      }
-    });
-  });
-}
-
 function initDatabase() {
   // Create users table
   db.exec(`
@@ -363,8 +295,6 @@ function initDatabase() {
   db.prepare('SELECT id, name, created_at FROM inventory_categories ORDER BY id ASC').all().forEach((category) => {
     syncLegacyCategoryMirror(category.id, category.name, category.created_at);
   });
-
-  seedInventoryTree();
 
   // Create default admin user if not exists
   const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get('1010');

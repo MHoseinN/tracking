@@ -27,13 +27,13 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
-              در حال حذف...
+              {{ loadingText }}
             </span>
-            <span v-else>بله، حذف شود</span>
+            <span v-else>{{ confirmText }}</span>
           </button>
           <button @click="$emit('cancel')" :disabled="loading"
             class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-            انصراف
+            {{ cancelText }}
           </button>
         </div>
       </div>
@@ -46,7 +46,10 @@ defineProps({
   isOpen: { type: Boolean, default: false },
   title: { type: String, default: 'حذف' },
   message: { type: String, default: 'آیا از حذف این مورد اطمینان دارید؟' },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  confirmText: { type: String, default: 'بله، حذف شود' },
+  cancelText: { type: String, default: 'انصراف' },
+  loadingText: { type: String, default: 'در حال حذف...' }
 });
 
 defineEmits(['confirm', 'cancel']);

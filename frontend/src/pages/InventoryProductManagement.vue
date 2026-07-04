@@ -38,9 +38,9 @@
       </section>
     </header>
 
-    <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-      <aside class="rounded-[2rem] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-          <div class="space-y-4">
+    <main class="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <aside class="rounded-[2rem] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.06)] xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
+          <div class="flex h-full min-h-0 flex-col space-y-4">
             <div class="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm">
             <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
@@ -53,7 +53,7 @@
             />
           </div>
 
-            <div class="space-y-2">
+            <div class="min-h-0 flex-1 space-y-2">
               <button
                 type="button"
               class="w-full rounded-2xl px-3 py-2 text-right text-sm font-semibold transition"
@@ -72,7 +72,7 @@
                 افزودن زیرشاخه به دسته انتخاب‌شده
               </button>
 
-              <div v-if="filteredTree.length" class="space-y-1">
+              <div v-if="filteredTree.length" class="max-h-[320px] space-y-1 overflow-y-auto pl-1 pr-1 xl:max-h-[calc(100vh-20rem)]">
                 <CategoryTreeItem
                 v-for="node in filteredTree"
                 :key="node.id"

@@ -141,6 +141,15 @@ export const useInventoryStore = defineStore('inventory', {
       }
     },
 
+    async updateReservationOrder(reservationOrderId, payload) {
+      try {
+        const response = await api.put(`/inventory/reservations/${reservationOrderId}`, payload);
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, message: getErrorMessage(error, 'خطا در ویرایش رزرو') };
+      }
+    },
+
     async updateUnitAssignment(unitId, payload) {
       try {
         const response = await api.put(`/inventory/units/${unitId}/assignment`, payload);

@@ -13,6 +13,7 @@ const {
   updateProduct,
   deleteProduct,
   createReservation,
+  updateReservationOrder,
   updateUnitAssignment,
   deleteUnitAssignment,
   releaseReservationOrder,
@@ -66,6 +67,15 @@ router.post('/reservations', [
   body('items').isArray({ min: 1 }),
   body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 })
 ], createReservation);
+
+router.put('/reservations/:reservationOrderId', [
+  body('customer_id').optional({ nullable: true }).isInt({ min: 1 }),
+  body('customer_name').optional({ nullable: true }).isString().trim().isLength({ min: 1, max: 255 }),
+  body('start_date').isString().trim().matches(/^\d{4}-\d{2}-\d{2}$/),
+  body('end_date').isString().trim().matches(/^\d{4}-\d{2}-\d{2}$/),
+  body('items').isArray({ min: 1 }),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 })
+], updateReservationOrder);
 
 router.put('/units/:unitId/assignment', [
   body('customer_id').optional({ nullable: true }).isInt({ min: 1 }),

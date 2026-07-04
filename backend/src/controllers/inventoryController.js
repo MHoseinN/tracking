@@ -814,6 +814,7 @@ function deleteProduct(req, res) {
       FROM inventory_reservation_items ri
       INNER JOIN inventory_units u ON u.id = ri.unit_id
       WHERE u.product_id = ?
+        AND ri.released_at IS NULL
     `).get(productId)?.count) || 0;
 
     if (reservationCount > 0) {
@@ -899,6 +900,180 @@ function createReservation(req, res) {
     res.status(201).json({ reservation_order_id: orderResult.lastInsertRowid });
   } catch (err) {
     console.error('Create reservation error:', err);
+    res.status(err.statusCode || 500).json({ message: err.message || 'Server error' });
+  }
+}
+
+function updateReservationOrder(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const reservationOrderId = normalizeInteger(req.params?.reservationOrderId);
+
+  try {
+    if (!reservationOrderId) {
+      return res.status(400).json({ message: 'شناسه رزرو معتبر نیست' });
+    }
+
+    const existingOrder = db.prepare(`
+      SELECT id
+      FROM inventory_reservation_orders
+      WHERE id = ?
+    `).get(reservationOrderId);
+
+    if (!existingOrder) {
+      return res.status(404).json({ message: 'رزرو پیدا نشد' });
+    }
+
+    const activeItems = db.prepare(`
+      SELECT
+        ri.id AS reservation_item_id,
+        ri.unit_id,
+        u.product_id,
+        u.unit_number
+      FROM inventory_reservation_items ri
+      INNER JOIN inventory_units u ON u.id = ri.unit_id
+      WHERE ri.reservation_order_id = ?
+        AND ri.released_at IS NULL
+      ORDER BY u.product_id ASC, u.unit_number ASC, ri.id ASC
+    `).all(reservationOrderId);
+
+    if (activeItems.length === 0) {
+      return res.status(404).json({ message: 'رزرو فعالی برای ویرایش پیدا نشد' });
+    }
+
+    const customer = findOrCreateCustomer(req.body?.customer_id, req.body?.customer_name);
+    const startDate = normalizeText(req.body?.start_date);
+    const endDate = normalizeText(req.body?.end_date);
+    const notes = normalizeText(req.body?.notes);
+    const items = parseItems(req.body?.items);
+
+    if (!startDate || !endDate || items.length === 0) {
+      return res.status(400).json({ message: 'اطلاعات رزرو کامل نیست' });
+    }
+
+    if (startDate > endDate) {
+      return res.status(400).json({ message: 'تاریخ شروع باید قبل از تاریخ پایان باشد' });
+    }
+
+    const currentByProduct = new Map();
+    activeItems.forEach((item) => {
+      if (!currentByProduct.has(item.product_id)) {
+        currentByProduct.set(item.product_id, []);
+      }
+      currentByProduct.get(item.product_id).push(item);
+    });
+
+    const requestedByProduct = new Map();
+    items.forEach((item) => {
+      const current = requestedByProduct.get(item.product_id) || 0;
+      requestedByProduct.set(item.product_id, current + item.quantity);
+    });
+
+    const productIds = Array.from(new Set([
+      ...currentByProduct.keys(),
+      ...requestedByProduct.keys()
+    ]));
+
+    const allocationPlan = [];
+
+    productIds.forEach((productId) => {
+      const requestedQuantity = requestedByProduct.get(productId) || 0;
+      const currentItemsForProduct = currentByProduct.get(productId) || [];
+
+      const product = db.prepare(`
+        SELECT id, name
+        FROM inventory_products
+        WHERE id = ?
+      `).get(productId);
+
+      if (!product) {
+        const error = new Error('یکی از محصولات انتخاب‌شده پیدا نشد');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const availableUnits = db.prepare(`
+        SELECT u.id, u.unit_number
+        FROM inventory_units u
+        WHERE u.product_id = ?
+          AND u.is_active = 1
+          AND NOT EXISTS (
+            SELECT 1
+            FROM inventory_reservation_items ri
+            WHERE ri.unit_id = u.id
+              AND ri.released_at IS NULL
+              AND ri.reservation_order_id <> ?
+          )
+        ORDER BY u.unit_number ASC, u.id ASC
+      `).all(productId, reservationOrderId);
+
+      if (availableUnits.length < requestedQuantity) {
+        const error = new Error(`موجودی آزاد برای محصول «${product.name}» کافی نیست`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const selectedUnitIds = [];
+      const selectedSet = new Set();
+
+      currentItemsForProduct.forEach((item) => {
+        if (selectedUnitIds.length >= requestedQuantity) return;
+        if (!availableUnits.some((unit) => unit.id === item.unit_id)) return;
+        selectedUnitIds.push(item.unit_id);
+        selectedSet.add(item.unit_id);
+      });
+
+      availableUnits.forEach((unit) => {
+        if (selectedUnitIds.length >= requestedQuantity) return;
+        if (selectedSet.has(unit.id)) return;
+        selectedUnitIds.push(unit.id);
+        selectedSet.add(unit.id);
+      });
+
+      const keepItems = currentItemsForProduct.filter((item) => selectedSet.has(item.unit_id));
+      const releaseItems = currentItemsForProduct.filter((item) => !selectedSet.has(item.unit_id));
+      const addUnitIds = selectedUnitIds.filter((unitId) => !currentItemsForProduct.some((item) => item.unit_id === unitId));
+
+      allocationPlan.push({
+        keepItems,
+        releaseItems,
+        addUnitIds
+      });
+    });
+
+    db.prepare(`
+      UPDATE inventory_reservation_orders
+      SET customer_id = ?, customer_name = ?, start_date = ?, end_date = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(customer.id, customer.name, startDate, endDate, notes, reservationOrderId);
+
+    const releaseItemStatement = db.prepare(`
+      UPDATE inventory_reservation_items
+      SET released_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+
+    const insertItemStatement = db.prepare(`
+      INSERT INTO inventory_reservation_items (reservation_order_id, unit_id, created_at, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `);
+
+    allocationPlan.forEach((plan) => {
+      plan.releaseItems.forEach((item) => {
+        releaseItemStatement.run(item.reservation_item_id);
+      });
+
+      plan.addUnitIds.forEach((unitId) => {
+        insertItemStatement.run(reservationOrderId, unitId);
+      });
+    });
+
+    res.json({ message: 'رزرو ویرایش شد' });
+  } catch (err) {
+    console.error('Update reservation order error:', err);
     res.status(err.statusCode || 500).json({ message: err.message || 'Server error' });
   }
 }
@@ -1093,6 +1268,7 @@ module.exports = {
   updateProduct,
   deleteProduct,
   createReservation,
+  updateReservationOrder,
   updateUnitAssignment,
   deleteUnitAssignment,
   releaseReservationOrder,

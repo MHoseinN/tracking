@@ -24,8 +24,8 @@
       </section>
     </header>
 
-    <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-      <aside class="space-y-5">
+    <main class="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <aside class="space-y-5 xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
         <section class="rounded-[1.75rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
           <h2 class="text-sm font-black text-slate-900">فیلترها</h2>
 
@@ -83,7 +83,7 @@
               همه دسته‌ها
             </button>
 
-            <div v-if="filteredTree.length" class="space-y-1">
+            <div v-if="filteredTree.length" class="max-h-[320px] space-y-1 overflow-y-auto pl-1 pr-1 xl:max-h-[calc(100vh-28rem)]">
               <CategoryTreeItem
                 v-for="node in filteredTree"
                 :key="node.id"

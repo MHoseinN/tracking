@@ -6,7 +6,7 @@
           <div class="flex items-center justify-between gap-4">
             <div>
               <p class="text-xs font-semibold tracking-[0.3em] text-slate-400">DIRECT RESERVE</p>
-              <h2 class="mt-2 text-2xl font-bold text-slate-900">رزرو مستقیم واحد</h2>
+              <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ unit?.reservation_item_id ? 'ویرایش رزرو واحد' : 'رزرو مستقیم واحد' }}</h2>
               <p class="mt-2 text-sm text-slate-500">{{ unit.product_name }} - واحد {{ Number(unit.unit_number || 0).toLocaleString('fa-IR') }}</p>
             </div>
             <button
@@ -74,21 +74,31 @@
             {{ errorMessage }}
           </p>
 
-          <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+          <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-between">
             <button
+              v-if="unit?.reservation_item_id"
               type="button"
-              class="h-12 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              @click="$emit('close')"
+              class="h-12 rounded-2xl border border-rose-200 bg-rose-50 px-5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+              @click="$emit('clear', unit)"
             >
-              انصراف
+              آزادسازی این واحد
             </button>
-            <button
-              type="submit"
-              :disabled="saving"
-              class="h-12 rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {{ saving ? 'در حال ثبت...' : 'ثبت رزرو مستقیم' }}
-            </button>
+            <div class="flex flex-col-reverse gap-3 sm:mr-auto sm:flex-row">
+              <button
+                type="button"
+                class="h-12 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                @click="$emit('close')"
+              >
+                انصراف
+              </button>
+              <button
+                type="submit"
+                :disabled="saving"
+                class="h-12 rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ saving ? 'در حال ثبت...' : unit?.reservation_item_id ? 'ذخیره تغییرات رزرو' : 'ثبت رزرو مستقیم' }}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -100,7 +110,7 @@
 import { computed, ref, watch } from 'vue';
 import JalaliDatePicker from './JalaliDatePicker.vue';
 import SearchableLookupInput from './SearchableLookupInput.vue';
-import { getCurrentPersianDate, toGregorianDate } from '../utils/dateConverter';
+import { getCurrentPersianDate, toGregorianDate, toPersianDate } from '../utils/dateConverter';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -111,7 +121,7 @@ const props = defineProps({
   initialEndPersian: { type: String, default: '' }
 });
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close', 'save', 'clear']);
 
 const today = getCurrentPersianDate();
 const fallbackDate = `${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`;
@@ -137,11 +147,11 @@ const durationLabel = computed(() => {
 });
 
 function resetForm() {
-  customerId.value = null;
-  customerName.value = '';
-  startDatePersian.value = props.initialStartPersian || fallbackDate;
-  endDatePersian.value = props.initialEndPersian || fallbackDate;
-  notes.value = '';
+  customerId.value = props.unit?.customer_id || null;
+  customerName.value = props.unit?.customer_name || '';
+  startDatePersian.value = props.unit?.start_date ? toPersianDate(props.unit.start_date) : (props.initialStartPersian || fallbackDate);
+  endDatePersian.value = props.unit?.end_date ? toPersianDate(props.unit.end_date) : (props.initialEndPersian || fallbackDate);
+  notes.value = props.unit?.reservation_notes || '';
   errorMessage.value = '';
 }
 
