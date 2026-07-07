@@ -1,26 +1,16 @@
 <template>
   <div ref="pickerRoot" class="relative">
-    <input
-      v-if="triggerMode === 'input'"
-      v-model="displayValue"
-      @focus="openCalendar"
-      readonly
+    <input v-if="triggerMode === 'input'" v-model="displayValue" @focus="openCalendar" readonly
       :placeholder="placeholder"
       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-      :class="[inputClass, { 'border-red-500': error }]"
-    />
-    <button
-      v-else
-      type="button"
-      @click="toggleCalendar"
-      class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition"
-      :class="buttonClass"
-    >
+      :class="[inputClass, { 'border-red-500': error }]" />
+    <button v-else type="button" @click="toggleCalendar"
+      class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition" :class="buttonClass">
+      <span>{{ displayValue || buttonPlaceholder }}</span>
       <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" />
       </svg>
-      <span>{{ displayValue || buttonPlaceholder }}</span>
     </button>
 
     <div v-if="show" class="absolute z-30 mt-2 bg-white border rounded-md shadow-lg p-3 w-64">
@@ -37,13 +27,8 @@
       <div class="grid grid-cols-7 gap-1 text-sm">
         <div v-for="blank in blanks" :key="`b-${blank}`" class="h-8"></div>
 
-        <button
-          v-for="day in daysInMonth"
-          :key="day"
-          type="button"
-          @click="selectDay(day)"
-          :class="['h-8 rounded-md', selectedDay === day ? 'bg-blue-600 text-white' : 'hover:bg-blue-50']"
-        >
+        <button v-for="day in daysInMonth" :key="day" type="button" @click="selectDay(day)"
+          :class="['h-8 rounded-md', selectedDay === day ? 'bg-blue-600 text-white' : 'hover:bg-blue-50']">
           {{ day }}
         </button>
       </div>

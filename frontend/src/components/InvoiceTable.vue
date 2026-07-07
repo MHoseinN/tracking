@@ -21,7 +21,7 @@
           </th>
           <th class="text-center px-4 py-3 font-semibold text-gray-600">وضعیت ارسال</th>
           <th class="text-center px-4 py-3 font-semibold text-gray-600">وضعیت تسویه</th>
-          <th v-if="showActions" class="text-center px-4 py-3 font-semibold text-gray-600">عملیات</th>
+          <th v-if="showActions" class="text-center py-3 font-semibold text-gray-600">عملیات</th>
         </tr>
       </thead>
       <tbody>
@@ -71,7 +71,7 @@
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
               </span>
-              <span v-else>{{ invoice.is_shipped ? '✓ ارسال شده' : '✗ ارسال نشده' }}</span>
+              <span v-else>{{ invoice.is_shipped ? ' ارسال شده ✓' : ' ارسال نشده ✗' }}</span>
             </button>
           </td>
 
@@ -87,38 +87,38 @@
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
               </span>
-              <span v-else>{{ invoice.is_settled ? '✓ تسویه شده' : '✗ تسویه نشده' }}</span>
+              <span v-else>{{ invoice.is_settled ? ' تسویه شده ✓' : ' تسویه نشده ✗' }}</span>
             </button>
           </td>
 
           <!-- Actions -->
-          <td v-if="showActions" class="px-4 py-3">
-            <div class="flex items-center justify-center gap-2">
-              <!-- Edit button -->
-              <button v-if="hasInvoiceNotes(invoice)" type="button" @click="openNotesModal(invoice)"
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition hover:bg-amber-200"
-                title="مشاهده توضیحات">
-                <span class="text-base font-black leading-none">!</span>
-              </button>
+          <td v-if="showActions" class="py-3">
+            <div class="flex justify-center items-center gap-2">
               <button @click="$emit('edit', invoice)"
-                class="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded-lg text-xs font-medium transition"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
                 title="ویرایش">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                ویرایش
               </button>
-
-              <!-- Delete button -->
               <button @click="$emit('delete', invoice.id)"
-                class="flex items-center gap-1 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded-lg text-xs font-medium transition"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition"
                 title="حذف">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                حذف
+              </button>
+              <button v-if="hasInvoiceNotes(invoice)" type="button" @click="openNotesModal(invoice)"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-200 text-yellow-700 transition hover:bg-yellow-300"
+                title="مشاهده توضیحات">
+                <span class="text-base font-black leading-none">!</span>
+              </button>
+              <button v-else
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-50 text-neutral-400 transition"
+                disabled>
+                <span class="text-base font-black leading-none">!</span>
               </button>
             </div>
           </td>

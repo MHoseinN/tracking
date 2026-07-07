@@ -5,7 +5,6 @@
         <div class="border-b border-slate-100 px-6 py-5">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold tracking-[0.3em] text-slate-400">CATEGORY</p>
               <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ category?.id ? 'ویرایش دسته‌بندی' : 'افزودن دسته‌بندی' }}</h2>
             </div>
             <button

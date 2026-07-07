@@ -1,11 +1,10 @@
 <template>
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 p-4">
-      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-[0_32px_100px_rgba(15,23,42,0.28)]">
+      <div class="max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-[0_32px_100px_rgba(15,23,42,0.28)]">
         <div class="border-b border-slate-100 px-6 py-5">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold tracking-[0.3em] text-slate-400">PRODUCT</p>
               <h2 class="mt-2 text-2xl font-bold text-slate-900">
                 {{ isEdit ? 'ویرایش محصول' : 'افزودن محصول جدید' }}
               </h2>
@@ -30,12 +29,12 @@
                 v-model.trim="form.name"
                 type="text"
                 class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                placeholder="مثلا اسپیکر JBL"
+                placeholder="دوربین A7 IV"
               />
             </label>
 
             <label class="space-y-2">
-              <span class="text-sm font-semibold text-slate-700">تعداد موجودی</span>
+              <span class="text-sm font-semibold text-slate-700">تعداد محصول</span>
               <input
                 v-model.number="form.total_quantity"
                 type="number"
@@ -59,16 +58,6 @@
               <span class="font-semibold text-slate-800">شاخه انتخاب‌شده:</span>
               {{ selectedCategoryLabel || 'هنوز شاخه‌ای انتخاب نشده است' }}
             </div>
-          </label>
-
-          <label class="block space-y-2">
-            <span class="text-sm font-semibold text-slate-700">یادداشت</span>
-            <textarea
-              v-model.trim="form.notes"
-              rows="4"
-              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              placeholder="توضیح کوتاه درباره وضعیت، مدل، یا نکته‌های مهم محصول"
-            ></textarea>
           </label>
 
           <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">

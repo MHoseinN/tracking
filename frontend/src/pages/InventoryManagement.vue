@@ -1,36 +1,37 @@
 <template>
-  <div
-    class="min-h-screen bg-[radial-gradient(circle_at_top,#eff6ff,transparent_34%),linear-gradient(180deg,#f8fbff_0%,#f8fafc_48%,#f1f5f9_100%)]">
-    <header class="sticky top-2 z-20 mx-auto max-w-7xl px-4 pt-4">
+  <div class="min-h-screen bg-gray-50">
+    <header class="sticky top-4 z-20 mx-auto max-w-7xl px-4">
       <section
-        class="rounded-[2rem] border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div class="grid gap-6 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-6">
+        class="rounded-lg border border-slate-200 bg-neutral-100 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div class="grid grid-flow-col px-4 py-4">
           <div>
-            <h1 class="mt-3 text-2xl font-black text-slate-900 sm:text-3xl">مدیریت رزرو </h1>
+            <h1 class="text-2xl font-black text-slate-900 ">مدیریت رزرو </h1>
           </div>
 
-          <div class="flex flex-wrap items-start justify-end gap-3">
-            <button type="button"
-              class="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              @click="router.push('/home')">
-              بازگشت
-            </button>
+          <div class="flex flex-wrap items-center justify-center gap-3">
             <button type="button"
               class="inline-flex h-12 items-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
               @click="router.push('/inventory/manage')">
               مدیریت محصولات
             </button>
             <button type="button"
-              class="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+              class="inline-flex h-12 items-center gap-2 rounded-2xl bg-amber-400 px-4 text-sm font-semibold text-white shadow-lg shadow-amber-500/20 transition hover:bg-amber-500"
               @click="router.push('/inventory/reservations/new')">
               <span>سبد رزرو</span>
               <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">{{
                 reservationCart.totalQuantity.toLocaleString('fa-IR') }}</span>
             </button>
             <button type="button"
-              class="inline-flex h-12 items-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+              class="inline-flex h-12 items-center rounded-2xl border border-emerald-200 bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700"
               @click="router.push('/inventory/reservations/active')">
-               رزروها
+              رزروها
+            </button>
+          </div>
+          <div class="flex justify-end">
+            <button type="button"
+              class="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              @click="router.push('/home')">
+              بازگشت
             </button>
           </div>
         </div>
@@ -38,25 +39,24 @@
     </header>
 
     <main class="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-      <aside class="space-y-5 xl:sticky xl:top-28 xl:h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
-        <section
-          class="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <div class="flex min-h-0 flex-1 flex-col gap-4">
+      <aside class="space-y-5 xl:sticky xl:self-start xl:overflow-hidden">
+        <section class="flex h-full min-h-0 flex-col rounded-lg border border-slate-200 bg-white/90 p-2">
+          <div class="flex min-h-0 flex-1 flex-col gap-2">
             <div class="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
+              <input v-model.trim="searchTerm" type="text" placeholder="جستجو   "
+                class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
               <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
               </svg>
-              <input v-model.trim="searchTerm" type="text" placeholder="جستجو در محصول و مشتری"
-                class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
             </div>
 
             <JalaliDatePicker :model-value="rangeStartPersian" trigger-mode="button" button-placeholder="از تاریخ"
-              button-class="h-11 w-full justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm"
+              button-class="h-11 w-full flex-row-reverse justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm"
               @update:model-value="rangeStartPersian = $event" />
 
             <JalaliDatePicker :model-value="rangeEndPersian" trigger-mode="button" button-placeholder="تا تاریخ"
-              button-class="h-11 w-full justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm"
+              button-class="h-11 w-full flex-row-reverse justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm"
               @update:model-value="rangeEndPersian = $event" />
 
             <CustomSelect :model-value="statusFilter" :options="statusOptions" placeholder="وضعیت"
@@ -75,7 +75,7 @@
                 پاک کردن
               </button>
             </div>
-            <div class="flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-3">
+            <div class="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-3">
               <div class="flex min-h-0 flex-1 flex-col space-y-1">
                 <button type="button" class="w-full rounded-2xl px-3 py-2 text-right text-sm font-semibold transition"
                   :class="selectedCategoryId ? 'text-slate-700 hover:bg-white' : 'bg-blue-50 text-blue-700'"
@@ -95,8 +95,8 @@
 
       <section class="space-y-5">
 
-        <section class="rounded-[1.75rem] border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4">
+        <section class="rounded-lg border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
+          <div class="flex flex-wrap items-center justify-between p-4">
             <div>
               <h2 class="text-lg font-black text-slate-900">محصولات {{ selectedCategoryObject?.name || 'همه دسته‌ها' }}
               </h2>
@@ -108,60 +108,62 @@
           <div v-else-if="paginatedGroups.length === 0" class="px-4 py-16 text-center text-sm text-slate-500">موردی پیدا
             نشد.</div>
 
-          <div v-else class="space-y-3 p-3">
+          <div v-else class="space-y-2 px-4">
             <article v-for="group in paginatedGroups" :key="group.product_id"
-              class="rounded-[1.5rem] border border-slate-200 bg-white p-3">
-              <div class="flex flex-wrap items-center justify-between gap-3 pb-3">
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-slate-900 px-3 py-1 text-[11px] font-semibold text-white">{{
-                      group.category_name || 'بدون دسته‌بندی' }}</span>
-                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">{{
-                      formatNumber(group.available_units) }} آزاد</span>
-                    <span class="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold text-rose-700">{{
-                      formatNumber(group.reserved_units) }} رزرو</span>
-                    <span v-if="reservationCart.getProductQuantity(group.product_id)"
-                      class="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700">
-                      {{ formatNumber(reservationCart.getProductQuantity(group.product_id)) }} در سبد
-                    </span>
+              class="rounded-lg border border-slate-200 bg-white p-4">
+              <div class="pb-2">
+                <div class="min-w-0 flex items-center justify-between gap-2">
+                  <div class="flex gap-4">
+                    <h3 class="truncate text-base font-black text-slate-900">{{ group.product_name }}</h3>
+                    <div class="flex gap-1">
+                      <span class="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">{{
+                        formatNumber(group.available_units) }} آزاد</span>
+                      <span class="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold text-rose-700">{{
+                        formatNumber(group.reserved_units) }} رزرو</span>
+                      <span v-if="reservationCart.getProductQuantity(group.product_id)"
+                        class="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700">
+                        {{ formatNumber(reservationCart.getProductQuantity(group.product_id)) }} در سبد
+                      </span>
+                    </div>
                   </div>
-                  <h3 class="mt-2 truncate text-base font-black text-slate-900">{{ group.product_name }}</h3>
+                  <div class="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                    {{ formatNumber(group.total_units) }}عدد </div>
+
                 </div>
-                <div class="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                  {{ formatNumber(group.total_units) }}عدد </div>
               </div>
 
-              <div class="flex flex-wrap gap-2">
+              <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
                 <article v-for="unit in group.units" :key="unit.unit_id"
-                  class="w-[168px] rounded-2xl border p-2 transition hover:-translate-y-0.5 hover:shadow-md"
+                  class="w-32 rounded-2xl border p-2 transition hover:-translate-y-0.5 hover:shadow-lg"
                   :class="unit.status === 'reserved' ? 'border-rose-200 bg-rose-50/80' : 'border-emerald-200 bg-emerald-50/80'">
                   <button type="button" class="block w-full text-right" @click="openUnitModal(unit)">
-                  <div class="flex items-start justify-between gap-2">
-                    <span class="text-[11px] font-black text-slate-700">شماره {{ formatNumber(unit.unit_number) }}</span>
-                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                      :class="unit.status === 'reserved' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'">
-                      {{ unit.status === 'reserved' ? 'رزرو' : 'آزاد' }}
-                    </span>
-                  </div>
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="text-[11px] font-black text-slate-700">شماره {{ formatNumber(unit.unit_number)
+                      }}</span>
+                      <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        :class="unit.status === 'reserved' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'">
+                        {{ unit.status === 'reserved' ? 'رزرو' : 'آزاد' }}
+                      </span>
+                    </div>
 
-                  <p class="mt-2 min-h-[32px] text-[11px] leading-5 text-slate-700">
-                    {{ unit.status === 'reserved' ? unit.customer_name || 'رزرو شده' : 'آماده برای رزرو' }}
-                  </p>
-                  <p class="text-[10px] text-slate-500">
-                    {{ unit.status === 'reserved' ? formatUnitDates(unit) : 'بدون رزرو فعال در بازه انتخابی' }}
-                  </p>
+                    <p class="mt-2 min-h-[32px] text-[11px] leading-5 text-slate-700">
+                      {{ unit.status === 'reserved' ? unit.customer_name || 'رزرو شده' : 'آماده برای رزرو' }}
+                    </p>
+                    <p class="text-[10px] text-slate-500">
+                      {{ unit.status === 'reserved' ? formatUnitDates(unit) : 'بدون رزرو فعال در بازه انتخابی' }}
+                    </p>
                   </button>
 
                   <div v-if="unit.status !== 'reserved'" class="mt-3 grid gap-2">
                     <button type="button"
                       class="inline-flex h-8 items-center justify-center rounded-xl bg-blue-600 px-2 text-[11px] font-semibold text-white transition hover:bg-blue-700"
                       @click.stop="openUnitModal(unit)">
-                      رزرو مستقیم
+                      رزرو 
                     </button>
                     <button type="button"
                       class="inline-flex h-8 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
                       @click.stop="addUnitToCart(group)">
-                      افزودن به سبد رزرو
+                      افزودن به سبد 
                     </button>
                   </div>
 

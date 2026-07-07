@@ -1,12 +1,9 @@
 ﻿<template>
   <div class="min-h-screen bg-gray-50" dir="rtl">
-    <header class="sticky top-0 z-10 bg-white shadow-sm">
+    <header class="sticky top-0 z-10 bg-white shadow-md">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
         <div class="min-w-0">
-          <p class="text-xs font-medium text-slate-500">صفحه اختصاصی کاربر</p>
-          <h1 class="truncate text-xl font-black text-slate-800 sm:text-2xl">
-            {{ customer?.name || 'کاربر' }}
-          </h1>
+          <p class="text-xl font-bold text-zinc-700">صفحه اختصاصی کاربر</p>
         </div>
 
         <div class="flex items-center gap-2">
@@ -21,13 +18,15 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl space-y-6 px-4 py-6">
+    <main class="mx-auto max-w-7xl space-y-4 p-4">
 
-      <section class="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+      <section class="overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-gray-100">
         <button type="button" @click="isCustomerInfoOpen = !isCustomerInfoOpen"
-          class="flex w-full items-center justify-between border-b border-slate-100 bg-slate-50/70 px-5 py-4 text-right transition hover:bg-slate-100/80 sm:px-6">
+          class="flex w-full items-center justify-between border-b border-white-100 bg-white-50/70 px-5 py-4 text-right transition hover:bg-gray-100/80 sm:px-6">
           <div>
-            <h2 class="text-lg font-bold text-slate-800"> اطلاعات کاربر</h2>
+            <h1 class="truncate text-xl font-black text-slate-800 sm:text-2xl">
+              {{ customer?.name || 'کاربر' }}
+            </h1>
           </div>
           <span
             class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200">
@@ -39,16 +38,7 @@
         </button>
 
         <div v-if="isCustomerInfoOpen" class="space-y-5 px-5 py-5 sm:px-6">
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
-              <p class="text-sm text-slate-500">تعداد فاکتورها</p>
-              <p class="mt-2 text-3xl font-black text-blue-600">{{ totalInvoicesCount.toLocaleString('fa-IR') }}</p>
-            </div>
-            <div
-              class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-emerald-50 to-green-50 p-4">
-              <p class="text-sm text-slate-500">فاکتورهای تسویه شده</p>
-              <p class="mt-2 text-3xl font-black text-emerald-600">{{ settledCount.toLocaleString('fa-IR') }}</p>
-            </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div
               class="rounded-3xl text-center border border-slate-200 bg-gradient-to-br from-emerald-50 to-lime-50 p-4">
               <p class="text-sm text-slate-500">مبلغ تسویه شده</p>
@@ -95,7 +85,6 @@
 
           <div class="grid gap-4 xl:grid-cols-[1fr_280px] xl:items-start">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">درباره مشتری</label>
               <textarea v-model="customerNotesDraft" rows="7" placeholder="درباره این مشتری بنویسید..."
                 class="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"></textarea>
             </div>
@@ -110,12 +99,12 @@
               </div>
 
               <button :disabled="customerFormSaving || !customerFormChanged" @click="saveCustomerForm"
-                class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50">
                 <svg v-if="customerFormSaving" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
-                {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات کاربر' }}
+                {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات ' }}
               </button>
             </div>
           </div>
@@ -123,9 +112,9 @@
       </section>
 
       <section class="overflow-hidden rounded-xl bg-white shadow">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-4">
 
-          <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false"
+          <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false" :show-icon-input="false" :searchIcon="false"
             @update:date-model-value="searchDate = $event" @update:filter-model-value="statusFilter = $event"
             @clear="clearSearch" />
 

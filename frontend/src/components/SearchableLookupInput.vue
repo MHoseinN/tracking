@@ -44,9 +44,9 @@
           :style="dropdownStyle"
           @click.stop
         >
-          <div class="border-b border-slate-100 px-4 py-3 text-xs font-semibold tracking-[0.2em] text-slate-400">
+          <!-- <div class="border-b border-slate-100 px-4 py-3 text-xs font-semibold tracking-[0.2em] text-slate-400">
             {{ headerText }}
-          </div>
+          </div> -->
 
           <div class="overflow-y-auto p-2" :style="{ maxHeight: dropdownStyle.maxHeight }">
             <button

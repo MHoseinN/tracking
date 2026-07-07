@@ -1,18 +1,18 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="max-w-7xl mx-auto bg-white shadow-sm sticky top-2 z-10 rounded-lg">
+    <header class="max-w-7xl mx-auto bg-white shadow-md sticky top-2 z-10 rounded-lg">
       <section
         class="relative overflow-visible border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] rounded-lg">
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-emerald-50 pointer-events-none rounded-lg">
+        <div class="absolute inset-0 bg-neutral-100 pointer-events-none rounded-lg">
         </div>
-        <div class="relative p-3 sm:p-5 space-y-5">
-          <div class="flex gap-4 items-center justify-between">
+        <div class="relative p-4 space-y-4">
+          <div class="flex items-center justify-between">
             <div
               class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
               <button @click="navigateToCharts"
                 class="inline-flex h-12 items-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100">
-                آمار                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                آمار <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -54,14 +54,6 @@
             </div>
             <div
               class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
-              <button @click="exportInvoices"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
-                گزارش
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
               <button @click="handleManualBackup" :disabled="backupLoading"
                 class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-200 px-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
                 {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
@@ -85,18 +77,28 @@
     </header>
 
     <!-- Main content -->
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <main class="max-w-7xl mx-auto py-4">
       <!-- Invoice table -->
-      <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="px-4 py-4 items-center justify-center gap-3">
-          <div>
-            <div class="rounded-3xl bg-white/95">
-              <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
-                :filter-model-value="statusFilter" text-placeholder="نام یا نام‌خانوادگی مشتری..."
-                @update:text-model-value="searchCustomerName = $event" @update:date-model-value="searchDate = $event"
-                @update:filter-model-value="statusFilter = $event" @clear="clearSearch" />
+      <div class=" bg-white rounded-xl shadow overflow-hidden">
+        <div class=" px-4 py-4 items-center justify-center gap-3">
+            <div class="flex justify-center items-center gap-4 rounded-3xl bg-white/95">
+              <div class="w-full">
+                <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
+                  :filter-model-value="statusFilter" 
+                  @update:text-model-value="searchCustomerName = $event" @update:date-model-value="searchDate = $event"
+                  @update:filter-model-value="statusFilter = $event" @clear="clearSearch" />
+              </div>
+              <div>
+                <button @click="exportInvoices"
+                  class="inline-flex h-14 items-center gap-2 rounded-2xl border border-sky-100 bg-sky-50 px-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+                  گزارش
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
         </div>
 
         <!-- Loading state -->

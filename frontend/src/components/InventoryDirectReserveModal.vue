@@ -1,13 +1,11 @@
 <template>
   <Teleport to="body">
     <div v-if="isOpen && unit" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 p-4">
-      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-[0_32px_100px_rgba(15,23,42,0.28)]">
-        <div class="border-b border-slate-100 px-6 py-5">
+      <div class="max-h-[90vh]  overflow-y-auto rounded-xl bg-white shadow-[0_32px_100px_rgba(15,23,42,0.28)]">
+        <div class="border-b border-slate-100 px-4 py-4">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold tracking-[0.3em] text-slate-400">DIRECT RESERVE</p>
-              <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ unit?.reservation_item_id ? 'ویرایش رزرو واحد' : 'رزرو مستقیم واحد' }}</h2>
-              <p class="mt-2 text-sm text-slate-500">{{ unit.product_name }} - واحد {{ Number(unit.unit_number || 0).toLocaleString('fa-IR') }}</p>
+              <h1>{{ unit.product_name }} -  {{ Number(unit.unit_number || 0).toLocaleString('fa-IR') }} عدد</h1>
             </div>
             <button
               type="button"
@@ -21,14 +19,13 @@
           </div>
         </div>
 
-        <form class="space-y-5 px-6 py-6" @submit.prevent="handleSubmit">
+        <form class="space-y-5 px-4 py-4" @submit.prevent="handleSubmit">
           <div class="grid gap-5 md:grid-cols-2">
             <label class="space-y-2 md:col-span-2">
               <span class="text-sm font-semibold text-slate-700">نام مشتری</span>
               <SearchableLookupInput
                 v-model="customerName"
                 :options="customerOptions"
-                header-text="مشتری‌ها"
                 no-results-text="مشتری‌ای پیدا نشد. می‌توانی نام جدید را دستی وارد کنی."
                 placeholder="نام مشتری را وارد کن یا از لیست انتخاب کن"
                 @select="handleCustomerSelect"
@@ -55,19 +52,9 @@
             </label>
           </div>
 
-          <label class="block space-y-2">
-            <span class="text-sm font-semibold text-slate-700">یادداشت</span>
-            <textarea
-              v-model.trim="notes"
-              rows="4"
-              class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              placeholder="اگر توضیحی برای این رزرو داری اینجا بنویس"
-            ></textarea>
-          </label>
-
-          <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <div class="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-slate-600">
             مدت رزرو:
-            <span class="font-semibold text-slate-800">{{ durationLabel }}</span>
+            <span class="font-semibold text-rose-600">{{ durationLabel }}</span>
           </div>
 
           <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
