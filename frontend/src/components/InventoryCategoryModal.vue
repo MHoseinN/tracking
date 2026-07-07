@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 p-4">
-      <div class="w-full max-w-xl rounded-[2rem] bg-white shadow-[0_32px_100px_rgba(15,23,42,0.28)]">
+      <div class="w-full max-w-xl rounded-xl bg-white shadow-[0_32px_100px_rgba(15,23,42,0.28)]">
         <div class="border-b border-slate-100 px-6 py-5">
           <div class="flex items-center justify-between gap-4">
             <div>
@@ -9,7 +9,7 @@
             </div>
             <button
               type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
               @click="$emit('close')"
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +25,7 @@
             <input
               v-model.trim="name"
               type="text"
-              class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              class="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               placeholder="مثلا سونی یا نورپردازی"
             />
           </label>
@@ -40,20 +40,20 @@
               v-model.trim="parentName"
               list="category-parent-options"
               type="text"
-              class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              class="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               placeholder="نام دسته والد را بنویس"
               @input="syncParentId"
             />
           </label>
 
-          <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <p v-if="errorMessage" class="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
             {{ errorMessage }}
           </p>
 
           <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
             <button
               type="button"
-              class="h-12 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              class="h-12 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               @click="$emit('close')"
             >
               انصراف
@@ -61,7 +61,7 @@
             <button
               type="submit"
               :disabled="saving"
-              class="h-12 rounded-2xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              class="h-12 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {{ saving ? 'در حال ذخیره...' : 'ذخیره دسته‌بندی' }}
             </button>

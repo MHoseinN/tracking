@@ -2,7 +2,7 @@
   <div class="space-y-1">
     <button
       type="button"
-      class="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-right text-sm transition"
+      class="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-right text-sm transition"
       :class="isSelected ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'"
       @click="handleClick"
     >

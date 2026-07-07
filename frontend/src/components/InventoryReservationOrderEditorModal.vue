@@ -5,7 +5,7 @@
       class="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/45 p-3 sm:p-5"
       @click.self="emit('cancel')"
     >
-      <div class="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_120px_rgba(15,23,42,0.26)]">
+      <div class="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_30px_120px_rgba(15,23,42,0.26)]">
         <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <p class="text-xs font-semibold tracking-[0.28em] text-slate-400">RESERVATION EDITOR</p>
@@ -13,7 +13,7 @@
           </div>
           <button
             type="button"
-            class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
             @click="emit('cancel')"
           >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +25,7 @@
         <div class="flex-1 overflow-y-auto px-5 py-5">
           <section class="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
             <div class="space-y-5">
-              <section class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <section class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                 <div class="grid gap-4 md:grid-cols-2">
                   <label class="space-y-2 md:col-span-2">
                     <span class="text-sm font-semibold text-slate-700">مشتری</span>
@@ -44,7 +44,7 @@
                     <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
                     <JalaliDatePicker
                       :model-value="startDatePersian"
-                      input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                      input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                       @update:model-value="startDatePersian = $event"
                     />
                   </label>
@@ -53,14 +53,14 @@
                     <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
                     <JalaliDatePicker
                       :model-value="endDatePersian"
-                      input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                      input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                       @update:model-value="endDatePersian = $event"
                     />
                   </label>
                 </div>
               </section>
 
-              <section class="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+              <section class="rounded-xl border border-slate-200 bg-white p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h3 class="text-base font-black text-slate-900">اقلام رزرو</h3>
@@ -79,11 +79,11 @@
                   </div>
                 </div>
 
-                <div v-if="items.length === 0" class="mt-4 rounded-[1.25rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                <div v-if="items.length === 0" class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
                   حداقل یک محصول باید در رزرو باقی بماند.
                 </div>
 
-                <div v-else class="mt-4 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+                <div v-else class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
                   <div class="grid grid-cols-[minmax(0,1.2fr)_86px_120px_90px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
                     <span>محصول</span>
                     <span class="text-center">تعداد</span>
@@ -109,7 +109,7 @@
                         {{ Number(item.quantity).toLocaleString('fa-IR') }}
                       </div>
 
-                      <div class="flex items-center justify-center gap-1 rounded-2xl bg-slate-50 px-2 py-2">
+                      <div class="flex items-center justify-center gap-1 rounded-xl bg-slate-50 px-2 py-2">
                         <button
                           type="button"
                           class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
@@ -150,25 +150,25 @@
             </div>
 
             <aside class="space-y-4">
-              <section class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <section class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                 <h3 class="text-sm font-black text-slate-900">خلاصه سریع</h3>
                 <div class="mt-3 grid gap-3">
-                  <div class="rounded-2xl bg-white px-4 py-3">
+                  <div class="rounded-xl bg-white px-4 py-3">
                     <p class="text-xs font-semibold text-slate-500">نام مشتری</p>
                     <p class="mt-1 text-sm font-bold text-slate-900">{{ customerName || 'وارد نشده' }}</p>
                   </div>
-                  <div class="rounded-2xl bg-white px-4 py-3">
+                  <div class="rounded-xl bg-white px-4 py-3">
                     <p class="text-xs font-semibold text-slate-500">بازه رزرو</p>
                     <p class="mt-1 text-sm font-bold text-slate-900">{{ startDatePersian || '-' }} تا {{ endDatePersian || '-' }}</p>
                   </div>
-                  <div class="rounded-2xl bg-white px-4 py-3">
+                  <div class="rounded-xl bg-white px-4 py-3">
                     <p class="text-xs font-semibold text-slate-500">تعداد کل اقلام</p>
                     <p class="mt-1 text-sm font-bold text-slate-900">{{ totalQuantity.toLocaleString('fa-IR') }} واحد</p>
                   </div>
                 </div>
               </section>
 
-              <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              <p v-if="errorMessage" class="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
                 {{ errorMessage }}
               </p>
 
@@ -176,7 +176,7 @@
                 <button
                   type="button"
                   :disabled="loading"
-                  class="inline-flex h-12 items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  class="inline-flex h-12 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   @click="submit"
                 >
                   {{ loading ? 'در حال ذخیره...' : 'ذخیره تغییرات رزرو' }}
@@ -184,7 +184,7 @@
                 <button
                   type="button"
                   :disabled="loading"
-                  class="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   @click="emit('cancel')"
                 >
                   بستن

@@ -1,41 +1,19 @@
 <template>
-  <div
-    class="min-h-screen bg-gray-50">
-    <header class="sticky top-4 z-20 mx-auto max-w-7xl px-4">
-      <section
-        class="rounded-lg border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div class="flex items-center justify-between  px-4 py-4 lg:px-6">
-          <div>
-            <h1 class="text-2xl font-black text-slate-900 sm:text-3xl"> محصولات </h1>
-          </div>
-          <div class="flex gap-2">
-            <button type="button"
-              class="inline-flex h-12 items-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
-              @click="openCategoryModal()">
-              افزودن دسته‌بندی
-            </button>
-            <button type="button"
-              class="inline-flex h-12 items-center rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
-              @click="openProductModal()">
-              افزودن محصول
-            </button>
-          </div>
-          <div>
-            <button type="button"
-              class="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              @click="router.push('/inventory')">
-              بازگشت   
-            </button>
-          </div>
-        </div>
-  </section>
-  </header>
+  <AppShell title="مدیریت محصولات" subtitle="دسته‌بندی‌ها و محصولات انبار را با همان منطق فعلی، در ساختار جدید و یکدست مدیریت کن">
+  <template #actions>
+    <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
+    <button type="button" @click="openProductModal()" class="app-button-success w-full">افزودن محصول</button>
+    <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })" class="app-button-secondary w-full disabled:opacity-50">افزودن زیرشاخه</button>
+    <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)" class="app-button-secondary w-full disabled:opacity-50">ویرایش دسته</button>
+    <button type="button" :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true" class="app-button w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف دسته</button>
+    <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به رزرو</button>
+  </template>
 
-  <main class="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+  <div class="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
     <aside
-      class="rounded-[2rem] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.06)] xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
+      class="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.06)] xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
       <div class="flex h-full min-h-0 flex-col space-y-4">
-        <div class="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm">
+        <div class="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 shadow-sm">
           <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
@@ -45,14 +23,14 @@
         </div>
 
         <div class="min-h-0 flex-1 space-y-2">
-          <button type="button" class="w-full rounded-2xl px-3 py-2 text-right text-sm font-semibold transition"
+          <button type="button" class="w-full rounded-xl px-3 py-2 text-right text-sm font-semibold transition"
             :class="selectedCategoryId ? 'text-slate-700 hover:bg-slate-50' : 'bg-blue-50 text-blue-700'"
             @click="selectedCategoryId = null">
             همه دسته‌ها
           </button>
 
           <button type="button" :disabled="!selectedCategoryObject"
-            class="w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-right text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            class="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-right text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
             @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">
             افزودن زیرشاخه به دسته انتخاب‌شده
           </button>
@@ -62,44 +40,13 @@
             <CategoryTreeItem v-for="node in filteredTree" :key="node.id" :node="node" :selected-id="selectedCategoryId"
               @select="selectedCategoryId = $event.id" />
           </div>
-          <p v-else class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
+          <p v-else class="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
         </div>
       </div>
     </aside>
 
     <section class="space-y-6">
-      <section class="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <div class="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm">
-            <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-            </svg>
-            <input v-model.trim="productSearch" type="text" placeholder="جستجوی لحظه‌ای در محصولات همین شاخه..."
-              class="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
-          </div>
-
-          <div class="flex flex-wrap gap-3">
-            <button type="button" :disabled="!selectedCategoryObject"
-              class="inline-flex h-12 items-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">
-              افزودن زیرشاخه
-            </button>
-            <button type="button" :disabled="!selectedCategoryObject"
-              class="inline-flex h-12 items-center rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="openCategoryModal(selectedCategoryObject)">
-              ویرایش دسته
-            </button>
-            <button type="button" :disabled="!selectedCategoryObject"
-              class="inline-flex h-12 items-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="showDeleteCategoryModal = true">
-              حذف دسته
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="rounded-[2rem] border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
+      <section class="rounded-xl border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5">
           <div>
             <h2 class="text-xl font-black text-slate-900">محصولات {{ selectedCategoryObject?.name || 'همه شاخه‌ها' }}
@@ -109,13 +56,49 @@
           </div>
         </div>
 
-        <div v-if="inventoryStore.loading" class="px-5 py-16 text-center text-sm text-slate-500">
-          در حال بارگذاری...
+        <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div class="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 shadow-sm">
+              <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+              <input v-model.trim="productSearch" type="text" placeholder="جستجوی لحظه‌ای در محصولات همین شاخه..."
+                class="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+              <button type="button" :disabled="!selectedCategoryObject"
+                class="inline-flex h-12 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">
+                افزودن زیرشاخه
+              </button>
+              <button type="button" :disabled="!selectedCategoryObject"
+                class="inline-flex h-12 items-center rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="openCategoryModal(selectedCategoryObject)">
+                ویرایش دسته
+              </button>
+              <button type="button" :disabled="!selectedCategoryObject"
+                class="inline-flex h-12 items-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="showDeleteCategoryModal = true">
+                حذف دسته
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div v-else-if="visibleProducts.length === 0" class="px-5 py-16 text-center text-sm text-slate-500">
-          محصولی برای این شاخه پیدا نشد.
-        </div>
+        <AppContentState
+          v-if="inventoryStore.loading"
+          loading
+          message="در حال بارگذاری..."
+          surface-class="border-0 bg-transparent px-5 py-16 shadow-none"
+        />
+
+        <AppContentState
+          v-else-if="visibleProducts.length === 0"
+          message="محصولی برای این شاخه پیدا نشد."
+          surface-class="border-0 bg-transparent px-5 py-16 shadow-none"
+        />
 
         <div v-else class="divide-y divide-slate-100">
           <article v-for="product in visibleProducts" :key="product.id"
@@ -134,12 +117,12 @@
 
             <div class="flex flex-wrap gap-2">
               <button type="button"
-                class="inline-flex h-11 items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                class="inline-flex h-11 items-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
                 @click="openProductModal(product)">
                 ویرایش
               </button>
               <button type="button"
-                class="inline-flex h-11 items-center rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                class="inline-flex h-11 items-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 @click="openDeleteProduct(product)">
                 حذف
               </button>
@@ -148,7 +131,7 @@
         </div>
       </section>
     </section>
-  </main>
+  </div>
 
   <InventoryCategoryModal :is-open="showCategoryModal" :category="selectedCategoryForModal"
     :categories="flatCategoryOptions" :saving="savingCategory" @close="closeCategoryModal" @save="handleSaveCategory" />
@@ -162,13 +145,15 @@
 
   <ConfirmModal :is-open="showDeleteProductModal" title="حذف محصول" :message="deleteProductMessage" :loading="deleting"
     @confirm="handleDeleteProduct" @cancel="showDeleteProductModal = false" />
-  </div>
+  </AppShell>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import AppContentState from '../components/AppContentState.vue';
+import AppShell from '../components/AppShell.vue';
 import CategoryTreeItem from '../components/CategoryTreeItem.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import InventoryCategoryModal from '../components/InventoryCategoryModal.vue';

@@ -2,7 +2,7 @@
   <div ref="rootRef" class="relative" :class="wrapperClass">
     <div
       ref="triggerRef"
-      class="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100"
+      class="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100"
       :class="inputContainerClass"
       @click="focusInput"
     >
@@ -40,7 +40,7 @@
     <Teleport to="body">
       <div v-if="isOpen" class="fixed inset-0 z-[150]" @click="closeDropdown">
         <div
-          class="fixed z-[151] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+          class="fixed z-[151] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
           :style="dropdownStyle"
           @click.stop
         >
@@ -53,7 +53,7 @@
               v-for="option in filteredOptions"
               :key="String(option.value)"
               type="button"
-              class="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-right text-sm font-medium transition"
+              class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-right text-sm font-medium transition"
               :class="isExactMatch(option) ? 'bg-gradient-to-r from-blue-50 to-cyan-50 text-slate-900 shadow-sm ring-1 ring-blue-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
               @click="selectOption(option)"
             >
@@ -68,7 +68,7 @@
               </span>
             </button>
 
-            <p v-if="filteredOptions.length === 0" class="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">
+            <p v-if="filteredOptions.length === 0" class="rounded-xl bg-slate-50 px-4 py-4 text-sm text-slate-500">
               {{ noResultsText }}
             </p>
           </div>

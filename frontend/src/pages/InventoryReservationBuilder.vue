@@ -1,31 +1,17 @@
 <template>
-  <div class="min-h-screen bg-[radial-gradient(circle_at_top,#ecfeff,transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)]">
-    <header class="sticky top-2 z-20 mx-auto max-w-6xl px-4 pt-4">
-      <section class="rounded-[2rem] border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div class="flex flex-wrap items-start justify-between gap-4 px-5 py-5 lg:px-6">
-          <div>
-            <p class="text-xs font-semibold tracking-[0.34em] text-slate-400">RESERVATION CART</p>
-            <h1 class="mt-3 text-2xl font-black text-slate-900 sm:text-3xl">سبد رزرو</h1>
-            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              محصولات موردنیاز را کم یا زیاد کن، بعد مشتری و بازه تاریخ را مشخص کن و ثبت نهایی بزن.
-            </p>
-          </div>
+  <AppShell title="سبد رزرو" subtitle="محصولات را انتخاب کن، مشتری و بازه تاریخ را تعیین کن و رزرو را نهایی ثبت کن">
+    <template #actions>
+      <button type="button" :disabled="saving || cartItems.length === 0" class="app-button-success w-full" @click="submitReservation">
+        {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
+      </button>
+      <button type="button" :disabled="cartItems.length === 0" class="app-button-secondary w-full" @click="showClearCartConfirm = true">
+        خالی کردن سبد
+      </button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
+    </template>
 
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              class="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              @click="router.push('/inventory')"
-            >
-              بازگشت به انبار
-            </button>
-          </div>
-        </div>
-      </section>
-    </header>
-
-    <main class="mx-auto max-w-6xl px-4 py-6">
-      <section class="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
+    <div class="max-w-6xl">
+      <section class="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <h2 class="text-xl font-black text-slate-900">مشتری و اقلام سبد</h2>
@@ -36,7 +22,7 @@
             <button
               type="button"
               :disabled="saving || cartItems.length === 0"
-              class="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              class="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               @click="submitReservation"
             >
               {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
@@ -44,7 +30,7 @@
             <button
               type="button"
               :disabled="cartItems.length === 0"
-              class="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               @click="showClearCartConfirm = true"
             >
               خالی کردن سبد
@@ -72,7 +58,7 @@
                 <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
                 <JalaliDatePicker
                   :model-value="startDatePersian"
-                  input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   @update:model-value="startDatePersian = $event"
                 />
               </label>
@@ -81,20 +67,20 @@
                 <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
                 <JalaliDatePicker
                   :model-value="endDatePersian"
-                  input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   @update:model-value="endDatePersian = $event"
                 />
               </label>
 
               <label class="space-y-2">
                 <span class="text-sm font-semibold text-slate-700">مدت رزرو</span>
-                <div class="flex h-12 items-center rounded-2xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                <div class="flex h-12 items-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
                   {{ durationLabel }}
                 </div>
               </label>
             </div>
 
-            <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+            <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 class="text-base font-black text-slate-900">افزودن محصول به سبد</h3>
@@ -114,15 +100,15 @@
               </div>
             </div>
 
-            <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            <p v-if="errorMessage" class="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
               {{ errorMessage }}
             </p>
 
-            <div v-if="cartItems.length === 0" class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+            <div v-if="cartItems.length === 0" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
               سبد رزرو خالی است. از انبار یا همین جست‌وجو محصولات را اضافه کن.
             </div>
 
-            <div v-else class="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+            <div v-else class="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
                 <span>محصول</span>
                 <span class="text-center">آزاد</span>
@@ -145,7 +131,7 @@
                     {{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}
                   </div>
 
-                  <div class="flex items-center justify-center gap-1 rounded-2xl bg-slate-50 px-2 py-2">
+                  <div class="flex items-center justify-center gap-1 rounded-xl bg-slate-50 px-2 py-2">
                     <button
                       type="button"
                       class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
@@ -185,15 +171,15 @@
           </div>
 
           <aside class="space-y-4">
-            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+            <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <p class="text-sm font-semibold text-slate-500">تعداد آیتم‌های سبد</p>
               <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.totalQuantity.toLocaleString('fa-IR') }}</p>
             </article>
-            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+            <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <p class="text-sm font-semibold text-slate-500">محصولات متفاوت</p>
               <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.uniqueProductsCount.toLocaleString('fa-IR') }}</p>
             </article>
-            <article class="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+            <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <p class="text-sm font-semibold text-slate-500">بازه انتخابی</p>
               <p class="mt-3 text-sm font-bold text-slate-900">{{ startDatePersian }} تا {{ endDatePersian }}</p>
             </article>
@@ -220,14 +206,15 @@
         @confirm="confirmSubmitReservation"
         @cancel="showSubmitConfirm = false"
       />
-    </main>
-  </div>
+    </div>
+  </AppShell>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import AppShell from '../components/AppShell.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import JalaliDatePicker from '../components/JalaliDatePicker.vue';
 import SearchableLookupInput from '../components/SearchableLookupInput.vue';

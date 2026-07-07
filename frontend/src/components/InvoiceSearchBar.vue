@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
     <div
-      class="flex min-h-14 w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+      class="flex min-h-14 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
 
       <svg v-if="searchIcon" class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor"
         viewBox="0 0 24 24">
@@ -28,7 +28,7 @@
     </div>
 
     <CustomSelect :model-value="filterModelValue" :options="filterOptions"
-      trigger-class="h-14 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
+      trigger-class="h-14 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
       @update:model-value="$emit('update:filterModelValue', $event)" />
   </div>
 </template>

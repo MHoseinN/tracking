@@ -1,80 +1,66 @@
 <template>
-  <div class="min-h-screen bg-[radial-gradient(circle_at_top,#fff7ed,transparent_34%),linear-gradient(180deg,#fffdf8_0%,#f8fafc_48%,#fff7ed_100%)]">
-    <header class="sticky top-2 z-20 mx-auto max-w-7xl px-4 pt-4">
-      <section class="rounded-[2rem] border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div class="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-6">
-          <div>
-            <p class="text-xs font-semibold tracking-[0.32em] text-slate-400">ACTIVE RESERVATIONS</p>
-            <h1 class="mt-3 text-2xl font-black text-slate-900 sm:text-3xl">مدیریت محصولات رزروشده</h1>
-            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              رزروها تا زمانی که خودت آزادشان نکنی فعال می‌مانند. از این صفحه می‌توانی یک محصول، یک رزرو کامل، یا همه رزروها را آزاد کنی.
-            </p>
-          </div>
+  <AppShell title="مدیریت محصولات رزروشده" subtitle="رزروهای فعال را مرور کن، آن‌ها را ویرایش کن یا به‌صورت تکی و گروهی آزادسازی کن">
+    <template #actions>
+      <button type="button" :disabled="releasingAll || !orders.length" class="app-button-danger w-full" @click="showReleaseAllConfirm = true">
+        {{ releasingAll ? 'در حال آزادسازی...' : 'آزادسازی همه محصولات' }}
+      </button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
+    </template>
 
-          <div class="flex flex-wrap items-start justify-end gap-3">
-            <button
-              type="button"
-              class="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              @click="router.push('/inventory')"
-            >
-              بازگشت به انبار
-            </button>
-            <button
-              type="button"
-              :disabled="releasingAll || !orders.length"
-              class="inline-flex h-12 items-center rounded-2xl bg-rose-600 px-4 text-sm font-semibold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="showReleaseAllConfirm = true"
-            >
-              {{ releasingAll ? 'در حال آزادسازی...' : 'آزادسازی همه محصولات' }}
-            </button>
-          </div>
-        </div>
-      </section>
-    </header>
-
-    <main class="mx-auto max-w-7xl px-4 py-6">
+    <div class="max-w-7xl">
       <section class="mb-5 grid gap-4 md:grid-cols-3">
-        <article class="rounded-[1.5rem] border border-white/80 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <p class="text-sm font-medium text-slate-500">رزروهای فعال</p>
-          <p class="mt-3 text-3xl font-black text-slate-900">{{ orders.length.toLocaleString('fa-IR') }}</p>
-        </article>
-        <article class="rounded-[1.5rem] border border-white/80 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <p class="text-sm font-medium text-slate-500">محصولات رزروشده</p>
-          <p class="mt-3 text-3xl font-black text-slate-900">{{ totalItems.toLocaleString('fa-IR') }}</p>
-        </article>
-        <article class="rounded-[1.5rem] border border-white/80 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <p class="text-sm font-medium text-slate-500">نوع مستقیم</p>
-          <p class="mt-3 text-3xl font-black text-slate-900">{{ directReservations.toLocaleString('fa-IR') }}</p>
-        </article>
+        <AppStatCard
+          label="رزروهای فعال"
+          :value="orders.length.toLocaleString('fa-IR')"
+          value-class="text-slate-900 text-3xl"
+          container-class="rounded-xl border-white/80 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
+        />
+        <AppStatCard
+          label="محصولات رزروشده"
+          :value="totalItems.toLocaleString('fa-IR')"
+          value-class="text-slate-900 text-3xl"
+          container-class="rounded-xl border-white/80 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
+        />
+        <AppStatCard
+          label="نوع مستقیم"
+          :value="directReservations.toLocaleString('fa-IR')"
+          value-class="text-slate-900 text-3xl"
+          container-class="rounded-xl border-white/80 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
+        />
       </section>
 
-      <section class="mb-5 rounded-[1.5rem] border border-slate-200 bg-white/92 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-        <div class="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
-          <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-          </svg>
-          <input
-            v-model.trim="customerSearch"
-            type="text"
-            class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-            placeholder="جست‌وجوی لحظه‌ای بر اساس نام مشتری"
-          />
-        </div>
-      </section>
+      <AppContentState
+        v-if="inventoryStore.loading"
+        loading
+        message="در حال بارگذاری رزروهای فعال..."
+        surface-class="rounded-xl bg-white/92 px-4 py-16 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+      />
 
-      <section v-if="inventoryStore.loading" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-16 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-        در حال بارگذاری رزروهای فعال...
-      </section>
-
-      <section v-else-if="filteredOrders.length === 0" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-16 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-        فعلا محصول رزروشده‌ای وجود ندارد.
-      </section>
+      <AppContentState
+        v-else-if="filteredOrders.length === 0"
+        message="فعلا محصول رزروشده‌ای وجود ندارد."
+        surface-class="rounded-xl bg-white/92 px-4 py-16 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+      />
 
       <section v-else class="space-y-3">
+        <section class="rounded-xl border border-slate-200 bg-white/92 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+          <div class="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
+            <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+            </svg>
+            <input
+              v-model.trim="customerSearch"
+              type="text"
+              class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              placeholder="جست‌وجوی لحظه‌ای بر اساس نام مشتری"
+            />
+          </div>
+        </section>
+
         <article
           v-for="order in filteredOrders"
           :key="order.reservation_order_id"
-          class="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+          class="overflow-hidden rounded-xl border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
         >
           <button
             type="button"
@@ -103,7 +89,7 @@
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="inline-flex h-10 items-center rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                class="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                 @click.stop="openEditor(order)"
               >
                 ویرایش رزرو
@@ -111,12 +97,12 @@
               <button
                 type="button"
                 :disabled="Boolean(releasingOrders[order.reservation_order_id])"
-                class="inline-flex h-10 items-center rounded-2xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                class="inline-flex h-10 items-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                 @click.stop="pendingReleaseOrder = order"
               >
                 {{ releasingOrders[order.reservation_order_id] ? 'در حال آزادسازی...' : 'آزادسازی کل رزرو' }}
               </button>
-              <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500">
+              <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
                 <svg class="h-4 w-4 transition" :class="expandedOrders[order.reservation_order_id] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -125,7 +111,7 @@
           </button>
 
           <div v-if="expandedOrders[order.reservation_order_id]" class="border-t border-slate-100 px-4 py-4">
-            <div class="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
                 <span>محصول</span>
                 <span class="text-center">تعداد</span>
@@ -148,7 +134,7 @@
                     {{ groupedItem.quantity.toLocaleString('fa-IR') }}
                   </div>
 
-                  <div class="flex items-center justify-center gap-1 rounded-2xl bg-slate-50 px-2 py-2">
+                  <div class="flex items-center justify-center gap-1 rounded-xl bg-slate-50 px-2 py-2">
                     <button
                       type="button"
                       :disabled="Boolean(updatingOrders[order.reservation_order_id])"
@@ -215,14 +201,17 @@
         @confirm="pendingReleaseOrder ? releaseOrder(pendingReleaseOrder) : null"
         @cancel="pendingReleaseOrder = null"
       />
-    </main>
-  </div>
+    </div>
+  </AppShell>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import AppContentState from '../components/AppContentState.vue';
+import AppShell from '../components/AppShell.vue';
+import AppStatCard from '../components/AppStatCard.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import InventoryReservationOrderEditorModal from '../components/InventoryReservationOrderEditorModal.vue';
 import { useInventoryStore } from '../stores/inventoryStore';

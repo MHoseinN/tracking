@@ -1,46 +1,46 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div>
-            <h1 class="text-xl font-bold text-gray-800">مدیریت کاربران</h1>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button @click="goBack"
-            class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-            <span>بازگشت</span>
-            <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-5">
+  <AppShell title="مدیریت کاربران" subtitle="فهرست مشتری‌ها، وضعیت حساب و عملیات سریع مرتبط با کاربران را یکجا مدیریت کن">
+    <template #actions>
+      <button type="button" @click="openAddModal" class="app-button-primary w-full justify-between">
+        <span>افزودن کاربر</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+      <button type="button" @click="exportCustomers" class="app-button-secondary w-full justify-between">
+        <span>گزارش کاربران</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+      </button>
+      <button type="button" @click="clearFilters" class="app-button-secondary w-full">پاک کردن فیلترها</button>
+      <button @click="goBack" class="app-button-secondary w-full justify-between">
+        <span>بازگشت</span>
+        <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </template>
       <div v-if="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">
         {{ errorMessage }}
       </div>
 
       <section
-        class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        class="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/70 pointer-events-none">
         </div>
         <div class="relative p-5 space-y-5">
           <div class="flex items-center gap-4 flex-row-reverse justify-between">
             <div class="flex gap-3 items-center justify-between">
               <button type="button" @click="openAddModal"
-                class="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700">
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700">
                 افزودن کاربر
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
               </button>
               <button type="button" @click="exportCustomers"
-                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50  px-4 py-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
+                class="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50  px-4 py-4 text-sm font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:bg-sky-100">
                 گزارش‌
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -49,14 +49,16 @@
               </button>
             </div>
             <div class="grid grid-cols-5 gap-3">
-              <div class="rounded-3xl border text-center border-slate-200 bg-white/90 px-12 py-4 shadow-sm">
-                <p class="text-xs font-medium text-slate-500">تمامی کاربران</p>
-                <p class="mt-3 text-3xl font-black text-slate-800">{{ formatNumber(totalCustomers) }}</p>
-              </div>
+              <AppStatCard
+                label="تمامی کاربران"
+                :value="formatNumber(totalCustomers)"
+                value-class="text-3xl text-slate-800"
+                container-class="bg-white/90 px-12 py-4"
+              />
 
               <button v-for="item in statusSummary" :key="item.label" type="button"
                 @click="statusFilter = item.filterValue" :class="[
-                  'rounded-3xl border px-4 py-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
+                  'rounded-xl border px-4 py-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
                   item.containerClass,
                   statusFilter === item.filterValue ? 'ring-2 ring-offset-2 ring-slate-300' : ''
                 ]">
@@ -68,31 +70,10 @@
 
 
 
-          <div class="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
-            <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_240px_auto] xl:items-center">
-              <div class="relative">
-                <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21 21l-4.35-4.35m1.1-5.4a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
-                </svg>
-                <input v-model="searchQuery" type="search"
-                  placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pr-10 pl-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <CustomSelect :model-value="statusFilter" :options="accountStatusFilterOptions"
-                trigger-class="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                @update:model-value="statusFilter = $event" />
-              <button type="button" @click="clearFilters"
-                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                پاک کردن فیلترها
-              </button>
-            </div>
-          </div>
         </div>
       </section>
 
-      <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <h3 class="text-base font-bold text-slate-800">لیست کاربران</h3>
@@ -102,7 +83,35 @@
           </div>
         </div>
 
-        <div v-if="loading" class="flex items-center justify-center py-16 text-gray-500">در حال بارگذاری...</div>
+        <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+          <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_240px_auto] xl:items-center">
+            <div class="relative">
+              <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35m1.1-5.4a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
+              </svg>
+              <input v-model="searchQuery" type="search"
+                placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تماس، معرف یا وضعیت حساب..."
+                class="w-full rounded-xl border border-slate-200 bg-white p-4 pr-10 pl-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <CustomSelect :model-value="statusFilter" :options="accountStatusFilterOptions"
+              trigger-class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              @update:model-value="statusFilter = $event" />
+            <button type="button" @click="clearFilters"
+              class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+              پاک کردن فیلترها
+            </button>
+          </div>
+        </div>
+
+        <AppContentState
+          v-if="loading"
+          loading
+          message="در حال بارگذاری..."
+          surface-class="border-0 bg-transparent py-16 shadow-none"
+          text-class="text-gray-500"
+        />
 
         <div v-else class="overflow-x-auto">
           <table class="w-full min-w-[920px]">
@@ -138,11 +147,23 @@
                 <td class="px-4 py-3 text-sm text-gray-600">{{ row.phone || '-' }}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ row.referrer || '-' }}</td>
                 <td class="px-4 py-3 text-sm">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center justify-center gap-2">
                     <button @click.stop="openEditModal(row)"
-                      class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-md hover:bg-amber-200">ویرایش</button>
+                      class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition hover:bg-blue-200"
+                      title="ویرایش">
+                      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
                     <button @click.stop="handleDelete(row)"
-                      class="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-md hover:bg-rose-200">حذف</button>
+                      class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-700 transition hover:bg-red-200"
+                      title="حذف">
+                      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -155,51 +176,21 @@
             </tbody>
           </table>
 
-          <div v-if="!invoiceStore.loading && totalRows > 0"
-            class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
-            <div class="flex items-center justify-between gap-8">
-              <div>
-                <p class="text-sm text-gray-500">
-                  نمایش
-                  <span class="font-medium text-gray-700">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
-                  تا
-                  <span class="font-medium text-gray-700">{{ Math.min(rowStartIndex + pageSize,
-                    totalRows).toLocaleString('fa-IR') }}</span>
-                  از
-                  <span class="font-medium text-gray-700">{{ totalRows.toLocaleString('fa-IR') }}</span>
-                </p>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <div class="flex items-center gap-2 text-sm text-gray-500">
-                  <CustomSelect :model-value="pageSize" :options="pageSizeSelectOptions"
-                    trigger-class="min-w-[92px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                    @update:model-value="pageSize = Number($event)" />
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center justify-center gap-2">
-              <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-                class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-                قبلی
-              </button>
-
-              <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)" :class="page === currentPage
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
-                class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
-                {{ page.toLocaleString('fa-IR') }}
-              </button>
-
-              <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-                class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-                بعدی
-              </button>
-            </div>
-          </div>
+          <AppPagination
+            v-if="!invoiceStore.loading"
+            :total-rows="totalRows"
+            :row-start-index="rowStartIndex"
+            :page-size="pageSize"
+            :page-size-options="pageSizeSelectOptions"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :visible-page-numbers="visiblePageNumbers"
+            @update:page-size="pageSize = $event"
+            @go-to-page="goToPage"
+          />
         </div>
       </div>
-    </main>
+  </AppShell>
 
     <CustomerFormModal :is-open="showForm" :customer="selectedCustomer"
       :existing-customers="invoiceStore.customersOverview" @close="closeModal" @saved="handleCustomerSaved" />
@@ -212,7 +203,7 @@
     <Teleport to="body">
       <div v-if="false && showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
         @click.self="closeModal">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
           <div class="flex items-center justify-between p-5 border-b">
             <h3 class="text-lg font-bold text-gray-800">{{ editingId ? 'ویرایش کاربر' : 'افزودن کاربر' }}</h3>
             <button @click="closeModal" class="text-gray-400 hover:text-gray-600 transition">
@@ -275,15 +266,17 @@
         </div>
       </div>
     </Teleport>
-  </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import { useAuthStore } from '../stores/authStore';
 import { useInvoiceStore } from '../stores/invoiceStore';
+import AppContentState from '../components/AppContentState.vue';
+import AppShell from '../components/AppShell.vue';
+import AppPagination from '../components/AppPagination.vue';
+import AppStatCard from '../components/AppStatCard.vue';
 import CustomerFormModal from '../components/CustomerFormModal.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import CustomSelect from '../components/CustomSelect.vue';
@@ -294,7 +287,6 @@ import { getAccountStatusTone } from '../utils/statusStyles';
 
 const router = useRouter();
 const toast = useToast();
-const authStore = useAuthStore();
 const invoiceStore = useInvoiceStore();
 
 const loading = ref(false);
@@ -759,11 +751,6 @@ function goBack() {
 
 function navigateToCustomer(customerId) {
   router.push(`/customer/${customerId}`);
-}
-
-function handleLogout() {
-  authStore.logout();
-  router.push('/login');
 }
 
 onMounted(async () => {

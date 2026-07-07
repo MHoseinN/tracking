@@ -1,67 +1,13 @@
 <template>
-  <div class="min-h-screen bg-[radial-gradient(circle_at_top,#f8fafc,transparent_28%),linear-gradient(180deg,#ffffff_0%,#f8fafc_40%,#eef2ff_100%)]">
-    <header class="sticky top-2 z-20 mx-auto max-w-7xl px-4 pt-4">
-      <section class="rounded-[2rem] border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div class="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-6">
-          <div>
-            <p class="text-xs font-semibold tracking-[0.32em] text-slate-400">INVENTORY MATRIX LAB</p>
-            <h1 class="mt-3 text-2xl font-black text-slate-900 sm:text-3xl">نمونه ماتریس وضعیت انبار</h1>
-            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              این صفحه فقط برای بررسی مدل ماتریسی است. هر محصول به شکل یک بلوک فشرده نمایش داده می‌شود و هر واحد با یک کلیک، فرم ویرایش خودش را دقیقا داخل همان کارت باز می‌کند.
-            </p>
-          </div>
+  <AppShell title="نمونه ماتریس وضعیت انبار" subtitle="الگوی فشرده نمایش واحدها را بررسی کن و وضعیت آزاد یا رزرو را در یک نمای ماتریسی ببین">
+    <template #actions>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
+    </template>
 
-          <div class="flex flex-wrap items-start justify-end gap-3">
-            <button
-              type="button"
-              class="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              @click="router.push('/inventory')"
-            >
-              بازگشت به انبار
-            </button>
-          </div>
-        </div>
-      </section>
-    </header>
-
-    <main class="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+    <div class="grid items-start gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
       <aside class="space-y-5 xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
-        <section class="rounded-[1.75rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <h2 class="text-sm font-black text-slate-900">فیلترها</h2>
-
-          <div class="mt-4 space-y-3">
-            <div class="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
-              <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-              </svg>
-              <input
-                v-model.trim="searchTerm"
-                type="text"
-                placeholder="جستجو در محصول و مشتری"
-                class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              />
-            </div>
-
-            <CustomSelect
-              :model-value="statusFilter"
-              :options="statusOptions"
-              placeholder="وضعیت"
-              trigger-class="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
-              @update:model-value="statusFilter = $event"
-            />
-
-            <CustomSelect
-              :model-value="pageSize"
-              :options="pageSizeOptions"
-              placeholder="تعداد"
-              trigger-class="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
-              @update:model-value="pageSize = Number($event)"
-            />
-          </div>
-        </section>
-
-        <section class="rounded-[1.75rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <div class="mb-3 flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 shadow-sm">
+        <section class="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+          <div class="mb-3 flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
             <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
             </svg>
@@ -76,7 +22,7 @@
           <div class="space-y-1">
             <button
               type="button"
-              class="w-full rounded-2xl px-3 py-2 text-right text-sm font-semibold transition"
+              class="w-full rounded-xl px-3 py-2 text-right text-sm font-semibold transition"
               :class="selectedCategoryId ? 'text-slate-700 hover:bg-slate-50' : 'bg-blue-50 text-blue-700'"
               @click="selectedCategoryId = null"
             >
@@ -92,11 +38,11 @@
                 @select="selectedCategoryId = $event.id"
               />
             </div>
-            <p v-else class="rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
+            <p v-else class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
           </div>
         </section>
 
-        <section class="rounded-[1.75rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+        <section class="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
           <h2 class="text-sm font-black text-slate-900">خلاصه</h2>
           <div class="mt-3 space-y-2 text-sm text-slate-600">
             <p>محصول: <span class="font-black text-slate-900">{{ formatNumber(filteredGroups.length) }}</span></p>
@@ -108,7 +54,7 @@
       </aside>
 
       <section class="space-y-5">
-        <section class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-4 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
+        <section class="rounded-xl border border-slate-200 bg-white/92 p-4 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 class="text-lg font-black text-slate-900">مدل ماتریسی فشرده</h2>
@@ -116,21 +62,55 @@
             </div>
             <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">ویرایش در همان کارت</span>
           </div>
+          <div class="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_180px_180px] xl:items-center">
+            <div class="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
+              <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+              <input
+                v-model.trim="searchTerm"
+                type="text"
+                placeholder="جستجو در محصول و مشتری"
+                class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              />
+            </div>
+
+            <CustomSelect
+              :model-value="statusFilter"
+              :options="statusOptions"
+              placeholder="وضعیت"
+              trigger-class="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
+              @update:model-value="statusFilter = $event"
+            />
+
+            <CustomSelect
+              :model-value="pageSize"
+              :options="pageSizeOptions"
+              placeholder="تعداد"
+              trigger-class="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
+              @update:model-value="pageSize = Number($event)"
+            />
+          </div>
         </section>
 
-        <section v-if="inventoryStore.loading" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-12 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-          در حال بارگذاری...
-        </section>
+        <AppContentState
+          v-if="inventoryStore.loading"
+          loading
+          message="در حال بارگذاری..."
+          surface-class="rounded-xl bg-white/92 px-4 py-12 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+        />
 
-        <section v-else-if="paginatedGroups.length === 0" class="rounded-[1.75rem] border border-slate-200 bg-white/92 px-4 py-12 text-center text-sm text-slate-500 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-          موردی پیدا نشد.
-        </section>
+        <AppContentState
+          v-else-if="paginatedGroups.length === 0"
+          message="موردی پیدا نشد."
+          surface-class="rounded-xl bg-white/92 px-4 py-12 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+        />
 
         <section v-else class="space-y-3">
           <article
             v-for="group in paginatedGroups"
             :key="group.product_id"
-            class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-3 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+            class="rounded-xl border border-slate-200 bg-white/92 p-3 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
           >
             <div class="flex flex-wrap items-center justify-between gap-3 px-1 pb-3">
               <div class="min-w-0">
@@ -147,7 +127,7 @@
               <article
                 v-for="unit in group.units"
                 :key="unit.unit_id"
-                class="w-[150px] rounded-2xl border transition"
+                class="w-[150px] rounded-xl border transition"
                 :class="selectedUnitId === unit.unit_id
                   ? 'border-slate-400 bg-white shadow-lg shadow-slate-200/60'
                   : unit.status === 'reserved'
@@ -215,60 +195,36 @@
 
         <section
           v-if="!inventoryStore.loading && filteredGroups.length > 0"
-          class="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-white/90 px-4 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between"
+          class="rounded-xl border border-slate-200 bg-white/90 px-4 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
         >
-          <p class="text-sm text-slate-500">
-            نمایش
-            <span class="font-bold text-slate-900">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
-            تا
-            <span class="font-bold text-slate-900">{{ Math.min(rowStartIndex + pageSize, filteredGroups.length).toLocaleString('fa-IR') }}</span>
-            از
-            <span class="font-bold text-slate-900">{{ filteredGroups.length.toLocaleString('fa-IR') }}</span>
-            محصول
-          </p>
-
-          <div class="flex flex-wrap gap-2">
-            <button
-              type="button"
-              :disabled="currentPage === 1"
-              class="inline-flex h-10 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              @click="goToPage(currentPage - 1)"
-            >
-              قبلی
-            </button>
-            <button
-              v-for="page in visiblePageNumbers"
-              :key="page"
-              type="button"
-              class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition"
-              :class="page === currentPage ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
-              @click="goToPage(page)"
-            >
-              {{ page.toLocaleString('fa-IR') }}
-            </button>
-            <button
-              type="button"
-              :disabled="currentPage === totalPages"
-              class="inline-flex h-10 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              @click="goToPage(currentPage + 1)"
-            >
-              بعدی
-            </button>
-          </div>
+          <AppPagination
+            :total-rows="filteredGroups.length"
+            :row-start-index="rowStartIndex"
+            :page-size="pageSize"
+            :page-size-options="pageSizeOptions"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :visible-page-numbers="visiblePageNumbers"
+            @update:page-size="pageSize = $event"
+            @go-to-page="goToPage"
+          />
         </section>
       </section>
-    </main>
+    </div>
 
     <datalist id="layout-lab-customers">
       <option v-for="customer in inventoryStore.lookups.customers" :key="customer.id" :value="customer.name"></option>
     </datalist>
-  </div>
+  </AppShell>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import AppContentState from '../components/AppContentState.vue';
+import AppShell from '../components/AppShell.vue';
+import AppPagination from '../components/AppPagination.vue';
 import CategoryTreeItem from '../components/CategoryTreeItem.vue';
 import CustomSelect from '../components/CustomSelect.vue';
 import { useInventoryStore } from '../stores/inventoryStore';

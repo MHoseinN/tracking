@@ -3,7 +3,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="$emit('close')">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh]">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh]">
         <!-- Header -->
         <div class="flex items-center justify-between p-5 border-b">
           <h3 class="text-lg font-bold text-gray-800">
@@ -79,7 +79,7 @@
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">یادداشت فاکتور</label>
             <textarea v-model="form.notes" rows="4" placeholder="توضیح یا یادداشت مرتبط با این فاکتور..."
-              class="w-full rounded-2xl border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+              class="w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
 
           <!-- Buttons -->

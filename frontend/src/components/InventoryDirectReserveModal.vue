@@ -9,7 +9,7 @@
             </div>
             <button
               type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
               @click="$emit('close')"
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,7 +37,7 @@
               <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
               <JalaliDatePicker
                 :model-value="startDatePersian"
-                input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 @update:model-value="startDatePersian = $event"
               />
             </label>
@@ -46,7 +46,7 @@
               <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
               <JalaliDatePicker
                 :model-value="endDatePersian"
-                input-class="h-12 rounded-2xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 @update:model-value="endDatePersian = $event"
               />
             </label>
@@ -57,7 +57,7 @@
             <span class="font-semibold text-rose-600">{{ durationLabel }}</span>
           </div>
 
-          <p v-if="errorMessage" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <p v-if="errorMessage" class="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
             {{ errorMessage }}
           </p>
 
@@ -65,7 +65,7 @@
             <button
               v-if="unit?.reservation_item_id"
               type="button"
-              class="h-12 rounded-2xl border border-rose-200 bg-rose-50 px-5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+              class="h-12 rounded-xl border border-rose-200 bg-rose-50 px-5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
               @click="$emit('clear', unit)"
             >
               آزادسازی این واحد
@@ -73,7 +73,7 @@
             <div class="flex flex-col-reverse gap-3 sm:mr-auto sm:flex-row">
               <button
                 type="button"
-                class="h-12 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                class="h-12 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 @click="$emit('close')"
               >
                 انصراف
@@ -81,7 +81,7 @@
               <button
                 type="submit"
                 :disabled="saving"
-                class="h-12 rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                class="h-12 rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {{ saving ? 'در حال ثبت...' : unit?.reservation_item_id ? 'ذخیره تغییرات رزرو' : 'ثبت رزرو مستقیم' }}
               </button>

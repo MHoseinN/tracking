@@ -134,10 +134,10 @@
           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4"
           @click.self="closeStatusConfirm">
           <div
-            class="w-full max-w-md rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)] overflow-hidden">
+            class="w-full max-w-md rounded-xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)] overflow-hidden">
             <div class="bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-5 text-white">
               <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center">
+                <div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -186,10 +186,10 @@
           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4"
           @click.self="closeNotesModal">
           <div
-            class="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)]">
+            class="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-[0_22px_80px_-24px_rgba(15,23,42,0.55)]">
             <div class="bg-gradient-to-r from-amber-400 to-yellow-500 px-6 py-5 text-slate-900">
               <div class="flex items-center gap-3">
-                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/60">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/60">
                   <span class="text-xl font-black leading-none">!</span>
                 </div>
                 <div>
@@ -204,7 +204,7 @@
 
               <div class="mt-6 flex justify-end">
                 <button type="button" @click="closeNotesModal"
-                  class="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                  class="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
                   بستن
                 </button>
               </div>

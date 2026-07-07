@@ -3,7 +3,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="$emit('cancel')">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
         <!-- Icon -->
         <div class="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
           <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

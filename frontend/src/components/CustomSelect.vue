@@ -20,7 +20,7 @@
     <Teleport to="body">
       <div v-if="isOpen" class="fixed inset-0 z-[140]" @click="closeDropdown">
         <div
-          class="fixed z-[141] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+          class="fixed z-[141] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
           :style="dropdownStyle"
           @click.stop
         >
@@ -29,7 +29,7 @@
               v-for="option in normalizedOptions"
               :key="String(option.value)"
               type="button"
-              class="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-right text-sm font-medium transition"
+              class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-right text-sm font-medium transition"
               :class="optionClasses(option)"
               @click="selectOption(option)"
             >

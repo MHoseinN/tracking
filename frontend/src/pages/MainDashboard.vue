@@ -1,96 +1,50 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="max-w-7xl mx-auto bg-white shadow-md sticky top-2 z-10 rounded-lg">
-      <section
-        class="relative overflow-visible border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] rounded-lg">
-        <div class="absolute inset-0 bg-neutral-100 pointer-events-none rounded-lg">
-        </div>
-        <div class="relative p-4 space-y-4">
-          <div class="flex items-center justify-between">
-            <div
-              class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
-              <button @click="navigateToCharts"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100">
-                آمار <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </button>
-              <button @click="navigateToUsers"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100">
-                کاربران
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </button>
-              <button @click="navigateToInventory"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100">
-                رزرو
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m8-14l-8 4m0 10L4 17V7m8 14V11" />
-                </svg>
-              </button>
-            </div>
-            <div
-              class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
-              <button @click="openAddModal"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700">
-                افزودن حساب
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-              <button @click="openAddCustomerModal"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-600">
-                افزودن کاربر
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M18 7v3m0 0v3m0-3h3m-3 0h-3M6 20a4 4 0 018 0M10 4a4 4 0 110 8 4 4 0 010-8z" />
-                </svg>
-              </button>
-            </div>
-            <div
-              class="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-white/85 p-2 shadow-sm">
-              <button @click="handleManualBackup" :disabled="backupLoading"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-200 px-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
-                {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
-              <button @click="handleLogout"
-                class="inline-flex h-12 items-center gap-2 rounded-2xl border border-amber-200 bg-red-700 px-3 text-sm font-semibold text-white transition hover:bg-red-600 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 ">
-                خروج
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </header>
-
-    <!-- Main content -->
-    <main class="max-w-7xl mx-auto py-4">
+  <AppShell title="حساب‌ها" subtitle="فهرست حساب‌ها، فیلترها و عملیات روزانه را در این صفحه مستقل مدیریت کن">
+    <template #actions>
+      <button @click="openAddModal" class="app-button-primary w-full justify-between">
+        <span>افزودن حساب</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+      <button @click="openAddCustomerModal" class="app-button-success w-full justify-between">
+        <span>افزودن کاربر</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 7v3m0 0v3m0-3h3m-3 0h-3M6 20a4 4 0 018 0M10 4a4 4 0 110 8 4 4 0 010-8z" />
+        </svg>
+      </button>
+      <button @click="navigateToCharts" class="app-button-secondary w-full justify-between">
+        <span>گزارش‌ها</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      </button>
+      <button @click="navigateToUsers" class="app-button-secondary w-full justify-between">
+        <span>مدیریت کاربران</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      </button>
+      <button @click="navigateToInventory" class="app-button-secondary w-full justify-between">
+        <span>بخش رزرو</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m8-14l-8 4m0 10L4 17V7m8 14V11" />
+        </svg>
+      </button>
+    </template>
       <!-- Invoice table -->
-      <div class=" bg-white rounded-xl shadow overflow-hidden">
-        <div class=" px-4 py-4 items-center justify-center gap-3">
-            <div class="flex justify-center items-center gap-4 rounded-3xl bg-white/95">
-              <div class="w-full">
+      <div class="app-panel">
+        <div class="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div class="w-full xl:max-w-4xl">
                 <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
                   :filter-model-value="statusFilter" 
                   @update:text-model-value="searchCustomerName = $event" @update:date-model-value="searchDate = $event"
                   @update:filter-model-value="statusFilter = $event" @clear="clearSearch" />
               </div>
-              <div>
+              <div class="flex items-center justify-end">
                 <button @click="exportInvoices"
-                  class="inline-flex h-14 items-center gap-2 rounded-2xl border border-sky-100 bg-sky-50 px-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+                  class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
                   گزارش
                   <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -102,64 +56,31 @@
         </div>
 
         <!-- Loading state -->
-        <div v-if="invoiceStore.loading" class="flex items-center justify-center py-16">
-          <div class="flex flex-col items-center gap-3">
-            <svg class="animate-spin h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <span class="text-gray-500">در حال بارگذاری...</span>
-          </div>
-        </div>
+        <AppContentState
+          v-if="invoiceStore.loading"
+          loading
+          message="در حال بارگذاری فهرست حساب‌ها..."
+          surface-class="border-0 bg-transparent shadow-none"
+        />
 
         <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="true" :show-actions="true"
           :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort" @edit="openEditModal"
           @delete="openDeleteModal" @status-change="handleStatusChange" @customer-click="navigateToCustomer" />
 
-        <div v-if="!invoiceStore.loading && totalRows > 0"
-          class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
-          <div class="flex items-center justify-between gap-8">
-            <div>
-              <p class="text-sm text-gray-500">
-                نمایش
-                <span class="font-medium text-gray-700">{{ (rowStartIndex + 1).toLocaleString('fa-IR') }}</span>
-                تا
-                <span class="font-medium text-gray-700">{{ Math.min(rowStartIndex + pageSize,
-                  totalRows).toLocaleString('fa-IR') }}</span>
-                از
-                <span class="font-medium text-gray-700">{{ totalRows.toLocaleString('fa-IR') }}</span>
-              </p>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <div class="flex items-center gap-2 text-sm text-gray-500">
-                <CustomSelect :model-value="pageSize" :options="pageSizeSelectOptions"
-                  trigger-class="min-w-[92px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                  @update:model-value="pageSize = Number($event)" />
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center justify-center gap-2">
-            <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-              class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-              قبلی
-            </button>
-
-            <button v-for="page in visiblePageNumbers" :key="page" @click="goToPage(page)" :class="page === currentPage
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-              : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
-              class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition">
-              {{ page.toLocaleString('fa-IR') }}
-            </button>
-
-            <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-              class="inline-flex items-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-              بعدی
-            </button>
-          </div>
-        </div>
+        <AppPagination
+          v-if="!invoiceStore.loading"
+          :total-rows="totalRows"
+          :row-start-index="rowStartIndex"
+          :page-size="pageSize"
+          :page-size-options="pageSizeSelectOptions"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :visible-page-numbers="visiblePageNumbers"
+          @update:page-size="pageSize = $event"
+          @go-to-page="goToPage"
+        />
       </div>
-    </main>
+  </AppShell>
 
     <!-- Invoice Form Modal -->
     <InvoiceForm :is-open="showInvoiceForm" :customer-id="null" :invoice-data="selectedInvoice"
@@ -175,30 +96,28 @@
 
     <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
       @close="clearUndo" />
-  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import { useAuthStore } from '../stores/authStore';
 import { useInvoiceStore } from '../stores/invoiceStore';
 
+import AppContentState from '../components/AppContentState.vue';
+import AppShell from '../components/AppShell.vue';
+import AppPagination from '../components/AppPagination.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import InvoiceForm from '../components/InvoiceForm.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import CustomerFormModal from '../components/CustomerFormModal.vue';
 import InvoiceSearchBar from '../components/InvoiceSearchBar.vue';
-import CustomSelect from '../components/CustomSelect.vue';
 import UndoBar from '../components/UndoBar.vue';
 import { toGregorianDate, toPersianDate } from '../utils/dateConverter';
 import { exportRowsToExcel } from '../utils/exportToExcel';
-import api from '../utils/api';
 
 const router = useRouter();
 const toast = useToast();
-const authStore = useAuthStore();
 const invoiceStore = useInvoiceStore();
 
 // State
@@ -220,7 +139,6 @@ const pageSizeSelectOptions = computed(() => pageSizeOptions.map((size) => ({
   label: size.toLocaleString('fa-IR'),
   value: size
 })));
-const backupLoading = ref(false);
 const undoState = ref({
   visible: false,
   title: '',
@@ -456,23 +374,6 @@ function navigateToInventory() {
   router.push('/inventory');
 }
 
-
-async function handleManualBackup() {
-  if (backupLoading.value) return;
-
-  backupLoading.value = true;
-  try {
-    const response = await api.post('/backups/manual');
-    const fileName = response?.data?.fileName;
-    toast.success(fileName ? `بکاپ با موفقیت گرفته شد: ${fileName}` : 'بکاپ با موفقیت گرفته شد');
-  } catch (err) {
-    const message = err.response?.data?.message || 'خطا در گرفتن بکاپ';
-    toast.error(message);
-  } finally {
-    backupLoading.value = false;
-  }
-}
-
 function exportInvoices() {
   exportRowsToExcel({
     fileName: 'invoices-export',
@@ -513,12 +414,6 @@ async function handleUndo() {
   } catch (error) {
     toast.error(error.message || 'بازگردانی با خطا مواجه شد');
   }
-}
-
-// Logout
-function handleLogout() {
-  authStore.logout();
-  router.push('/login');
 }
 
 watch([searchCustomerName, searchDate, statusFilter], () => {

@@ -1,33 +1,32 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div>
-            <h1 class="text-xl font-bold text-gray-800"> گزارش</h1>
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <button @click="goBack"
-            class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-            <span>بازگشت</span>
-            <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
+  <AppShell title="گزارش" subtitle="روند درآمد، تعداد فاکتورها و عملکرد مشتری‌ها را در نماهای تحلیلی یکپارچه مرور کن">
+    <template #actions>
+      <button @click="exportReports" class="app-button-primary w-full justify-between">
+        <span>خروجی گزارش</span>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+      </button>
+      <div class="rounded-xl border border-slate-200 bg-white p-3">
+        <p class="mb-2 text-xs font-bold tracking-[0.18em] text-slate-400">YEAR FILTER</p>
+        <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
+          trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+          @update:model-value="selectedYear = $event" />
       </div>
-    </header>
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      <div v-if="loading" class="flex items-center justify-center py-24">
-        <div class="flex flex-col items-center gap-3">
-          <svg class="animate-spin h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-          <span class="text-gray-500">در حال بارگذاری آمار...</span>
-        </div>
-      </div>
+      <button @click="goBack" class="app-button-secondary w-full justify-between">
+        <span>بازگشت</span>
+        <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </template>
+      <AppContentState
+        v-if="loading"
+        loading
+        message="در حال بارگذاری آمار..."
+        surface-class="border-0 bg-transparent py-24 shadow-none"
+        text-class="text-gray-500"
+      />
 
       <div v-else class="space-y-6">
         <div v-if="errorMessage" class="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-4">
@@ -35,7 +34,7 @@
         </div>
 
         <section
-          class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
+          class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
           <div
             class="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/70 pointer-events-none">
           </div>
@@ -47,7 +46,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <button @click="exportReports"
-                class="inline-flex items-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+                class="inline-flex items-center rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
                 گزارش
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -56,25 +55,26 @@
               </button>
               <div class="min-w-[180px]">
                 <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
-                  trigger-class="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
                   @update:model-value="selectedYear = $event" />
               </div>
             </div>
           </div>
 
           <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <article v-for="card in reportSummaryCards" :key="card.label"
-              class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md">
-              <div class="flex flex-col items-center justify-center gap-4">
-                <p class="text-sm text-slate-500">{{ card.label }}</p>
-                <p class="mt-3 text-2xl font-black" :class="card.valueClass">{{ card.value }}</p>
-              </div>
-            </article>
+            <AppStatCard
+              v-for="card in reportSummaryCards"
+              :key="card.label"
+              :label="card.label"
+              :value="card.value"
+              :value-class="card.valueClass"
+              container-class="bg-white/90 shadow-md"
+            />
           </div>
 
           <div class="relative grid gap-6">
             <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-              <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
                 <div class="mb-4 flex items-center justify-between">
                   <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
                   <span
@@ -83,7 +83,7 @@
                 <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
               </div>
 
-              <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
                 <div class="mb-4 flex items-center justify-between">
                   <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
                   <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
@@ -93,7 +93,7 @@
             </div>
 
             <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] mt-8">
-              <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+              <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                   <div>
                     <h3 class="text-base font-bold text-slate-800">جدول تحلیل دوره‌ای</h3>
@@ -132,13 +132,13 @@
               </div>
 
               <div class="grid gap-6">
-                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <div class="mb-4 flex items-center justify-between">
                     <h3 class="text-base font-bold text-slate-800">وضعیت عملیاتی</h3>
                     <span class="text-xs text-slate-500">ارسال و تسویه</span>
                   </div>
                   <div class="space-y-3">
-                    <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-2xl bg-white px-4 py-3">
+                    <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-xl bg-white px-4 py-3">
                       <div class="mb-2 flex items-center justify-between">
                         <p class="font-semibold text-slate-700">{{ item.label }}</p>
                         <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
@@ -150,14 +150,14 @@
                   </div>
                 </div>
 
-                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <div class="mb-4 flex items-center justify-between">
                     <h3 class="text-base font-bold text-slate-800">برترین مشتری‌ها</h3>
                     <span class="text-xs text-slate-500">بر اساس مبلغ فاکتور</span>
                   </div>
                   <div v-if="topCustomers.length" class="space-y-3">
                     <div v-for="customer in topCustomers" :key="customer.name"
-                      class="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                      class="flex items-center justify-between rounded-xl bg-white px-4 py-3">
                       <div>
                         <p class="font-semibold text-slate-800">{{ customer.name }}</p>
                         <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
@@ -165,17 +165,17 @@
                       <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
                     </div>
                   </div>
-                  <p v-else class="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
+                  <p v-else class="rounded-xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
                     نمایش نیست</p>
                 </div>
 
-                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <div class="mb-4 flex items-center justify-between">
                     <h3 class="text-base font-bold text-slate-800">مرور سریع</h3>
                     <span class="text-xs text-slate-500">خلاصه کاربردی</span>
                   </div>
                   <div class="space-y-4">
-                    <div v-for="item in reportHighlights" :key="item.label" class="rounded-2xl bg-white px-4 py-4">
+                    <div v-for="item in reportHighlights" :key="item.label" class="rounded-xl bg-white px-4 py-4">
                       <p class="text-xs text-slate-500">{{ item.label }}</p>
                       <p class="mt-2 text-lg font-bold" :class="item.valueClass">{{ item.value }}</p>
                     </div>
@@ -186,8 +186,7 @@
           </div>
         </section>
       </div>
-    </main>
-  </div>
+  </AppShell>
 </template>
 
 <script setup>
@@ -195,6 +194,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import api from '../utils/api';
+import AppContentState from '../components/AppContentState.vue';
+import AppShell from '../components/AppShell.vue';
+import AppStatCard from '../components/AppStatCard.vue';
 import CustomSelect from '../components/CustomSelect.vue';
 import { exportRowsToExcel } from '../utils/exportToExcel';
 import Chart from 'chart.js/auto';
