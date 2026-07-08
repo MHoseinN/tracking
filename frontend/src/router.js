@@ -11,7 +11,7 @@ const routes = [
   {
     path: '/home',
     name: 'Home',
-    component: () => import('./pages/Home.vue'),
+    component: () => import('./components/dashboard/HomeRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'خانه',
@@ -21,7 +21,7 @@ const routes = [
   {
     path: '/accounts',
     name: 'Accounts',
-    component: () => import('./pages/MainDashboard.vue'),
+    component: () => import('./components/dashboard/AccountsRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'حساب‌ها',
@@ -31,7 +31,7 @@ const routes = [
   {
     path: '/customer/:id',
     name: 'CustomerDetail',
-    component: () => import('./pages/CustomerDetail.vue'),
+    component: () => import('./components/customers/CustomerDetailRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'صفحه مشتری',
@@ -42,7 +42,7 @@ const routes = [
   {
     path: '/reports',
     name: 'Reports',
-    component: () => import('./pages/Reports.vue'),
+    component: () => import('./components/reports/ReportsRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'گزارش',
@@ -52,7 +52,7 @@ const routes = [
   {
     path: '/users',
     name: 'UsersManagement',
-    component: () => import('./pages/UsersManagement.vue'),
+    component: () => import('./components/users/UsersManagementRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'مدیریت کاربران',
@@ -62,7 +62,7 @@ const routes = [
   {
     path: '/inventory',
     name: 'InventoryManagement',
-    component: () => import('./pages/InventoryManagement.vue'),
+    component: () => import('./components/inventory/InventoryManagementRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'مدیریت رزرو',
@@ -72,7 +72,7 @@ const routes = [
   {
     path: '/inventory/manage',
     name: 'InventoryProductManagement',
-    component: () => import('./pages/InventoryProductManagement.vue'),
+    component: () => import('./components/inventory/InventoryProductManagementRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'مدیریت محصولات',
@@ -82,7 +82,7 @@ const routes = [
   {
     path: '/inventory/reservations/new',
     name: 'InventoryReservationBuilder',
-    component: () => import('./pages/InventoryReservationBuilder.vue'),
+    component: () => import('./components/inventory/InventoryReservationBuilderRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'سبد رزرو',
@@ -92,7 +92,7 @@ const routes = [
   {
     path: '/inventory/reservations/active',
     name: 'InventoryReservedProducts',
-    component: () => import('./pages/InventoryReservedProducts.vue'),
+    component: () => import('./components/inventory/InventoryReservedProductsRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'رزروهای فعال',
@@ -102,7 +102,7 @@ const routes = [
   {
     path: '/inventory/layout-lab',
     name: 'InventoryLayoutLab',
-    component: () => import('./pages/InventoryLayoutLab.vue'),
+    component: () => import('./components/inventory/InventoryLayoutLabRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'لب چیدمان',

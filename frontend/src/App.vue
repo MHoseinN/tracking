@@ -22,7 +22,7 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import AppShell from './components/AppShell.vue';
+import AppShell from './pages/AppShell.vue';
 import { useAuthStore } from './stores/authStore';
 
 const authStore = useAuthStore();

@@ -272,17 +272,17 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import { useInvoiceStore } from '../stores/invoiceStore';
-import AppContentState from '../components/AppContentState.vue';
-import AppPagination from '../components/AppPagination.vue';
-import AppStatCard from '../components/AppStatCard.vue';
-import CustomerFormModal from '../components/CustomerFormModal.vue';
-import ConfirmModal from '../components/ConfirmModal.vue';
-import CustomSelect from '../components/CustomSelect.vue';
-import UndoBar from '../components/UndoBar.vue';
-import api from '../utils/api';
-import { exportRowsToExcel } from '../utils/exportToExcel';
-import { getAccountStatusTone } from '../utils/statusStyles';
+import { useInvoiceStore } from '../../stores/invoiceStore';
+import AppContentState from '../AppContentState.vue';
+import AppPagination from '../AppPagination.vue';
+import AppStatCard from '../AppStatCard.vue';
+import CustomerFormModal from '../CustomerFormModal.vue';
+import ConfirmModal from '../ConfirmModal.vue';
+import CustomSelect from '../CustomSelect.vue';
+import UndoBar from '../UndoBar.vue';
+import api from '../../utils/api';
+import { exportRowsToExcel } from '../../utils/exportToExcel';
+import { getAccountStatusTone } from '../../utils/statusStyles';
 
 const router = useRouter();
 const toast = useToast();

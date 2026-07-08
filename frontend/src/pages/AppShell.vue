@@ -182,25 +182,24 @@ const navGroups = [
   },
   {
     key: 'accounts',
-    label: 'Accounts',
+    label: 'حساب',
     items: [
-      { key: 'accounts', label: 'حساب‌ها', to: '/accounts' },
+      { key: 'accounts', label: 'مدیربت حساب‌ها', to: '/accounts' },
       { key: 'reports', label: 'گزارش‌ها', to: '/reports' }
     ]
   },
   {
     key: 'customers',
-    label: 'Customers',
+    label: 'کاربران',
     items: [
-      { key: 'users', label: 'مدیریت کاربران', to: '/users' },
-      { key: 'customer-detail', label: 'صفحه مشتری', to: route.path.startsWith('/customer/') ? route.path : '/users', badge: 'جزئیات' }
+      { key: 'users', label: 'مدیریت کاربران', to: '/users' }
     ]
   },
   {
     key: 'inventory',
-    label: 'Inventory',
+    label: 'رزرو',
     items: [
-      { key: 'inventory', label: 'داشبورد رزرو', to: '/inventory' },
+      { key: 'dashInventory', label: 'داشبورد رزرو', to: '/inventory' },
       { key: 'inventory-manage', label: 'مدیریت محصولات', to: '/inventory/manage' },
       { key: 'inventory-new', label: 'سبد رزرو', to: '/inventory/reservations/new' },
       { key: 'inventory-active', label: 'رزروهای فعال', to: '/inventory/reservations/active' },
@@ -252,7 +251,7 @@ const breadcrumbs = computed(() => {
     return items;
   }
 
-  if (route.path.startsWith('/inventory/')) {
+  if (route.path.startsWith('/inventory')) {
     items.push({ key: 'crumb-inventory', label: 'داشبورد رزرو', to: '/inventory', clickable: route.path !== '/inventory' });
   }
 
