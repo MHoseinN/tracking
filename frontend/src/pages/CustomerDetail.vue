@@ -1,6 +1,6 @@
 ﻿<template>
-  <AppShell title="صفحه اختصاصی کاربر" subtitle="مشخصات، یادداشت‌ها و تاریخچه فاکتورهای این مشتری را در یک شِل ثابت و متمرکز مدیریت کن" dir="rtl">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button @click="openAddModal" class="app-button-primary w-full justify-between">
         <span>افزودن حساب</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +25,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
-    </template>
+    </Teleport>
 
       <section class="overflow-hidden rounded-xl bg-white shadow-md ring-1 ring-gray-100">
         <button type="button" @click="isCustomerInfoOpen = !isCustomerInfoOpen"
@@ -170,7 +170,7 @@
           @go-to-page="goToPage"
         />
       </section>
-  </AppShell>
+  </div>
 
     <InvoiceForm :is-open="showInvoiceForm" :customer-id="customerId" :invoice-data="selectedInvoice"
       :customers-list="[]" @save="handleSaveInvoice" @close="closeInvoiceForm" />
@@ -188,7 +188,6 @@ import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
 
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppStatCard from '../components/AppStatCard.vue';
 import CustomSelect from '../components/CustomSelect.vue';

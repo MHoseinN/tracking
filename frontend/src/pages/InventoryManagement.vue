@@ -1,6 +1,6 @@
 <template>
-  <AppShell title="مدیریت رزرو" subtitle="وضعیت موجودی، رزروهای فعال و عملیات روزمره انبار را در یک صفحه مرکزی مدیریت کن">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button type="button" class="app-button-primary w-full justify-between" @click="router.push('/inventory/manage')">
         <span>مدیریت محصولات</span>
       </button>
@@ -12,7 +12,7 @@
       <button type="button" class="app-button-secondary w-full" @click="reloadDashboard">بارگذاری مجدد</button>
       <button type="button" class="app-button-secondary w-full" @click="resetFilters">پاک کردن فیلترها</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت به خانه</button>
-    </template>
+    </Teleport>
 
     <div class="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
       <aside class="space-y-5 xl:sticky xl:self-start xl:overflow-hidden">
@@ -178,7 +178,7 @@
       :customers="inventoryStore.lookups.customers" :saving="directReserveSaving"
       :initial-start-persian="rangeStartPersian" :initial-end-persian="rangeEndPersian" @close="closeDirectReserve"
       @save="submitDirectReserve" @clear="clearUnitReservation" />
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
@@ -186,7 +186,6 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppPagination from '../components/AppPagination.vue';
 import CategoryTreeItem from '../components/CategoryTreeItem.vue';
 import CustomSelect from '../components/CustomSelect.vue';
@@ -324,7 +323,7 @@ async function loadData() {
   try {
     const params = getRangeParams();
     await Promise.all([
-      inventoryStore.fetchLookups(params),
+      inventoryStore.fetchLookups(),
       inventoryStore.fetchDashboard(params)
     ]);
     reservationCart.syncProductMeta(inventoryStore.lookups.products);

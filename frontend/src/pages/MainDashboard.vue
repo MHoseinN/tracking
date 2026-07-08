@@ -1,6 +1,6 @@
 <template>
-  <AppShell title="حساب‌ها" subtitle="فهرست حساب‌ها، فیلترها و عملیات روزانه را در این صفحه مستقل مدیریت کن">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button @click="openAddModal" class="app-button-primary w-full justify-between">
         <span>افزودن حساب</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,7 +31,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m8-14l-8 4m0 10L4 17V7m8 14V11" />
         </svg>
       </button>
-    </template>
+    </Teleport>
       <!-- Invoice table -->
       <div class="app-panel">
         <div class="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-5">
@@ -80,7 +80,7 @@
           @go-to-page="goToPage"
         />
       </div>
-  </AppShell>
+  </div>
 
     <!-- Invoice Form Modal -->
     <InvoiceForm :is-open="showInvoiceForm" :customer-id="null" :invoice-data="selectedInvoice"
@@ -105,7 +105,6 @@ import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
 
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppPagination from '../components/AppPagination.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import InvoiceForm from '../components/InvoiceForm.vue';

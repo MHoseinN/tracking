@@ -1,13 +1,13 @@
 <template>
-  <AppShell title="مدیریت محصولات" subtitle="دسته‌بندی‌ها و محصولات انبار را با همان منطق فعلی، در ساختار جدید و یکدست مدیریت کن">
-  <template #actions>
+  <div>
+  <Teleport to="#app-shell-actions">
     <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
     <button type="button" @click="openProductModal()" class="app-button-success w-full">افزودن محصول</button>
     <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })" class="app-button-secondary w-full disabled:opacity-50">افزودن زیرشاخه</button>
     <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)" class="app-button-secondary w-full disabled:opacity-50">ویرایش دسته</button>
     <button type="button" :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true" class="app-button w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف دسته</button>
     <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به رزرو</button>
-  </template>
+  </Teleport>
 
   <div class="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
     <aside
@@ -145,7 +145,7 @@
 
   <ConfirmModal :is-open="showDeleteProductModal" title="حذف محصول" :message="deleteProductMessage" :loading="deleting"
     @confirm="handleDeleteProduct" @cancel="showDeleteProductModal = false" />
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
@@ -153,7 +153,6 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import CategoryTreeItem from '../components/CategoryTreeItem.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import InventoryCategoryModal from '../components/InventoryCategoryModal.vue';

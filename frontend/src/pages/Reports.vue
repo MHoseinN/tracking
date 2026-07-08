@@ -1,6 +1,6 @@
 <template>
-  <AppShell title="گزارش" subtitle="روند درآمد، تعداد فاکتورها و عملکرد مشتری‌ها را در نماهای تحلیلی یکپارچه مرور کن">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button @click="exportReports" class="app-button-primary w-full justify-between">
         <span>خروجی گزارش</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,7 +19,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
-    </template>
+    </Teleport>
       <AppContentState
         v-if="loading"
         loading
@@ -186,7 +186,7 @@
           </div>
         </section>
       </div>
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
@@ -195,7 +195,6 @@ import { useRouter } from 'vue-router';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import api from '../utils/api';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppStatCard from '../components/AppStatCard.vue';
 import CustomSelect from '../components/CustomSelect.vue';
 import { exportRowsToExcel } from '../utils/exportToExcel';

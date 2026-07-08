@@ -1,6 +1,6 @@
 <template>
-  <AppShell title="مدیریت کاربران" subtitle="فهرست مشتری‌ها، وضعیت حساب و عملیات سریع مرتبط با کاربران را یکجا مدیریت کن">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button type="button" @click="openAddModal" class="app-button-primary w-full justify-between">
         <span>افزودن کاربر</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,7 +20,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
-    </template>
+    </Teleport>
       <div v-if="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">
         {{ errorMessage }}
       </div>
@@ -190,7 +190,7 @@
           />
         </div>
       </div>
-  </AppShell>
+  </div>
 
     <CustomerFormModal :is-open="showForm" :customer="selectedCustomer"
       :existing-customers="invoiceStore.customersOverview" @close="closeModal" @saved="handleCustomerSaved" />
@@ -274,7 +274,6 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppStatCard from '../components/AppStatCard.vue';
 import CustomerFormModal from '../components/CustomerFormModal.vue';

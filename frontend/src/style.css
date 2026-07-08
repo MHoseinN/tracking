@@ -8,6 +8,9 @@
 
 :root {
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --shell-nav-width: 18rem;
+  --shell-actions-width: 220px;
+  --shell-header-height: 112px;
 }
 
 body {
@@ -47,11 +50,111 @@ body {
 }
 
 .app-shell {
-  @apply min-h-screen bg-white;
+  @apply min-h-screen bg-gray-100;
 }
 
 .app-header {
   @apply fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white backdrop-blur-xl;
+}
+
+.app-shell__nav,
+.app-shell__header,
+.app-shell__actions,
+.app-shell__main {
+  min-width: 0;
+}
+
+.app-shell-actions-portal {
+  display: none;
+}
+
+.app-shell-actions-portal:has(> :not(:first-child)) > :first-child {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app-shell__nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--shell-nav-width);
+    overflow: hidden;
+    @apply border-l border-gray-200 bg-white;
+  }
+
+  .app-shell__header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: var(--shell-nav-width);
+    height: var(--shell-header-height);
+    z-index: 40;
+    @apply border-b border-gray-200 bg-white backdrop-blur-xl;
+  }
+
+  .app-shell__actions {
+    position: fixed;
+    top: var(--shell-header-height);
+    left: 0;
+    bottom: 0;
+    width: var(--shell-actions-width);
+    overflow: hidden;
+    @apply border-r border-gray-200 bg-white;
+  }
+
+  .app-shell__main {
+    position: fixed;
+    top: var(--shell-header-height);
+    right: var(--shell-nav-width);
+    bottom: 0;
+    left: var(--shell-actions-width);
+    overflow-y: auto;
+    overflow-x: hidden;
+    @apply bg-gray-100;
+  }
+
+  .app-shell-actions-portal {
+    position: fixed;
+    top: calc(var(--shell-header-height) + 1rem);
+    left: 1rem;
+    bottom: 1rem;
+    width: calc(var(--shell-actions-width) - 2rem);
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-shell {
+    @apply flex min-h-screen flex-col bg-gray-100;
+  }
+
+  .app-shell__nav,
+  .app-shell__actions {
+    display: none;
+  }
+
+  .app-shell__header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    @apply border-b border-slate-200 bg-slate-100/95 backdrop-blur-xl;
+  }
+
+  .app-shell__main {
+    @apply flex-1;
+  }
 }
 
 .app-panel {

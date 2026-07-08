@@ -1,6 +1,6 @@
 <template>
-  <AppShell title="خانه" subtitle="نمای کلی سیستم، آمار تجمیعی و دسترسی سریع به بخش‌های اصلی را از اینجا ببین">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button type="button" class="app-button-primary w-full justify-between" @click="router.push('/accounts')">
         <span>صفحه حساب‌ها</span>
       </button>
@@ -13,7 +13,7 @@
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/inventory')">
         <span>بخش رزرو</span>
       </button>
-    </template>
+    </Teleport>
 
     <AppContentState
       v-if="loading"
@@ -107,14 +107,13 @@
         </div>
       </section>
     </div>
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppStatCard from '../components/AppStatCard.vue';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import { useInventoryStore } from '../stores/inventoryStore';

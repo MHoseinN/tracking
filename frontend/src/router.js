@@ -12,62 +12,102 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: () => import('./pages/Home.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'خانه',
+      subtitle: 'نمای کلی سیستم، آمار تجمیعی و دسترسی سریع به بخش‌های اصلی را از اینجا ببین'
+    }
   },
   {
     path: '/accounts',
     name: 'Accounts',
     component: () => import('./pages/MainDashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'حساب‌ها',
+      subtitle: 'فهرست حساب‌ها، فیلترها و عملیات روزانه را در این صفحه مستقل مدیریت کن'
+    }
   },
   {
     path: '/customer/:id',
     name: 'CustomerDetail',
     component: () => import('./pages/CustomerDetail.vue'),
-    meta: { requiresAuth: true },
+    meta: {
+      requiresAuth: true,
+      title: 'صفحه مشتری',
+      subtitle: 'جزئیات مشتری، حساب‌ها و عملیات مرتبط را بدون ترک شِل اصلی مدیریت کن'
+    },
     props: true
   },
   {
     path: '/reports',
     name: 'Reports',
     component: () => import('./pages/Reports.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'گزارش',
+      subtitle: 'روند درآمد، تعداد فاکتورها و عملکرد مشتری‌ها را در نماهای تحلیلی یکپارچه مرور کن'
+    }
   },
   {
     path: '/users',
     name: 'UsersManagement',
     component: () => import('./pages/UsersManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'مدیریت کاربران',
+      subtitle: 'فهرست مشتری‌ها، وضعیت حساب و عملیات سریع مرتبط با کاربران را یکجا مدیریت کن'
+    }
   },
   {
     path: '/inventory',
     name: 'InventoryManagement',
     component: () => import('./pages/InventoryManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'مدیریت رزرو',
+      subtitle: 'وضعیت موجودی، رزروهای فعال و عملیات روزمره انبار را در یک صفحه مرکزی مدیریت کن'
+    }
   },
   {
     path: '/inventory/manage',
     name: 'InventoryProductManagement',
     component: () => import('./pages/InventoryProductManagement.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'مدیریت محصولات',
+      subtitle: 'ساختار دسته‌بندی، موجودی و ویرایش محصولات را در همین نمای ثابت انجام بده'
+    }
   },
   {
     path: '/inventory/reservations/new',
     name: 'InventoryReservationBuilder',
     component: () => import('./pages/InventoryReservationBuilder.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'سبد رزرو',
+      subtitle: 'رزرو تازه را مرحله‌به‌مرحله بساز و بدون خروج از شِل، اقلام را نهایی کن'
+    }
   },
   {
     path: '/inventory/reservations/active',
     name: 'InventoryReservedProducts',
     component: () => import('./pages/InventoryReservedProducts.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'رزروهای فعال',
+      subtitle: 'رزروهای جاری، آزادسازی و ویرایش را در پنل اصلی دنبال کن'
+    }
   },
   {
     path: '/inventory/layout-lab',
     name: 'InventoryLayoutLab',
     component: () => import('./pages/InventoryLayoutLab.vue'),
-    meta: { requiresAuth: true }
+    meta: {
+      requiresAuth: true,
+      title: 'لب چیدمان',
+      subtitle: 'آزمایش چیدمان و رفتار رزروها را در محیط لَب بررسی کن'
+    }
   },
   {
     path: '/',

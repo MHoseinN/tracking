@@ -1,11 +1,11 @@
 <template>
-  <AppShell title="مدیریت محصولات رزروشده" subtitle="رزروهای فعال را مرور کن، آن‌ها را ویرایش کن یا به‌صورت تکی و گروهی آزادسازی کن">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button type="button" :disabled="releasingAll || !orders.length" class="app-button-danger w-full" @click="showReleaseAllConfirm = true">
         {{ releasingAll ? 'در حال آزادسازی...' : 'آزادسازی همه محصولات' }}
       </button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
-    </template>
+    </Teleport>
 
     <div class="max-w-7xl">
       <section class="mb-5 grid gap-4 md:grid-cols-3">
@@ -202,7 +202,7 @@
         @cancel="pendingReleaseOrder = null"
       />
     </div>
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
@@ -210,7 +210,6 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppStatCard from '../components/AppStatCard.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import InventoryReservationOrderEditorModal from '../components/InventoryReservationOrderEditorModal.vue';

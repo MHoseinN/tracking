@@ -1,6 +1,6 @@
 <template>
-  <AppShell title="سبد رزرو" subtitle="محصولات را انتخاب کن، مشتری و بازه تاریخ را تعیین کن و رزرو را نهایی ثبت کن">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button type="button" :disabled="saving || cartItems.length === 0" class="app-button-success w-full" @click="submitReservation">
         {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
       </button>
@@ -8,7 +8,7 @@
         خالی کردن سبد
       </button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
-    </template>
+    </Teleport>
 
     <div class="max-w-6xl">
       <section class="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
@@ -207,14 +207,13 @@
         @cancel="showSubmitConfirm = false"
       />
     </div>
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import AppShell from '../components/AppShell.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import JalaliDatePicker from '../components/JalaliDatePicker.vue';
 import SearchableLookupInput from '../components/SearchableLookupInput.vue';

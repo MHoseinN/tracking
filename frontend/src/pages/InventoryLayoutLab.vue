@@ -1,8 +1,8 @@
 <template>
-  <AppShell title="نمونه ماتریس وضعیت انبار" subtitle="الگوی فشرده نمایش واحدها را بررسی کن و وضعیت آزاد یا رزرو را در یک نمای ماتریسی ببین">
-    <template #actions>
+  <div>
+    <Teleport to="#app-shell-actions">
       <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
-    </template>
+    </Teleport>
 
     <div class="grid items-start gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
       <aside class="space-y-5 xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
@@ -215,7 +215,7 @@
     <datalist id="layout-lab-customers">
       <option v-for="customer in inventoryStore.lookups.customers" :key="customer.id" :value="customer.name"></option>
     </datalist>
-  </AppShell>
+  </div>
 </template>
 
 <script setup>
@@ -223,7 +223,6 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../components/AppContentState.vue';
-import AppShell from '../components/AppShell.vue';
 import AppPagination from '../components/AppPagination.vue';
 import CategoryTreeItem from '../components/CategoryTreeItem.vue';
 import CustomSelect from '../components/CustomSelect.vue';
