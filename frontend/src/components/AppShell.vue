@@ -1,9 +1,10 @@
 <template>
-  <div class="app-shell">
+  <div class="app-shell min-h-screen xl:flex ">
+    <!--  SideBar -->
     <aside class="hidden lg:block fixed right-0 top-0 bottom-0 z-50 border-l border-gray-200 bg-white"
       :style="{ width: `${rightSidebarWidth}px` }">
-      <div class="flex h-full flex-col px-5">
-        <div class="px-5 py-6">
+      <div class="flex h-full flex-col px-4">
+        <div class="px-4 py-6">
           <div class="flex items-center gap-3">
             <div
               class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
@@ -19,34 +20,33 @@
           </div>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide px-3 py-4">
-          <div v-for="group in navGroups" :key="group.key" class="mb-2">
+        <div class="min-h-0 flex-1 flex-col gap-2 overflow-y-auto scrollbar-hide px-3">
+          <div v-for="group in navGroups" :key="group.key" class="flex-col">
             <button v-if="!group.items?.length" type="button"
               class="flex w-full items-center justify-between rounded-xl px-3 py-3 text-right transition"
               :class="isGroupActive(group) ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
               @click="navigateTo(group.to)">
               <div class="flex min-w-0 items-center gap-3">
                 <span class="truncate text-sm font-semibold">{{ group.label }}</span>
-                
               </div>
             </button>
 
             <template v-else>
               <button type="button"
-                class="flex w-full items-center justify-between rounded-xl px-3 py-3 text-right transition"
+                class="flex w-full gap-1 items-center justify-between rounded-xl px-3 py-3 text-right transition"
                 :class="isGroupActive(group) ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
                 @click="toggleGroup(group.key)">
                 <div class="flex min-w-0 items-center gap-3">
                   <span class="truncate text-sm font-semibold">{{ group.label }}</span>
                 </div>
                 <span class="text-3xl leading-none">{{ openGroups[group.key] ? '−' : '+' }}</span>
-                
+
               </button>
 
-              <div v-if="openGroups[group.key]" class="mr-6 mt-2 border-r border-slate-200 pr-4">
+              <div v-if="openGroups[group.key]" class="mr-6 mt-2 pr-4">
                 <button v-for="item in group.items" :key="item.key" type="button"
-                  class="flex w-full items-center justify-between rounded-xl px-3 py-3 text-right text-sm transition"
-                  :class="isActiveRoute(item) ? 'bg-slate-100 font-bold text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
+                  class="flex gap-2 w-full items-center justify-between rounded-xl px-3 py-3 text-right text-zinc-700 transition  hover:bg-gray-100 "
+                  :class="isActiveRoute(item) ? 'bg-gray-100 font-bold text-blue-700' : 'text-zinc-700 bg-white hover:bg-gray-100 hover:text-blue-700'"
                   @click="navigateTo(item.to)">
                   <span>{{ item.label }}</span>
                   <span v-if="item.badge"
@@ -59,7 +59,7 @@
         </div>
       </div>
     </aside>
-
+    <!-- Header -->
     <header class="app-header lg:left-0" :style="desktopShellActive ? { right: `${rightSidebarWidth}px` } : undefined">
       <div class="px-4 py-4">
         <div class="flex justify-between items-center gap-16 px-2">
@@ -118,11 +118,11 @@
         </div>
       </div>
     </header>
-
-    <aside class="hidden lg:block fixed left-0 bottom-0 z-30 border-r-4 bg-white pt-2"
+    <!-- Actions SideBar -->
+    <aside class="hidden lg:block fixed left-0 bottom-0 z-50 border-t border-r border-gray-200 bg-white pt-4"
       :style="desktopShellActive ? { top: `${desktopTopOffset}px`, width: `${leftSidebarWidth}px` } : undefined">
-      <div class="flex h-full flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto p-3">
+      <div class="flex h-full flex-col ">
+        <div class="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-hide">
           <div class="space-y-3">
             <slot name="actions">
               <p class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">اکشنی برای این
@@ -132,8 +132,8 @@
         </div>
       </div>
     </aside>
-
-    <div class="bg-red-300 "
+    <!-- Main Content -->
+    <div class="bg-gray-100 "
       :style="desktopShellActive ? { paddingTop: `${desktopTopOffset + 10}px`, paddingRight: `${rightSidebarWidth + 24}px`, paddingLeft: `${leftSidebarWidth + 24}px` } : undefined">
       <main class="min-w-0 flex flex-col gap-4">
         <div v-if="breadcrumbs.length" class="flex flex-wrap items-center gap-2 rounded-xl bg-white px-4 py-4">
@@ -208,9 +208,9 @@ const searchLoading = ref(false);
 const backupLoading = ref(false);
 const searchRootRef = ref(null);
 const searchDataInitialized = ref(false);
-const rightSidebarWidth = 288;
+const rightSidebarWidth = 285;
 const leftSidebarWidth = 200;
-const desktopTopOffset = 85;
+const desktopTopOffset = 90;
 const desktopShellActive = true;
 
 const navGroups = [
@@ -271,7 +271,14 @@ const routeLabelMap = {
 };
 
 const routeSearchItems = [
-  { key: 'route-home', type: 'route', label: 'خانه', meta: 'نمای کلی سیستم', badge: 'صفحه', to: '/home' },
+  {
+    key: 'route-home',
+    type: 'route',
+    label: 'خانه',
+    meta: 'نمای کلی سیستم',
+    badge: 'صفحه',
+    to: '/home'
+  },
   { key: 'route-accounts', type: 'route', label: 'حساب‌ها', meta: 'مدیریت و جستجوی همه حساب‌ها', badge: 'صفحه', to: '/accounts' },
   { key: 'route-reports', type: 'route', label: 'گزارش‌ها', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
   { key: 'route-users', type: 'route', label: 'مدیریت کاربران', meta: 'لیست و وضعیت حساب مشتری‌ها', badge: 'صفحه', to: '/users' },
