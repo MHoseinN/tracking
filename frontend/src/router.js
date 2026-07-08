@@ -100,16 +100,6 @@ const routes = [
     }
   },
   {
-    path: '/inventory/layout-lab',
-    name: 'InventoryLayoutLab',
-    component: () => import('./components/inventory/InventoryLayoutLabRoute.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'لب چیدمان',
-      subtitle: 'آزمایش چیدمان و رفتار رزروها را در محیط لَب بررسی کن'
-    }
-  },
-  {
     path: '/',
     redirect: '/home'
   },

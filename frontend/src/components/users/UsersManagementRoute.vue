@@ -203,7 +203,7 @@
     <Teleport to="body">
       <div v-if="false && showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
         @click.self="closeModal">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg">
           <div class="flex items-center justify-between p-5 border-b">
             <h3 class="text-lg font-bold text-gray-800">{{ editingId ? 'ویرایش کاربر' : 'افزودن کاربر' }}</h3>
             <button @click="closeModal" class="text-gray-400 hover:text-gray-600 transition">
@@ -479,7 +479,7 @@ function accountStatusSelectClass(status) {
 
 function statusTriggerClass(status) {
   return [
-    'min-w-[180px] rounded-2xl border px-3 py-2.5 text-sm font-medium shadow-sm transition hover:shadow-md',
+    'min-w-[180px] rounded-xl border px-3 py-2.5 text-sm font-medium shadow-sm transition hover:shadow-md',
     status ? accountStatusSelectClass(status) : 'border-gray-300 bg-white text-gray-400 hover:border-slate-300'
   ];
 }

@@ -5,7 +5,7 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="close"
     >
-      <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl" dir="rtl">
+      <div class="w-full max-w-lg rounded-xl bg-white shadow-xl" dir="rtl">
         <div class="flex items-center justify-between border-b p-5">
           <h3 class="text-lg font-bold text-gray-800">
             {{ isEditMode ? 'ویرایش کاربر' : 'افزودن کاربر' }}

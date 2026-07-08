@@ -12,7 +12,7 @@
       id="app-shell-actions"
       class="app-shell-actions-portal"
     >
-      <p class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+      <p class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
         اکشنی برای این صفحه تعریف نشده است.
       </p>
     </div>

@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="visible" class="fixed bottom-5 left-1/2 z-[80] w-[min(92vw,520px)] -translate-x-1/2">
-      <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white shadow-2xl">
+      <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white shadow-xl">
         <div class="min-w-0">
           <p class="truncate text-sm font-semibold">{{ title }}</p>
           <p v-if="message" class="mt-1 text-xs text-slate-300">{{ message }}</p>

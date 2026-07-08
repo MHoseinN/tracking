@@ -1,17 +1,17 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <button type="button" class="app-button-primary w-full justify-between" @click="router.push('/accounts')">
-        <span>صفحه حساب‌ها</span>
+      <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/accounts')">
+        <span> مدیریت حساب‌</span>
       </button>
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/users')">
-        <span>مدیریت کاربران</span>
+        <span> مدیریت کاربران</span>
       </button>
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/reports')">
-        <span>گزارش‌ها</span>
+        <span>آمار</span>
       </button>
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/inventory')">
-        <span>بخش رزرو</span>
+        <span> رزرو</span>
       </button>
     </Teleport>
 

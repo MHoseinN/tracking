@@ -3,7 +3,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="$emit('close')">
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh]">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
         <!-- Header -->
         <div class="flex items-center justify-between p-5 border-b">
           <h3 class="text-lg font-bold text-gray-800">
