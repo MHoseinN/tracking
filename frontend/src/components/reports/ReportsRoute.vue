@@ -1,18 +1,14 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
-      <button @click="exportReports" class="app-button-primary w-full justify-between">
-        <span>خروجی گزارش</span>
+      <button @click="exportReports"
+        class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
+        Excel
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
       </button>
-      <div class="rounded-xl border border-slate-200 bg-white p-3">
-        <p class="mb-2 text-xs font-bold tracking-[0.18em] text-slate-400">YEAR FILTER</p>
-        <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
-          trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-          @update:model-value="selectedYear = $event" />
-      </div>
       <button @click="goBack" class="app-button-secondary w-full justify-between">
         <span>بازگشت</span>
         <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +32,7 @@
         <section
           class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
           <div
-            class="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/70 pointer-events-none">
+            class="absolute inset-0 pointer-events-none">
           </div>
           <div class="relative flex flex-wrap items-start justify-between gap-4">
             <div class="space-y-2">
@@ -44,15 +40,7 @@
                 <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
               </div>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-              <button @click="exportReports"
-                class="inline-flex items-center rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
-                گزارش
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
+            <div class="flex flex-wrap items-center gap-3">            
               <div class="min-w-[180px]">
                 <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
                   trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"

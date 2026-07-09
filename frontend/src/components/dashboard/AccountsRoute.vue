@@ -7,95 +7,55 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
       </button>
-      <button @click="openAddCustomerModal" class="app-button-success w-full justify-between">
-        <span>افزودن کاربر</span>
+      <button @click="exportInvoices"
+        class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
+        Excel
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 7v3m0 0v3m0-3h3m-3 0h-3M6 20a4 4 0 018 0M10 4a4 4 0 110 8 4 4 0 010-8z" />
-        </svg>
-      </button>
-      <button @click="navigateToCharts" class="app-button-secondary w-full justify-between">
-        <span>گزارش‌ها</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      </button>
-      <button @click="navigateToUsers" class="app-button-secondary w-full justify-between">
-        <span>مدیریت کاربران</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m9-9a2 2 0 11-4 0 2 2 0 014 0zm-6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </button>
-      <button @click="navigateToInventory" class="app-button-secondary w-full justify-between">
-        <span>بخش رزرو</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m8-14l-8 4m0 10L4 17V7m8 14V11" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
       </button>
     </Teleport>
-      <!-- Invoice table -->
-      <div class="app-panel">
-        <div class="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-5">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div class="w-full xl:max-w-4xl">
-                <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
-                  :filter-model-value="statusFilter" 
-                  @update:text-model-value="searchCustomerName = $event" @update:date-model-value="searchDate = $event"
-                  @update:filter-model-value="statusFilter = $event" @clear="clearSearch" />
-              </div>
-              <div class="flex items-center justify-end">
-                <button @click="exportInvoices"
-                  class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
-                  گزارش
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+    <!-- Invoice table -->
+    <div class="app-panel">
+      <div class="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-5">
+        <div class="w-full">
+          <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
+            :filter-model-value="statusFilter" @update:text-model-value="searchCustomerName = $event"
+            @update:date-model-value="searchDate = $event" @update:filter-model-value="statusFilter = $event"
+            @clear="clearSearch" />
         </div>
-
-        <!-- Loading state -->
-        <AppContentState
-          v-if="invoiceStore.loading"
-          loading
-          message="در حال بارگذاری فهرست حساب‌ها..."
-          surface-class="border-0 bg-transparent shadow-none"
-        />
-
-        <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="true" :show-actions="true"
-          :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort" @edit="openEditModal"
-          @delete="openDeleteModal" @status-change="handleStatusChange" @customer-click="navigateToCustomer" />
-
-        <AppPagination
-          v-if="!invoiceStore.loading"
-          :total-rows="totalRows"
-          :row-start-index="rowStartIndex"
-          :page-size="pageSize"
-          :page-size-options="pageSizeSelectOptions"
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :visible-page-numbers="visiblePageNumbers"
-          @update:page-size="pageSize = $event"
-          @go-to-page="goToPage"
-        />
       </div>
+
+      <!-- Loading state -->
+      <AppContentState v-if="invoiceStore.loading" loading message="در حال بارگذاری فهرست حساب‌ها..."
+        surface-class="border-0 bg-transparent shadow-none" />
+
+      <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="true" :show-actions="true"
+        :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort" @edit="openEditModal"
+        @delete="openDeleteModal" @status-change="handleStatusChange" @customer-click="navigateToCustomer" />
+
+      <AppPagination v-if="!invoiceStore.loading" :total-rows="totalRows" :row-start-index="rowStartIndex"
+        :page-size="pageSize" :page-size-options="pageSizeSelectOptions" :current-page="currentPage"
+        :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event"
+        @go-to-page="goToPage" />
+    </div>
   </div>
 
-    <!-- Invoice Form Modal -->
-    <InvoiceForm :is-open="showInvoiceForm" :customer-id="null" :invoice-data="selectedInvoice"
-      :customers-list="invoiceStore.customers" @save="handleSaveInvoice" @close="closeInvoiceForm" />
+  <!-- Invoice Form Modal -->
+  <InvoiceForm :is-open="showInvoiceForm" :customer-id="null" :invoice-data="selectedInvoice"
+    :customers-list="invoiceStore.customers" @save="handleSaveInvoice" @close="closeInvoiceForm" />
 
-    <CustomerFormModal :is-open="showCustomerForm" :existing-customers="invoiceStore.customers"
-      @close="closeCustomerForm" @saved="handleCustomerSaved" />
+  <CustomerFormModal :is-open="showCustomerForm" :existing-customers="invoiceStore.customers" @close="closeCustomerForm"
+    @saved="handleCustomerSaved" />
 
-    <!-- Confirm Delete Modal -->
-    <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
-      message="آیا از حذف این فاکتور اطمینان دارید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
-      @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
+  <!-- Confirm Delete Modal -->
+  <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
+    message="آیا از حذف این فاکتور اطمینان دارید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
+    @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
 
-    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
-      @close="clearUndo" />
+  <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+    @close="clearUndo" />
 </template>
 
 <script setup>

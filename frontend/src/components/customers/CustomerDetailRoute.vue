@@ -8,7 +8,7 @@
         </svg>
       </button>
       <button @click="exportCustomerInvoices" class="app-button-secondary w-full justify-between">
-        <span>گزارش مشتری</span>
+        <span>آمار مشتری</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
@@ -136,7 +136,7 @@
             </button>
             <button @click="exportCustomerInvoices"
               class="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
-              گزارش
+              آمار
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

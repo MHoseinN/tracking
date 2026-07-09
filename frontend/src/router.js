@@ -45,7 +45,7 @@ const routes = [
     component: () => import('./components/reports/ReportsRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'گزارش',
+      title: 'آمار',
       subtitle: 'روند درآمد، تعداد فاکتورها و عملکرد مشتری‌ها را در نماهای تحلیلی یکپارچه مرور کن'
     }
   },

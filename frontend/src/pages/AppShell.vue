@@ -6,29 +6,24 @@
           <div class="flex items-center gap-3">
             <button type="button" class="app-shell__toggle" @click="toggleSidebar('nav')">
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  :d="navCollapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  :d="navCollapsed ? 'm18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5' : 'm5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5'" />
               </svg>
             </button>
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 text-white">
+              <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 17V7m4 10V5m4 12V9M5 19h14" />
+                  d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V13.5Zm0 2.25h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V18Zm2.498-6.75h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V13.5Zm0 2.25h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V18Zm2.504-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5Zm0 2.25h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V18Zm2.498-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5ZM8.25 6h7.5v2.25h-7.5V6ZM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 0 0 2.25 2.25h10.5a2.25 2.25 0 0 0 2.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0 0 12 2.25Z" />
               </svg>
             </div>
             <div class="min-w-0 app-shell__label-block">
-              <p class="text-sm font-bold tracking-[0.28em] text-slate-400">مدیریت</p>
-              <h1 class="mt-1 truncate text-xl font-black text-slate-900">حساب و رزرو</h1>
+              <p class="text-sm font-bold text-gray-500">مدیریت</p>
+              <h1 class=" truncate text-xl font-black text-slate-900">حساب و رزرو</h1>
             </div>
           </div>
         </div>
 
-        <div class="min-h-0 flex-1  overflow-y-auto scrollbar-hide">
+        <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide py-2">
           <div v-for="group in navGroups" :key="group.key" class="py-1 last-0">
             <button v-if="!group.items?.length" type="button"
               class="flex w-full rounded-xl text-right transition app-shell__menu-button px-4"
@@ -37,7 +32,8 @@
               <span class="flex items-center justify-center gap-2 min-w-0">
                 <span class="app-shell__menu-icon">
                   <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="path" />
+                    <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round"
+                      stroke-linejoin="round" stroke-width="2" :d="path" />
                   </svg>
                 </span>
                 <span class="truncate text-sm font-semibold app-shell__label-text">{{ group.label }}</span>
@@ -52,12 +48,15 @@
                 <span class="flex items-center gap-2 min-w-0">
                   <span class="app-shell__menu-icon">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="path" />
+                      //
+                      <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2" :d="path" />
+
                     </svg>
                   </span>
                   <span class="truncate text-sm font-semibold app-shell__label-text">{{ group.label }}</span>
                 </span>
-                <span class="text-3xl leading-none app-shell__label-text">{{ openGroups[group.key] ? '−' : '+' }}</span>
+                <span class="text-3xl leading-none app-shell__label-text">{{ openGroups[group.key] ? '-' : '+' }}</span>
               </button>
 
               <div v-if="openGroups[group.key]" class="mr-10 py-1 app-shell__submenu">
@@ -81,80 +80,96 @@
     <header class="app-shell__header">
       <div class="flex h-full flex-col justify-center gap-4 px-4 lg:px-6">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center justify-between">
-            <div ref="searchRootRef" class="relative min-w-0 flex-1">
-              <div
-                class="flex h-14 items-center w-[92%] gap-3 rounded-xl border border-gray-200 bg-white px-4 shadow-md transition duration-200 focus-within:border-gray-400 focus-within:ring-4 focus-within:ring-gray-100">
-                <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+          <div ref="searchRootRef" class="relative min-w-0 flex-1">
+            <div
+              class="flex h-14 items-center w-[92%] gap-3 rounded-xl border border-gray-200 bg-white px-4 shadow-md transition duration-200 focus-within:border-gray-400 focus-within:ring-4 focus-within:ring-gray-100">
+              <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+              <input v-model.trim="globalSearch" type="text"
+                class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                placeholder="جست‌وجوی سراسری در حساب‌، مشتری‌ و محصول" @focus="handleSearchFocus"
+                @keydown.esc="closeSearchResults" />
+              <button v-if="globalSearch" type="button" class="app-icon-button h-9 w-9 rounded-xl border-0 bg-slate-100"
+                @click="clearSearch">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                <input v-model.trim="globalSearch" type="text"
-                  class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                  placeholder="جست‌وجوی سراسری در حساب‌، مشتری‌ و محصول" @focus="handleSearchFocus"
-                  @keydown.esc="closeSearchResults" />
-                <button v-if="globalSearch" type="button"
-                  class="app-icon-button h-9 w-9 rounded-xl border-0 bg-slate-100" @click="clearSearch">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+              </button>
+            </div>
 
-              <div v-if="showSearchResults"
-                class="absolute inset-x-0 w-[92%]  z-[90] overflow-hidden rounded-xl  border border-gray-200 bg-white shadow-md">
-                <div v-if="searchLoading" class="px-4 py-6 text-sm text-slate-500">در حال آماده‌سازی نتایج...</div>
-                <div v-else-if="searchSections.length === 0" class="px-4 py-6 text-sm text-slate-500">نتیجه‌ای پیدا نشد.</div>
-                <div v-else class="max-h-[420px] overflow-y-auto p-3">
-                  <div v-for="section in searchSections" :key="section.title" class="mb-3 last:mb-0">
-                    <p class="mb-2 px-2 text-xs font-bold tracking-[0.2em] text-slate-400">{{ section.title }}</p>
-                    <button v-for="item in section.items" :key="item.key" type="button"
-                      class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-right transition hover:bg-slate-50"
-                      @click="handleSearchSelection(item)">
-                      <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold text-slate-800">{{ item.label }}</p>
-                        <p v-if="item.meta" class="mt-1 truncate text-xs text-slate-500">{{ item.meta }}</p>
-                      </div>
-                      <span class="app-badge bg-slate-100 text-slate-600">{{ item.badge }}</span>
-                    </button>
-                  </div>
+            <div v-if="showSearchResults"
+              class="absolute inset-x-0 w-[92%]  z-[90] overflow-hidden rounded-xl  border border-gray-200 bg-white shadow-md">
+              <div v-if="searchLoading" class="px-4 py-6 text-sm text-slate-500">در حال آماده‌سازی نتایج...</div>
+              <div v-else-if="searchSections.length === 0" class="px-4 py-6 text-sm text-slate-500">نتیجه‌ای پیدا نشد.
+              </div>
+              <div v-else class="max-h-[420px] overflow-y-auto p-3">
+                <div v-for="section in searchSections" :key="section.title" class="mb-3 last:mb-0">
+                  <p class="mb-2 px-2 text-xs font-bold tracking-[0.2em] text-slate-400">{{ section.title }}</p>
+                  <button v-for="item in section.items" :key="item.key" type="button"
+                    class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-right transition hover:bg-slate-50"
+                    @click="handleSearchSelection(item)">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold text-slate-800">{{ item.label }}</p>
+                      <p v-if="item.meta" class="mt-1 truncate text-xs text-slate-500">{{ item.meta }}</p>
+                    </div>
+                    <span class="app-badge bg-slate-100 text-slate-600">{{ item.badge }}</span>
+                  </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="hidden items-center gap-2 lg:flex">
-              <button type="button" :disabled="backupLoading"
-                class="app-button border border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 focus:ring-amber-100"
-                @click="handleManualBackup">
-                {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
-              </button>
-              <button type="button" class="app-button-danger" @click="handleLogout">خروج</button>
-            </div>
+          <div class="hidden items-center gap-2 lg:flex">
+            <button type="button" :disabled="backupLoading"
+              class="app-button border border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 focus:ring-amber-100"
+              @click="handleManualBackup">
+              {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </button>
+            <button type="button" class="app-button-danger" @click="handleLogout">
+              خروج
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </header>
 
-    <aside class="app-shell__actions">
-      <div class="flex h-full flex-col p-4 items-center">
-        <div class="mb-3 flex items-center justify-between pb-3 app-shell__actions-header">
-          <button type="button" class="app-shell__toggle" @click="toggleSidebar('actions')">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                :d="actionsCollapsed ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7'"
-              />
-            </svg>
-          </button>
+    <aside class="app-shell__actions" :class="{ 'app-shell__actions--collapsed': actionsCollapsed }">
+      <div class="flex h-full flex-col gap-3" :class="actionsCollapsed ? 'justify-start py-3' : 'p-4'">
+        <div class="flex items-center px-2 gap-5 app-shell__actions-header" :class="actionsCollapsed ? '' : ''">
+
+          <div>
+            <button type="button" class="app-shell__toggle" @click="toggleSidebar('actions')">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  :d="actionsCollapsed ? 'm5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5' : 'm18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5'" />
+              </svg>
+            </button>
+          </div>
+          <div :class="actionsCollapsed ? 'hidden' : ''">
+            <h1>عملیات</h1>
+          </div>
         </div>
-        <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
-          <div id="app-shell-actions" class="h-full app-shell__actions-content"></div>
+
+        <div class="min-h-0 overflow-y-auto scrollbar-hide">
+          <div id="app-shell-actions" class="flex flex-col gap-2 w-full h-full app-shell__actions-content"></div>
         </div>
       </div>
     </aside>
 
     <main class="app-shell__main scrollbar-hide">
-      <div class="min-h-full space-y-5 p-4 lg:p-6">
+      <div class="min-h-full space-y-5 p-4">
         <slot />
       </div>
     </main>
@@ -202,36 +217,36 @@ const navGroups = [
   {
     key: 'accounts',
     label: 'حساب',
-    icon: ['M4.5 6.75h15', 'M6 4.5h12a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z'],
+    icon: ["M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"],
     items: [
-      { key: 'accounts', label: 'مدیربت حساب‌ها', to: '/accounts', icon: ['M6 7.5h12', 'M6 12h12', 'M6 16.5h7.5'] },
-      { key: 'reports', label: 'گزارش‌ها', to: '/reports', icon: ['M6.75 17.25V9.75', 'M12 17.25V6.75', 'M17.25 17.25v-4.5'] }
+      { key: 'accounts', label: 'مدیریت حساب‌ها', to: '/accounts' },
+      { key: 'reports', label: 'آمار', to: '/reports' }
     ]
   },
   {
     key: 'customers',
     label: 'کاربران',
-    icon: ['M15 19.5v-1.125A3.375 3.375 0 0 0 11.625 15h-3.75A3.375 3.375 0 0 0 4.5 18.375V19.5', 'M9.75 10.5A3 3 0 1 0 9.75 4.5a3 3 0 0 0 0 6Z'],
+    icon: ['M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z'],
     items: [
-      { key: 'users', label: 'مدیریت کاربران', to: '/users', icon: ['M4.5 19.5v-1.125A3.375 3.375 0 0 1 7.875 15h3.75A3.375 3.375 0 0 1 15 18.375V19.5', 'M9.75 10.5A3 3 0 1 0 9.75 4.5a3 3 0 0 0 0 6Z'] }
+      { key: 'users', label: 'مدیریت کاربران', to: '/users' }
     ]
   },
   {
     key: 'inventory',
     label: 'رزرو',
-    icon: ['M4.5 7.5 12 3.75 19.5 7.5 12 11.25 4.5 7.5Z', 'M4.5 7.5v9L12 20.25l7.5-3.75v-9'],
+    icon: ['M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z'],
     items: [
-      { key: 'dashInventory', label: 'داشبورد رزرو', to: '/inventory', icon: ['M6.75 16.5v-3.75', 'M12 16.5v-9', 'M17.25 16.5V9'] },
-      { key: 'inventory-new', label: 'سبد رزرو', to: '/inventory/reservations/new', icon: ['M3.75 5.25h1.5l1.5 9h9.75l1.5-6.75H6.75', 'M9 18.75a.75.75 0 1 0 0 0.001', 'M15.75 18.75a.75.75 0 1 0 0 0.001'] },
-      { key: 'inventory-active', label: 'رزروهای فعال', to: '/inventory/reservations/active', icon: ['M12 6.75v5.25l3 1.5', 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'] }
+      { key: 'dashInventory', label: 'داشبورد رزرو', to: '/inventory' },
+      { key: 'inventory-new', label: 'سبد رزرو', to: '/inventory/reservations/new' },
+      { key: 'inventory-active', label: 'رزروهای فعال', to: '/inventory/reservations/active' }
     ]
   },
   {
     key: 'products',
     label: 'محصولات',
-    icon: ['M12 3.75 19.5 8.25v7.5L12 20.25 4.5 15.75v-7.5L12 3.75Z', 'M8.25 6.375 15.75 10.875'],
+    icon: ['m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9'],
     items: [
-      { key: 'inventory-manage', label: 'مدیریت محصولات', to: '/inventory/manage', icon: ['M4.5 7.5 12 3.75 19.5 7.5 12 11.25 4.5 7.5Z', 'M4.5 7.5v9L12 20.25l7.5-3.75v-9'] }
+      { key: 'inventory-manage', label: 'مدیریت محصولات', to: '/inventory/manage' }
     ]
   }
 ];
@@ -240,13 +255,13 @@ const openGroups = ref({
   accounts: true,
   customers: true,
   inventory: true,
-  products:true
+  products: true
 });
 
 const routeSearchItems = [
   { key: 'route-home', type: 'route', label: 'خانه', meta: 'نمای کلی سیستم', badge: 'صفحه', to: '/home' },
   { key: 'route-accounts', type: 'route', label: 'حساب‌ها', meta: 'مدیریت و جستجوی همه حساب‌ها', badge: 'صفحه', to: '/accounts' },
-  { key: 'route-reports', type: 'route', label: 'گزارش‌ها', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
+  { key: 'route-reports', type: 'route', label: 'آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
   { key: 'route-users', type: 'route', label: 'مدیریت کاربران', meta: 'لیست و وضعیت حساب مشتری‌ها', badge: 'صفحه', to: '/users' },
   { key: 'route-inventory', type: 'route', label: 'داشبورد رزرو', meta: 'وضعیت موجودی و رزروها', badge: 'صفحه', to: '/inventory' },
   { key: 'route-products', type: 'route', label: 'مدیریت محصولات', meta: 'دسته‌بندی و محصولات انبار', badge: 'صفحه', to: '/inventory/manage' },

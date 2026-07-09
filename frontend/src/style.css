@@ -80,7 +80,7 @@ body {
     grid-template-columns: var(--shell-actions-width) minmax(0, 1fr) var(--shell-nav-width);
     grid-template-rows: var(--shell-header-height) minmax(0, 1fr);
     grid-template-areas:
-      "actions header nav"
+      "header header nav"
       "actions main nav";
     transition: grid-template-columns 280ms ease;
   }
@@ -245,20 +245,24 @@ body {
   padding-right: 0;
 }
 
+.app-shell--actions-collapsed .app-shell__actions.app-shell__actions--collapsed {
+  overflow: visible;
+}
+
 .app-shell-actions-portal:has(> :not(:first-child)) > :first-child {
   display: none;
 }
 
 .app-panel {
-  @apply overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm;
+  @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
 }
 
 .app-sidebar-panel {
-  @apply overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm;
+  @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
 }
 
 .app-panel-muted {
-  @apply rounded-[24px] border border-slate-200 bg-slate-50 shadow-sm;
+  @apply rounded-xl border border-slate-200 bg-slate-50 shadow-sm;
 }
 
 .app-section-title {

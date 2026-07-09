@@ -13,14 +13,10 @@
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/inventory')">
         <span> رزرو</span>
       </button>
-    </Teleport> 
+    </Teleport>
 
-     <AppContentState
-      v-if="loading"
-      loading
-      message="در حال بارگذاری نمای کلی سیستم..."
-      surface-class="border-0 bg-transparent py-24 shadow-none"
-    /> 
+    <AppContentState v-if="loading" loading message="در حال بارگذاری نمای کلی سیستم..."
+      surface-class="border-0 bg-transparent py-24 shadow-none" />
 
     <div v-else class="space-y-6">
       <section class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -37,7 +33,6 @@
           <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div>
               <h3 class="text-base font-bold text-slate-800">آخرین حساب‌ها</h3>
-              <p class="mt-1 text-xs text-slate-500">پنج حساب آخر ثبت‌شده در سیستم</p>
             </div>
             <button type="button" class="app-button-secondary px-3 py-2 text-xs" @click="router.push('/accounts')">
               مشاهده همه
@@ -53,8 +48,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="invoice in latestInvoices" :key="invoice.id" class="border-b border-slate-100 last:border-b-0">
-                  <td class="px-5 py-4 text-sm font-semibold text-slate-700">{{ invoice.customer_name || 'بدون نام' }}</td>
+                <tr v-for="invoice in latestInvoices" :key="invoice.id"
+                  class="border-b border-slate-100 last:border-b-0">
+                  <td class="px-5 py-4 text-sm font-semibold text-slate-700">{{ invoice.customer_name || 'بدون نام' }}
+                  </td>
                   <td class="px-5 py-4 text-sm text-slate-500">{{ toPersianDate(invoice.date) }}</td>
                   <td class="px-5 py-4 text-sm font-bold text-slate-700">{{ formatCurrency(invoice.price) }}</td>
                 </tr>
@@ -68,18 +65,14 @@
 
         <div class="space-y-6">
           <div class="app-panel p-5">
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-base font-bold text-slate-800">وضعیت انبار</h3>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">خلاصه رزرو</span>
+            <div class="mb-4 text-center">
+              <h3 class="text-base font-bold text-slate-800">وضعیت رزرو</h3>
             </div>
-            <div class="space-y-3">
-              <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p class="text-xs text-slate-500">کل محصولات</p>
-                <p class="mt-2 text-lg font-black text-slate-900">{{ formatNumber(inventorySummary.total_products) }}</p>
-              </div>
+            <div class="space-y-3 text-center">
               <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p class="text-xs text-slate-500">واحدهای آزاد</p>
-                <p class="mt-2 text-lg font-black text-emerald-700">{{ formatNumber(inventorySummary.total_available) }}</p>
+                <p class="mt-2 text-lg font-black text-emerald-700">{{ formatNumber(inventorySummary.total_available) }}
+                </p>
               </div>
               <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p class="text-xs text-slate-500">واحدهای رزروشده</p>
@@ -89,9 +82,8 @@
           </div>
 
           <div class="app-panel p-5">
-            <div class="mb-4 flex items-center justify-between">
+            <div class="mb-4 text-center">
               <h3 class="text-base font-bold text-slate-800">میانبرها</h3>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Quick Access</span>
             </div>
             <div class="grid gap-3">
               <button type="button" class="app-button-secondary justify-between" @click="router.push('/accounts')">
@@ -100,7 +92,8 @@
               <button type="button" class="app-button-secondary justify-between" @click="router.push('/users')">
                 <span>ورود به کاربران</span>
               </button>
-              <button type="button" class="app-button-secondary justify-between" @click="router.push('/inventory/reservations/active')">
+              <button type="button" class="app-button-secondary justify-between"
+                @click="router.push('/inventory/reservations/active')">
                 <span>رزروهای فعال</span>
               </button>
             </div>
@@ -146,7 +139,7 @@ const latestInvoices = computed(() =>
       if (dateCompare !== 0) return dateCompare;
       return (Number(right.id) || 0) - (Number(left.id) || 0);
     })
-    .slice(0, 5)
+    .slice(0, 9)
 );
 
 
