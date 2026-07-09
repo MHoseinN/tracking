@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/accounts')">
         <span> مدیریت حساب‌</span>
       </button>
@@ -13,22 +13,23 @@
       <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/inventory')">
         <span> رزرو</span>
       </button>
-    </Teleport>
+    </Teleport> 
 
-    <AppContentState
+     <AppContentState
       v-if="loading"
       loading
       message="در حال بارگذاری نمای کلی سیستم..."
       surface-class="border-0 bg-transparent py-24 shadow-none"
-    />
+    /> 
 
     <div v-else class="space-y-6">
-      <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
         <AppStatCard label="کل حساب‌ها" :value="formatNumber(totalInvoices)" value-class="text-indigo-600" />
         <AppStatCard label="مبلغ کل" :value="formatCurrency(totalRevenue)" value-class="text-emerald-600" />
         <AppStatCard label="تسویه‌نشده" :value="formatCurrency(unsettledAmount)" value-class="text-rose-600" />
         <AppStatCard label="کل کاربران" :value="formatNumber(totalCustomers)" value-class="text-sky-600" />
         <AppStatCard label="رزرو فعال" :value="formatNumber(activeReservations)" value-class="text-amber-600" />
+        <AppStatCard label="بهترین مشتری" :value="123456" value-class="text-amber-600" />
       </section>
 
       <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -147,6 +148,7 @@ const latestInvoices = computed(() =>
     })
     .slice(0, 5)
 );
+
 
 onMounted(async () => {
   loading.value = true;

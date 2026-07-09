@@ -1,8 +1,8 @@
 <template>
   <div class="app-shell" :class="shellClassNames">
     <aside class="app-shell__nav">
-      <div class="flex h-full flex-col px-4 pt-1 py-5">
-        <div class="border-b border-gray-200 px-2 py-7">
+      <div class="flex h-full flex-col px-3">
+        <div class="py-6">
           <div class="flex items-center gap-3">
             <button type="button" class="app-shell__toggle" @click="toggleSidebar('nav')">
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,13 +28,13 @@
           </div>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto px-1 pt-4 scrollbar-hide">
-          <div v-for="group in navGroups" :key="group.key" class="mb-2 last:mb-0">
+        <div class="min-h-0 flex-1  overflow-y-auto scrollbar-hide">
+          <div v-for="group in navGroups" :key="group.key" class="py-1 last-0">
             <button v-if="!group.items?.length" type="button"
-              class="flex w-full items-center justify-between rounded-xl px-3 py-3 text-right transition app-shell__menu-button"
+              class="flex w-full rounded-xl text-right transition app-shell__menu-button px-4"
               :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
               @click="navigateTo(group.to)">
-              <span class="flex items-center gap-3 min-w-0">
+              <span class="flex items-center justify-center gap-2 min-w-0">
                 <span class="app-shell__menu-icon">
                   <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="path" />
@@ -46,10 +46,10 @@
 
             <template v-else>
               <button type="button"
-                class="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-right transition app-shell__menu-button"
+                class="flex w-full items-center justify-between rounded-xl  text-right transition app-shell__menu-button px-4"
                 :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
                 @click="toggleGroup(group.key)">
-                <span class="flex items-center gap-3 min-w-0">
+                <span class="flex items-center gap-2 min-w-0">
                   <span class="app-shell__menu-icon">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="path" />
@@ -60,21 +60,16 @@
                 <span class="text-3xl leading-none app-shell__label-text">{{ openGroups[group.key] ? '−' : '+' }}</span>
               </button>
 
-              <div v-if="openGroups[group.key]" class="mr-4 mt-1 space-y-1 app-shell__submenu">
+              <div v-if="openGroups[group.key]" class="mr-10 py-1 app-shell__submenu">
                 <button v-for="item in group.items" :key="item.key" type="button"
-                  class="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-right text-sm transition app-shell__menu-button"
+                  class="flex w-full px-6 items-center justify-between rounded-xl text-right text-sm transition app-shell__menu-button"
                   :class="isActiveRoute(item) ? 'app-shell__menu-button--subactive font-bold text-blue-700' : 'bg-white text-zinc-700 hover:bg-slate-50 hover:text-blue-700'"
                   @click="navigateTo(item.to)">
-                  <span class="flex items-center gap-3 min-w-0">
-                    <span class="app-shell__menu-icon app-shell__menu-icon--sub">
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path v-for="(path, index) in item.icon" :key="`${item.key}-${index}`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="path" />
-                      </svg>
-                    </span>
+                  <span class="flex items-center gap-2 min-w-0">
                     <span class="truncate app-shell__label-text">{{ item.label }}</span>
                   </span>
-                  <span v-if="item.badge"
-                    class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 app-shell__label-text">{{ item.badge }}</span>
+                  <!-- <span v-if="item.badge"
+                    class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 app-shell__label-text">{{ item.badge }}</span> -->
                 </button>
               </div>
             </template>
@@ -139,9 +134,8 @@
     </header>
 
     <aside class="app-shell__actions">
-      <div class="flex h-full flex-col p-4">
-        <div class="mb-3 flex items-center justify-between border-b border-gray-200 pb-3 app-shell__actions-header">
-          <span class="text-sm font-semibold text-slate-500 app-shell__label-text">اکشن‌ها</span>
+      <div class="flex h-full flex-col p-4 items-center">
+        <div class="mb-3 flex items-center justify-between pb-3 app-shell__actions-header">
           <button type="button" class="app-shell__toggle" @click="toggleSidebar('actions')">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

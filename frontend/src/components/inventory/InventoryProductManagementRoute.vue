@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
       <button type="button" @click="openProductModal()" class="app-button-success w-full">افزودن محصول</button>
       <button type="button" :disabled="!selectedCategoryObject"

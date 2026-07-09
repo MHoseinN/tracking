@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button type="button" class="app-button-primary w-full justify-between" @click="router.push('/inventory/manage')">
         <span>مدیریت محصولات</span>
       </button>

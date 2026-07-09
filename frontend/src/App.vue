@@ -7,15 +7,6 @@
     >
       <component :is="Component" :key="currentRoute.fullPath" />
     </AppShell>
-    <div
-      v-if="currentRoute.meta.requiresAuth && authStore.isAuthenticated"
-      id="app-shell-actions"
-      class="app-shell-actions-portal"
-    >
-      <p class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-        اکشنی برای این صفحه تعریف نشده است.
-      </p>
-    </div>
     <component :is="Component" v-else :key="currentRoute.fullPath" />
   </router-view>
 </template>

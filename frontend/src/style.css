@@ -8,11 +8,16 @@
 
 :root {
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  --shell-nav-width: 12.25rem;
-  --shell-actions-width: 7.25rem;
-  --shell-nav-collapsed-width: 5.5rem;
-  --shell-actions-collapsed-width: 4.75rem;
-  --shell-header-height: 112px;
+  --shell-nav-width: 18rem;
+  --shell-actions-width: 12rem;
+  --shell-nav-collapsed-width: 4rem;
+  --shell-actions-collapsed-width: 4rem;
+  --shell-header-height: 100px;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
@@ -21,7 +26,9 @@ body {
 }
 
 #app {
-  @apply min-h-screen bg-white;
+  height: 100%;
+  overflow: hidden;
+  @apply bg-white;
 }
 
 ::-webkit-scrollbar {
@@ -53,7 +60,9 @@ body {
 
 .app-shell {
   direction: ltr;
-  @apply min-h-screen bg-gray-100;
+  height: 100vh;
+  overflow: hidden;
+  @apply bg-gray-100;
 }
 
 .app-shell__nav,
@@ -61,12 +70,12 @@ body {
 .app-shell__actions,
 .app-shell__main {
   direction: rtl;
+  min-height: 0;
   min-width: 0;
 }
 
 @media (min-width: 1024px) {
   .app-shell {
-    min-height: 100vh;
     display: grid;
     grid-template-columns: var(--shell-actions-width) minmax(0, 1fr) var(--shell-nav-width);
     grid-template-rows: var(--shell-header-height) minmax(0, 1fr);
@@ -102,7 +111,7 @@ body {
   .app-shell__actions {
     grid-area: actions;
     overflow: hidden;
-    @apply border-l border-slate-200 bg-white;
+    @apply border-r border-gray-200 bg-white;
   }
 
   .app-shell__main {
@@ -124,7 +133,7 @@ body {
 
 @media (max-width: 1023px) {
   .app-shell {
-    @apply flex min-h-screen flex-col bg-gray-100;
+    @apply flex h-screen flex-col bg-gray-100;
   }
 
   .app-shell__nav,
@@ -133,7 +142,7 @@ body {
   }
 
   .app-shell__header {
-    position: sticky;
+    position: fixed;
     top: 0;
     z-index: 40;
     @apply border-b border-slate-200 bg-slate-100/95 backdrop-blur-xl;
@@ -163,12 +172,12 @@ body {
 }
 
 .app-shell__menu-icon {
-  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent bg-slate-100 text-slate-500;
-  transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease;
+  @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500;
+  transition: background-color 280ms ease, color 280ms ease;
 }
 
 .app-shell__menu-icon--sub {
-  @apply h-10 w-10;
+  @apply h-11 w-11;
 }
 
 .app-shell__label-block,
@@ -199,7 +208,7 @@ body {
 
 .app-shell--nav-collapsed .app-shell__nav .app-shell__menu-button {
   justify-content: center;
-  padding-left: 0.75rem;
+  padding-left:0.27rem;
   padding-right: 0.75rem;
 }
 
@@ -213,7 +222,7 @@ body {
 }
 
 .app-shell--nav-collapsed .app-shell__nav .app-shell__menu-icon {
-  @apply h-11 w-11 rounded-2xl bg-transparent text-slate-400;
+  @apply h-11 w-11 rounded-xl bg-transparent text-slate-400;
 }
 
 .app-shell__menu-button--active .app-shell__menu-icon,

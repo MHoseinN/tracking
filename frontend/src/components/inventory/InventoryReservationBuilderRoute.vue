@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button type="button" :disabled="saving || cartItems.length === 0" class="app-button-success w-full" @click="submitReservation">
         {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
       </button>

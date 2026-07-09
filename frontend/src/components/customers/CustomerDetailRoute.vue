@@ -1,6 +1,6 @@
 ﻿<template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button @click="openAddModal" class="app-button-primary w-full justify-between">
         <span>افزودن حساب</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

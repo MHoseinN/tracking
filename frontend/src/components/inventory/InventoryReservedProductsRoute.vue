@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button type="button" :disabled="releasingAll || !orders.length" class="app-button-danger w-full" @click="showReleaseAllConfirm = true">
         {{ releasingAll ? 'در حال آزادسازی...' : 'آزادسازی همه محصولات' }}
       </button>

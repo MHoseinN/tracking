@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport defer to="#app-shell-actions">
       <button @click="exportReports" class="app-button-primary w-full justify-between">
         <span>خروجی گزارش</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
