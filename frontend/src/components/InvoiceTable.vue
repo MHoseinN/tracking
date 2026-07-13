@@ -44,7 +44,7 @@
           <!-- Customer name (clickable) -->
           <td v-if="showCustomerColumn" class="px-4 py-3">
             <button @click="$emit('customer-click', invoice.customer_id)"
-              class="text-blue-600 hover:text-blue-800 hover:underline font-medium transition">
+              class="text-slate-700 hover:text-slate-500 font-medium transition">
               {{ invoice.customer_name }}
             </button>
           </td>

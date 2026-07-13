@@ -1,17 +1,17 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
-      <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/accounts')">
-        <span> مدیریت حساب‌</span>
+      <button @click="openAddModal" class="app-button-secondary w-full justify-between">
+        <span>افزودن حساب</span>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
       </button>
-      <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/users')">
-        <span> مدیریت کاربران</span>
-      </button>
-      <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/reports')">
-        <span>آمار</span>
-      </button>
-      <button type="button" class="app-button-secondary w-full justify-between" @click="router.push('/inventory')">
-        <span> رزرو</span>
+      <button @click="openAddCustomerModal" class="app-button-secondary w-full justify-between">
+        <span>افزودن کاربر</span>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
       </button>
     </Teleport>
 
@@ -102,20 +102,35 @@
       </section>
     </div>
   </div>
+
+  <InvoiceForm :is-open="showInvoiceForm" :customer-id="null" :invoice-data="selectedInvoice"
+    :customers-list="invoiceStore.customers" @save="handleSaveInvoice" @close="closeInvoiceForm" />
+
+  <CustomerFormModal :is-open="showCustomerForm" :existing-customers="invoiceStore.customers" @close="closeCustomerForm"
+    @saved="handleCustomerSaved" />
+
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import AppStatCard from '../AppStatCard.vue';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import { useInventoryStore } from '../../stores/inventoryStore';
 import { toPersianDate } from '../../utils/dateConverter';
+import InvoiceForm from '../InvoiceForm.vue';
+import CustomerFormModal from '../CustomerFormModal.vue';
+
 
 const router = useRouter();
+const toast = useToast();
 const invoiceStore = useInvoiceStore();
 const inventoryStore = useInventoryStore();
+const selectedInvoice = ref(null);
+const showInvoiceForm = ref(false);
+const showCustomerForm = ref(false);
 
 const loading = ref(true);
 
@@ -142,11 +157,63 @@ const latestInvoices = computed(() =>
     .slice(0, 9)
 );
 
+function openAddModal() {
+  selectedInvoice.value = null;
+  showInvoiceForm.value = true;
+}
+
+function closeInvoiceForm() {
+  showInvoiceForm.value = false;
+  selectedInvoice.value = null;
+}
+
+function openAddCustomerModal() {
+  showCustomerForm.value = true;
+}
+
+function closeCustomerForm() {
+  showCustomerForm.value = false;
+}
+
+async function handleSaveInvoice({ data, isEdit }) {
+  let result;
+
+  if (isEdit && selectedInvoice.value) {
+    result = await invoiceStore.updateInvoice(selectedInvoice.value.id, data);
+    if (!result.success) {
+      toast.error(result.message);
+      return;
+    }
+    toast.success('فاکتور با موفقیت ویرایش شد');
+  } else {
+    result = await invoiceStore.addInvoice(data);
+    if (!result.success) {
+      toast.error(result.message);
+      return;
+    }
+    toast.success('فاکتور با موفقیت اضافه شد');
+  }
+
+  closeInvoiceForm();
+  await Promise.all([
+    invoiceStore.fetchAllInvoices(),
+    invoiceStore.fetchCustomersOverview()
+  ]);
+}
+
+async function handleCustomerSaved() {
+  closeCustomerForm();
+  await Promise.all([
+    invoiceStore.fetchCustomers(),
+    invoiceStore.fetchCustomersOverview()
+  ]);
+}
 
 onMounted(async () => {
   loading.value = true;
   try {
     await Promise.all([
+      invoiceStore.fetchCustomers(),
       invoiceStore.fetchAllInvoices(),
       invoiceStore.fetchCustomersOverview(),
       inventoryStore.fetchDashboard(),
@@ -156,6 +223,7 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
 
 function formatNumber(value) {
   return Math.round(Number(value) || 0).toLocaleString('fa-IR');

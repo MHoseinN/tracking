@@ -1,6 +1,6 @@
 <template>
   <div class="app-shell" :class="shellClassNames">
-    <aside class="app-shell__nav">
+    <aside class="app-shell__nav border-l border-gray-200">
       <div class="flex h-full flex-col px-3">
         <div class="py-6">
           <div class="flex items-center gap-3">
@@ -67,8 +67,6 @@
                   <span class="flex items-center gap-2 min-w-0">
                     <span class="truncate app-shell__label-text">{{ item.label }}</span>
                   </span>
-                  <!-- <span v-if="item.badge"
-                    class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 app-shell__label-text">{{ item.badge }}</span> -->
                 </button>
               </div>
             </template>
@@ -77,12 +75,12 @@
       </div>
     </aside>
 
-    <header class="app-shell__header">
+    <header class="app-shell__header z-[50]">
       <div class="flex h-full flex-col justify-center gap-4 px-4 lg:px-6">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center justify-between">
-          <div ref="searchRootRef" class="relative min-w-0 flex-1">
+          <div ref="searchRootRef" class="relative flex-1">
             <div
-              class="flex h-14 items-center w-[92%] gap-3 rounded-xl border border-gray-200 bg-white px-4 shadow-md transition duration-200 focus-within:border-gray-400 focus-within:ring-4 focus-within:ring-gray-100">
+              class="flex h-12 items-center w-[75%] gap-3 rounded-lg border border-gray-200 bg-white px-4 shadow-md transition duration-200 focus-within:ring-4 focus-within:ring-blue-100">
               <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
@@ -100,7 +98,7 @@
             </div>
 
             <div v-if="showSearchResults"
-              class="absolute inset-x-0 w-[92%]  z-[90] overflow-hidden rounded-xl  border border-gray-200 bg-white shadow-md">
+              class="absolute inset-x-0 w-[75%] mt-1 z-[90] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
               <div v-if="searchLoading" class="px-4 py-6 text-sm text-slate-500">در حال آماده‌سازی نتایج...</div>
               <div v-else-if="searchSections.length === 0" class="px-4 py-6 text-sm text-slate-500">نتیجه‌ای پیدا نشد.
               </div>
@@ -121,19 +119,32 @@
             </div>
           </div>
 
-          <div class="hidden items-center gap-2 lg:flex">
-            <button type="button" :disabled="backupLoading"
+          <div class="hidden items-center gap-2 px-3 lg:flex justify-between">
+            <div v-if="showProfileClicked"
+              class="border-2 mt-6 border-gray-200 bg-neutral-100 px-4 py-2 z-[50] rounded-lg">
+              <p>محمد حسین نعمتیان</p>
+              <div class="rounded-xl bg-neutral-400 inline-block px-2 py-1">
+                <p class="text-xs"> ادمین ارشد</p>
+              </div>
+            </div>
+            <button type="button" @click="showProfile"
+              class="app-button-secondary border border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+            </button>
+            <button type="button" title="بکاپ" :disabled="backupLoading"
               class="app-button border border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 focus:ring-amber-100"
               @click="handleManualBackup">
-              {{ backupLoading ? 'در حال بکاپ...' : 'بکاپ' }}
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="size-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
             </button>
-            <button type="button" class="app-button-danger" @click="handleLogout">
-              خروج
+            <button type="button" title="خروج" class="app-button-danger" @click="handleLogout">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="size-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -141,6 +152,7 @@
               </svg>
             </button>
           </div>
+
         </div>
       </div>
     </header>
@@ -206,6 +218,9 @@ const searchDataInitialized = ref(false);
 const navCollapsed = ref(false);
 const actionsCollapsed = ref(false);
 
+
+const showProfileClicked = ref(false);
+
 const navGroups = [
   {
     key: 'home',
@@ -251,12 +266,14 @@ const navGroups = [
   }
 ];
 
-const openGroups = ref({
-  accounts: true,
-  customers: true,
-  inventory: true,
-  products: true
+const createClosedGroups = () => ({
+  accounts: false,
+  customers: false,
+  inventory: false,
+  products: false
 });
+
+const openGroups = ref(createClosedGroups());
 
 const routeSearchItems = [
   { key: 'route-home', type: 'route', label: 'خانه', meta: 'نمای کلی سیستم', badge: 'صفحه', to: '/home' },
@@ -314,6 +331,10 @@ const searchSections = computed(() => {
   ].filter((section) => section.items.length > 0);
 });
 
+function showProfile() {
+  showProfileClicked.value = !showProfileClicked.value;
+}
+
 function isActiveRoute(item) {
   if (item.to === '/users' && route.path.startsWith('/customer/')) return true;
   return route.path === item.to;
@@ -328,7 +349,10 @@ function isGroupActive(group) {
 
 function toggleGroup(key) {
   if (navCollapsed.value) return;
-  openGroups.value[key] = !openGroups.value[key];
+
+  const nextState = !openGroups.value[key];
+  openGroups.value = createClosedGroups();
+  openGroups.value[key] = nextState;
 }
 
 function toggleSidebar(sidebar) {
@@ -342,6 +366,7 @@ function toggleSidebar(sidebar) {
 
 function navigateTo(path) {
   if (!path || route.path === path) return;
+  openGroups.value = createClosedGroups();
   router.push(path);
 }
 

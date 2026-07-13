@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
     <div
-      class="flex min-h-14 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+      class="flex min-h-12 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-sm transition focus-within:ring-4 focus-within:ring-blue-100">
 
       <svg v-if="searchIcon" class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor"
         viewBox="0 0 24 24">
@@ -10,10 +10,10 @@
       </svg>
       <input v-if="showTextInput" :value="textModelValue" @input="$emit('update:textModelValue', $event.target.value)"
         type="text" :placeholder="textPlaceholder"
-        class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+        class="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 " />
 
       <button v-if="hasValue" type="button" @click="$emit('clear')"
-        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
         title="پاک کردن">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -28,7 +28,7 @@
     </div>
 
     <CustomSelect :model-value="filterModelValue" :options="filterOptions"
-      trigger-class="h-14 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
+      trigger-class="h-12 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium shadow-md transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
       @update:model-value="$emit('update:filterModelValue', $event)" />
   </div>
 </template>

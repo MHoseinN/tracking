@@ -1,5 +1,5 @@
 <template>
-  <div v-if="totalRows > 0" class="app-pagination">
+  <div v-if="totalRows > 0" class="app-pagination ">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
       <div>
         <p class="text-sm text-slate-500">
@@ -13,11 +13,11 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 text-sm text-slate-500">
+        <div class="flex items-center gap-2 text-sm text-gray-500">
           <CustomSelect
             :model-value="pageSize"
             :options="pageSizeOptions"
-            trigger-class="min-w-[92px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+            trigger-class="min-w-[95px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-gray-300 hover:shadow-md"
             @update:model-value="$emit('update:page-size', Number($event))"
           />
         </div>
@@ -34,7 +34,7 @@
         :key="page"
         @click="$emit('go-to-page', page)"
         :class="page === currentPage
-          ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+          ? ' bg-blue-600 text-white shadow-lg shadow-blue-600/20'
           : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
         class="app-pagination-button"
       >

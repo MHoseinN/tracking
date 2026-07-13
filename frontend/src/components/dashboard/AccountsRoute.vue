@@ -9,7 +9,7 @@
       </button>
       <button @click="exportInvoices"
         class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
-        Excel
+        گزارش‌گیری
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -18,7 +18,7 @@
     </Teleport>
     <!-- Invoice table -->
     <div class="app-panel">
-      <div class="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-5">
+      <div class="border-b border-slate-200  px-4 py-4 sm:px-5">
         <div class="w-full">
           <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
             :filter-model-value="statusFilter" @update:text-model-value="searchCustomerName = $event"
@@ -56,6 +56,7 @@
 
   <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
     @close="clearUndo" />
+    
 </template>
 
 <script setup>

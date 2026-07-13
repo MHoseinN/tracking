@@ -16,164 +16,151 @@
         </svg>
       </button>
     </Teleport>
-      <AppContentState
-        v-if="loading"
-        loading
-        message="در حال بارگذاری آمار..."
-        surface-class="border-0 bg-transparent py-24 shadow-none"
-        text-class="text-gray-500"
-      />
+    <AppContentState v-if="loading" loading message="در حال بارگذاری آمار..."
+      surface-class="border-0 bg-transparent py-24 shadow-none" text-class="text-gray-500" />
 
-      <div v-else class="space-y-6">
-        <div v-if="errorMessage" class="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-4">
-          {{ errorMessage }}
+    <div v-else class="space-y-6">
+      <div v-if="errorMessage" class="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-4">
+        {{ errorMessage }}
+      </div>
+
+      <section
+        class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
+        <div class="absolute inset-0 pointer-events-none">
+        </div>
+        <div class="relative flex flex-wrap items-start justify-between gap-4">
+          <div class="space-y-2">
+            <div>
+              <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="min-w-[180px]">
+              <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
+                trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                @update:model-value="selectedYear = $event" />
+            </div>
+          </div>
         </div>
 
-        <section
-          class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
-          <div
-            class="absolute inset-0 pointer-events-none">
-          </div>
-          <div class="relative flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-2">
-              <div>
-                <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
+        <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <AppStatCard v-for="card in reportSummaryCards" :key="card.label" :label="card.label" :value="card.value"
+            :value-class="card.valueClass" container-class="bg-white/90 shadow-md" />
+        </div>
+
+        <div class="relative grid gap-6">
+          <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">درآمد</span>
               </div>
+              <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
             </div>
-            <div class="flex flex-wrap items-center gap-3">            
-              <div class="min-w-[180px]">
-                <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
-                  trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                  @update:model-value="selectedYear = $event" />
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
+                <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
               </div>
+              <canvas ref="countChartCanvas" class="w-full h-[380px]"></canvas>
             </div>
           </div>
 
-          <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <AppStatCard
-              v-for="card in reportSummaryCards"
-              :key="card.label"
-              :label="card.label"
-              :value="card.value"
-              :value-class="card.valueClass"
-              container-class="bg-white/90 shadow-md"
-            />
-          </div>
+          <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] mt-8">
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                  <h3 class="text-base font-bold text-slate-800">جدول تحلیل دوره‌ای</h3>
+                  <p class="mt-1 text-xs text-slate-500">نمای ریزتر از روند تعداد فاکتورها و درآمد</p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  {{ activeRows.length.toLocaleString('fa-IR') }} ردیف
+                </span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="border-b border-slate-100 bg-slate-50">
+                    <tr>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">{{ periodHeader }}
+                      </th>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">تعداد فاکتورها
+                      </th>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">درآمد</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="stat in activeRows" :key="stat.period"
+                      class="border-b border-slate-100 hover:bg-slate-50">
+                      <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period,
+                        displayMode) }}</td>
+                      <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.invoice_count) }}</td>
+                      <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.total_income) }}</td>
+                    </tr>
+                    <tr v-if="!activeRows.length">
+                      <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود
+                        ندارد</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-          <div class="relative grid gap-6">
-            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+            <div class="grid gap-6">
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
                 <div class="mb-4 flex items-center justify-between">
-                  <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
-                  <span
-                    class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">درآمد</span>
+                  <h3 class="text-base font-bold text-slate-800">وضعیت عملیاتی</h3>
+                  <span class="text-xs text-slate-500">ارسال و تسویه</span>
                 </div>
-                <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
+                <div class="space-y-3">
+                  <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-xl bg-white px-4 py-3">
+                    <div class="mb-2 flex items-center justify-between">
+                      <p class="font-semibold text-slate-700">{{ item.label }}</p>
+                      <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
                 <div class="mb-4 flex items-center justify-between">
-                  <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
-                  <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
+                  <h3 class="text-base font-bold text-slate-800">برترین مشتری‌ها</h3>
+                  <span class="text-xs text-slate-500">بر اساس مبلغ فاکتور</span>
                 </div>
-                <canvas ref="countChartCanvas" class="w-full h-[380px]"></canvas>
-              </div>
-            </div>
-
-            <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] mt-8">
-              <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                  <div>
-                    <h3 class="text-base font-bold text-slate-800">جدول تحلیل دوره‌ای</h3>
-                    <p class="mt-1 text-xs text-slate-500">نمای ریزتر از روند تعداد فاکتورها و درآمد</p>
+                <div v-if="topCustomers.length" class="space-y-3">
+                  <div v-for="customer in topCustomers" :key="customer.name"
+                    class="flex items-center justify-between rounded-xl bg-white px-4 py-3">
+                    <div>
+                      <p class="font-semibold text-slate-800">{{ customer.name }}</p>
+                      <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
+                    </div>
+                    <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
                   </div>
-                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                    {{ activeRows.length.toLocaleString('fa-IR') }} ردیف
-                  </span>
                 </div>
-                <div class="overflow-x-auto">
-                  <table class="w-full">
-                    <thead class="border-b border-slate-100 bg-slate-50">
-                      <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">{{ periodHeader }}
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">تعداد فاکتورها
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">درآمد</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="stat in activeRows" :key="stat.period"
-                        class="border-b border-slate-100 hover:bg-slate-50">
-                        <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period,
-                          displayMode) }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.invoice_count) }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.total_income) }}</td>
-                      </tr>
-                      <tr v-if="!activeRows.length">
-                        <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود
-                          ندارد</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                <p v-else class="rounded-xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
+                  نمایش نیست</p>
               </div>
 
-              <div class="grid gap-6">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-base font-bold text-slate-800">وضعیت عملیاتی</h3>
-                    <span class="text-xs text-slate-500">ارسال و تسویه</span>
-                  </div>
-                  <div class="space-y-3">
-                    <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-xl bg-white px-4 py-3">
-                      <div class="mb-2 flex items-center justify-between">
-                        <p class="font-semibold text-slate-700">{{ item.label }}</p>
-                        <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
-                      </div>
-                      <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }"></div>
-                      </div>
-                    </div>
-                  </div>
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <div class="mb-4 flex items-center justify-between">
+                  <h3 class="text-base font-bold text-slate-800">مرور سریع</h3>
+                  <span class="text-xs text-slate-500">خلاصه کاربردی</span>
                 </div>
-
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-base font-bold text-slate-800">برترین مشتری‌ها</h3>
-                    <span class="text-xs text-slate-500">بر اساس مبلغ فاکتور</span>
-                  </div>
-                  <div v-if="topCustomers.length" class="space-y-3">
-                    <div v-for="customer in topCustomers" :key="customer.name"
-                      class="flex items-center justify-between rounded-xl bg-white px-4 py-3">
-                      <div>
-                        <p class="font-semibold text-slate-800">{{ customer.name }}</p>
-                        <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
-                      </div>
-                      <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
-                    </div>
-                  </div>
-                  <p v-else class="rounded-xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
-                    نمایش نیست</p>
-                </div>
-
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-base font-bold text-slate-800">مرور سریع</h3>
-                    <span class="text-xs text-slate-500">خلاصه کاربردی</span>
-                  </div>
-                  <div class="space-y-4">
-                    <div v-for="item in reportHighlights" :key="item.label" class="rounded-xl bg-white px-4 py-4">
-                      <p class="text-xs text-slate-500">{{ item.label }}</p>
-                      <p class="mt-2 text-lg font-bold" :class="item.valueClass">{{ item.value }}</p>
-                    </div>
+                <div class="space-y-4">
+                  <div v-for="item in reportHighlights" :key="item.label" class="rounded-xl bg-white px-4 py-4">
+                    <p class="text-xs text-slate-500">{{ item.label }}</p>
+                    <p class="mt-2 text-lg font-bold" :class="item.valueClass">{{ item.value }}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -272,7 +259,7 @@ const reportSummaryCards = computed(() => ([
     value: formatNumber(activeSummary.value.totalIncome),
     valueClass: 'text-emerald-600',
   },
-   {
+  {
     label: 'مبلغ تسویه نشده',
     value: formatNumber(advancedSummary.value.unsettledAmount),
     valueClass: 'text-rose-600',
@@ -292,8 +279,8 @@ const reportSummaryCards = computed(() => ([
     value: advancedSummary.value.topCustomerName,
     valueClass: 'text-amber-600',
   },
-  
- 
+
+
 ]));
 
 const scopedInvoices = computed(() => {

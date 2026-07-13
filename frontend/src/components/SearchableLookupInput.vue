@@ -2,7 +2,7 @@
   <div ref="rootRef" class="relative" :class="wrapperClass">
     <div
       ref="triggerRef"
-      class="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100"
+      class="flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100"
       :class="inputContainerClass"
       @click="focusInput"
     >
@@ -15,7 +15,7 @@
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
-        class="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+        class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
         :class="inputClass"
         @focus="openDropdown"
         @input="handleInput"
@@ -38,15 +38,12 @@
     </div>
 
     <Teleport to="body">
-      <div v-if="isOpen" class="fixed inset-0 z-[150]" @click="closeDropdown">
+      <div v-if="isOpen" class="fixed inset-0 z-50" @click="closeDropdown">
         <div
-          class="fixed z-[151] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+          class="fixed z-[50] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
           :style="dropdownStyle"
           @click.stop
         >
-          <!-- <div class="border-b border-slate-100 px-4 py-3 text-xs font-semibold tracking-[0.2em] text-slate-400">
-            {{ headerText }}
-          </div> -->
 
           <div class="overflow-y-auto p-2" :style="{ maxHeight: dropdownStyle.maxHeight }">
             <button
