@@ -1,14 +1,14 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
-      <button @click="openAddModal" class="app-button-secondary w-full justify-between">
-        <span>افزودن حساب</span>
+      <button @click="openAddModal" class="app-button-primary w-full justify-between">
+        <span> حساب جدید</span>
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
       </button>
-      <button @click="openAddCustomerModal" class="app-button-secondary w-full justify-between">
-        <span>افزودن کاربر</span>
+      <button @click="openAddCustomerModal" class="app-button-primary w-full justify-between">
+        <span> کاربر جدید</span>
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>

@@ -2,7 +2,7 @@
   <div>
     <Teleport defer to="#app-shell-actions">
       <button @click="openAddModal" class="app-button-primary w-full justify-between">
-        <span>افزودن حساب</span>
+        <span> حساب جدید</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -56,7 +56,7 @@
 
   <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
     @close="clearUndo" />
-    
+
 </template>
 
 <script setup>

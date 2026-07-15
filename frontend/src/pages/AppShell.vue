@@ -89,7 +89,7 @@
                 class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 placeholder="جست‌وجوی سراسری در حساب‌، مشتری‌ و محصول" @focus="handleSearchFocus"
                 @keydown.esc="closeSearchResults" />
-              <button v-if="globalSearch" type="button" class="app-icon-button h-9 w-9 rounded-xl border-0 bg-slate-100"
+              <button v-if="globalSearch" type="button" class="app-icon-button h-9 w-9 rounded-xl border-0 bg-gray-300"
                 @click="clearSearch">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -189,7 +189,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/authStore';
@@ -355,6 +355,22 @@ function toggleGroup(key) {
   openGroups.value[key] = nextState;
 }
 
+function syncOpenGroupWithRoute() {
+  const nextState = createClosedGroups();
+
+  if (route.path === '/reports' || route.path === '/accounts') {
+    nextState.accounts = true;
+  } else if (route.path === '/users' || route.path.startsWith('/customer/')) {
+    nextState.customers = true;
+  } else if (route.path === '/inventory' || route.path === '/inventory/reservations/new' || route.path === '/inventory/reservations/active') {
+    nextState.inventory = true;
+  } else if (route.path === '/inventory/manage') {
+    nextState.products = true;
+  }
+
+  openGroups.value = nextState;
+}
+
 function toggleSidebar(sidebar) {
   if (sidebar === 'nav') {
     navCollapsed.value = !navCollapsed.value;
@@ -366,9 +382,10 @@ function toggleSidebar(sidebar) {
 
 function navigateTo(path) {
   if (!path || route.path === path) return;
-  openGroups.value = createClosedGroups();
   router.push(path);
 }
+
+watch(() => route.path, syncOpenGroupWithRoute, { immediate: true });
 
 async function ensureSearchData() {
   if (searchDataInitialized.value) return;

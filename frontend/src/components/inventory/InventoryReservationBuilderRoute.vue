@@ -12,7 +12,7 @@
 
     <div class="max-w-6xl">
       <section class="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
+        <!-- <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <h2 class="text-xl font-black text-slate-900">مشتری و اقلام سبد</h2>
             <p class="mt-2 text-sm text-slate-500">هم مشتری را انتخاب کن، هم محصولات را با جست‌وجوی دراپ‌داونی اضافه کن و در همان بالا رزرو را ثبت نهایی بزن.</p>
@@ -36,9 +36,9 @@
               خالی کردن سبد
             </button>
           </div>
-        </div>
+        </div> -->
 
-        <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(330px,0.8fr)]">
+        <div class="mt-5 grid gap-5 ">
           <div class="space-y-5">
             <div class="grid gap-5 md:grid-cols-3">
               <label class="space-y-2 md:col-span-3">
@@ -170,7 +170,7 @@
             </div>
           </div>
 
-          <aside class="space-y-4">
+          <!-- <aside class="space-y-4">
             <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <p class="text-sm font-semibold text-slate-500">تعداد آیتم‌های سبد</p>
               <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.totalQuantity.toLocaleString('fa-IR') }}</p>
@@ -183,7 +183,7 @@
               <p class="text-sm font-semibold text-slate-500">بازه انتخابی</p>
               <p class="mt-3 text-sm font-bold text-slate-900">{{ startDatePersian }} تا {{ endDatePersian }}</p>
             </article>
-          </aside>
+          </aside> -->
         </div>
       </section>
 

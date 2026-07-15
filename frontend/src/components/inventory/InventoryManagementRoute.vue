@@ -1,11 +1,8 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
-      <button type="button" class="app-button-primary w-full justify-between" @click="router.push('/inventory/manage')">
-        <span>مدیریت محصولات</span>
-      </button>
       <button type="button"
-        class="app-button w-full justify-between border border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 focus:ring-amber-100"
+        class="app-button w-full justify-between border border-rose-200 bg-rose-100 text-rose-700 hover:bg-rose-200 focus:ring-rose-100"
         @click="router.push('/inventory/reservations/new')">
         <span>سبد رزرو</span>
         <span class="rounded-full bg-white/60 px-2 py-0.5 text-xs font-bold">{{
@@ -13,76 +10,59 @@
       </button>
       <button type="button" class="app-button-success w-full"
         @click="router.push('/inventory/reservations/active')">رزروهای فعال</button>
-      <button type="button" class="app-button-secondary w-full" @click="reloadDashboard">بارگذاری مجدد</button>
-      <button type="button" class="app-button-secondary w-full" @click="resetFilters">پاک کردن فیلترها</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت به خانه</button>
     </Teleport>
 
-    <div class="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-      <aside class="space-y-5 xl:sticky xl:self-start xl:overflow-hidden">
-        <section class="flex h-full min-h-0 flex-col rounded-lg border border-slate-200 bg-white/90 p-2">
-          <div class="flex min-h-0 flex-1 flex-col gap-2">
-            <div class="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-              <div class="flex min-h-0 flex-1 flex-col space-y-1">
-                <button type="button" class="w-full rounded-xl px-3 py-2 text-right text-sm font-semibold transition"
-                  :class="selectedCategoryId ? 'text-slate-700 hover:bg-white' : 'bg-blue-50 text-blue-700'"
-                  @click="selectedCategoryId = null">
-                  دسته بندی </button>
+    <div class="grid items-start gap-2 grid-cols-[250px_minmax(0,1fr)]">
+      <aside
+        class="rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem] overflow-hidden">
+        <div class="flex h-full min-h-0 flex-col space-y-4">
+          <div class="min-h-0 flex-1 space-y-2">
+            <button type="button" class="w-full rounded-lg px-3 py-2 text-right text-sm font-semibold transition"
+              :class="selectedCategoryId ? 'text-slate-700' : 'bg-blue-100 text-blue-700'"
+              @click="selectedCategoryId = null">
+              همه محصولات </button>
 
-                <div v-if="filteredTree.length" class="min-h-0 flex-1 space-y-1 overflow-y-auto pl-1 pr-1">
-                  <CategoryTreeItem v-for="node in filteredTree" :key="node.id" :node="node"
-                    :selected-id="selectedCategoryId" @select="selectedCategoryId = $event.id" />
-                </div>
-                <p v-else class="rounded-xl bg-white px-3 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
-              </div>
+            <div v-if="filteredTree.length" class=" space-y-1 overflow-y-auto pl-1 pr-1 max-h-[calc(100vh-20rem)]">
+              <CategoryTreeItem v-for="node in filteredTree" :key="node.id" :node="node"
+                :selected-id="selectedCategoryId" @select="selectedCategoryId = $event.id" />
             </div>
+            <p v-else class="rounded-xl bg-white px-3 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
           </div>
-        </section>
+        </div>
       </aside>
 
-      <section class="space-y-5">
-
-        <section class="rounded-lg border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-          <div class="border-b border-slate-100 p-4">
+      <section class="space-y-4">
+        <section class="rounded-lg border border-gray-200 bg-white shadow-md">
+          <div class="p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 class="text-lg font-black text-slate-900">محصولات {{ selectedCategoryObject?.name || 'همه دسته‌ها'
-                  }}
+                }}
                 </h2>
               </div>
             </div>
-            <div class="mt-4 grid gap-3 grid-cols-1">
-              <div class="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
+            <div class="mt-4 grid gap-3 grid-cols-4">
+              <div
+                class="flex min-h-11 col-span-4 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
                 <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
                 </svg>
-                <input v-model.trim="searchTerm" type="text" placeholder="جستجو در محصول، دسته‌بندی و مشتری"
+                <input v-model.trim="searchTerm" type="text" placeholder="جستجو"
                   class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
               </div>
-              <div class="grid md:grid-cols-3 gap-1">
-                <CustomSelect :model-value="statusFilter" :options="statusOptions" placeholder="وضعیت"
-                  trigger-class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
-                  @update:model-value="statusFilter = $event" />
-                <JalaliDatePicker :model-value="rangeStartPersian" trigger-mode="button" button-placeholder="از تاریخ"
-                  button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm"
-                  @update:model-value="rangeStartPersian = $event" />
-                <JalaliDatePicker :model-value="rangeEndPersian" trigger-mode="button" button-placeholder="تا تاریخ"
-                  button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm"
-                  @update:model-value="rangeEndPersian = $event" />
-                <!-- <div class="grid grid-cols-2 gap-1">
-                  <button type="button"
-                    class="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900  text-sm font-semibold text-white transition hover:bg-slate-800"
-                    @click="reloadDashboard">
-                    اعمال
-                  </button>
-                  <button type="button"
-                    class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    @click="resetFilters">
-                    حذف فیلتر‌ها
-                  </button>
-                </div> -->
-              </div>
+              <CustomSelect class="col-span-1" :model-value="statusFilter" :options="statusOptions" placeholder="وضعیت"
+                trigger-class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
+                @update:model-value="statusFilter = $event" />
+              <JalaliDatePicker class="col-span-1" :model-value="rangeStartPersian" trigger-mode="button"
+                button-placeholder="از تاریخ"
+                button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm"
+                @update:model-value="rangeStartPersian = $event" />
+              <JalaliDatePicker class="col-span-1" :model-value="rangeEndPersian" trigger-mode="button"
+                button-placeholder="تا تاریخ"
+                button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm"
+                @update:model-value="rangeEndPersian = $event" />
             </div>
           </div>
 
@@ -91,10 +71,10 @@
           <AppContentState v-else-if="paginatedGroups.length === 0" message="موردی پیدا نشد."
             surface-class="border-0 bg-transparent px-4 py-16 shadow-none" />
 
-          <div v-else class="space-y-2 px-4">
+          <div v-else class="space-y-4 px-4">
             <article v-for="group in paginatedGroups" :key="group.product_id"
-              class="rounded-lg border border-slate-200 bg-white p-4">
-              <div class="pb-2">
+              class="rounded-lg bg-neutral-50 border border-slate-300">
+              <div class="p-3  bg-gray-100">
                 <div class="min-w-0 flex items-center justify-between gap-2">
                   <div class="flex gap-4">
                     <h3 class="truncate text-base font-black text-slate-900">{{ group.product_name }}</h3>
@@ -111,18 +91,17 @@
                   </div>
                   <div class="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
                     {{ formatNumber(group.total_units) }}عدد </div>
-
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-2 rounded-lg bg-gray-50 p-2">
                 <article v-for="unit in group.units" :key="unit.unit_id"
-                  class="w-32 rounded-xl border p-2 transition hover:-translate-y-0.5 hover:shadow-lg"
+                  class="w-30 rounded-xl border p-2 transition hover:-translate-y-0.5 hover:shadow-lg"
                   :class="unit.status === 'reserved' ? 'border-rose-200 bg-rose-50/80' : 'border-emerald-200 bg-emerald-50/80'">
                   <button type="button" class="block w-full text-right" @click="openUnitModal(unit)">
                     <div class="flex items-start justify-between gap-2">
                       <span class="text-[11px] font-black text-slate-700">شماره {{ formatNumber(unit.unit_number)
-                        }}</span>
+                      }}</span>
                       <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
                         :class="unit.status === 'reserved' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'">
                         {{ unit.status === 'reserved' ? 'رزرو' : 'آزاد' }}

@@ -1,13 +1,13 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
+      <button type="button" @click="openProductModal()" class="app-button-primary w-full">افزودن محصول</button>
       <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
-      <button type="button" @click="openProductModal()" class="app-button-success w-full">افزودن محصول</button>
+      <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)"
+        class="app-button w-full bg-amber-200/80 disabled:opacity-50">ویرایش ‌دسته‌بندی</button>
       <button type="button" :disabled="!selectedCategoryObject"
         @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })"
-        class="app-button-secondary w-full disabled:opacity-50">افزودن زیرشاخه</button>
-      <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)"
-        class="app-button-secondary w-full disabled:opacity-50">ویرایش دسته</button>
+        class="app-button-sucess w-full disabled:opacity-50">افزودن زیرشاخه</button>
       <button type="button" :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true"
         class="app-button w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف
         دسته</button>
@@ -15,30 +15,15 @@
         رزرو</button>
     </Teleport>
 
-    <div class="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+    <div class="grid items-start gap-2 grid-cols-[250px_minmax(0,1fr)]">
       <aside
-        class="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.06)] xl:sticky xl:top-28 xl:max-h-[calc(100vh-8.5rem)] xl:self-start xl:overflow-hidden">
+        class="rounded-xl border border-slate-200 bg-white p-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem)] overflow-hidden">
         <div class="flex h-full min-h-0 flex-col space-y-4">
-          <div class="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 shadow-sm">
-            <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-            </svg>
-            <input v-model.trim="treeSearch" type="text" placeholder="جستجو در شاخه‌ها..."
-              class="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
-          </div>
-
           <div class="min-h-0 flex-1 space-y-2">
             <button type="button" class="w-full rounded-xl px-3 py-2 text-right text-sm font-semibold transition"
-              :class="selectedCategoryId ? 'text-slate-700 hover:bg-slate-50' : 'bg-blue-50 text-blue-700'"
+              :class="selectedCategoryId ? 'text-slate-700' : 'bg-blue-100 text-blue-700'"
               @click="selectedCategoryId = null">
-              همه دسته‌ها
-            </button>
-
-            <button type="button" :disabled="!selectedCategoryObject"
-              class="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-right text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">
-              افزودن زیرشاخه به دسته انتخاب‌شده
+              همه محصولات
             </button>
 
             <div v-if="filteredTree.length"
@@ -52,8 +37,8 @@
       </aside>
 
       <section class="space-y-6">
-        <section class="rounded-xl border border-slate-200 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5">
+        <section class="rounded-lg border border-gray-200 bg-white shadow-md">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-5">
             <div>
               <h2 class="text-xl font-black text-slate-900">محصولات {{ selectedCategoryObject?.name || 'همه شاخه‌ها' }}
               </h2>

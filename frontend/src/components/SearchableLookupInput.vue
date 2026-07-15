@@ -38,9 +38,9 @@
     </div>
 
     <Teleport to="body">
-      <div v-if="isOpen" class="fixed inset-0 z-50" @click="closeDropdown">
+      <div v-if="isOpen" class="fixed inset-0 z-[150]" @click="closeDropdown">
         <div
-          class="fixed z-[50] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+          class="fixed z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
           :style="dropdownStyle"
           @click.stop
         >

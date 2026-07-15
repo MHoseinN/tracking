@@ -14,8 +14,8 @@
       </svg>
     </button>
 
-    <div v-if="show" class="absolute z-30 mt-3 bg-white border-2 border-gray-200 rounded-md shadow-md p-3 w-64">
-      <div class="flex items-center justify-between mb-2">
+    <div v-if="show" class="fixed z-50 mx-auto mt-1 bg-white border-2 border-gray-200 rounded-md shadow-md p-3 w-64">
+      <div class="flex items-center justify-between pb-1 border-b ">
         <button type="button" @click="prevMonth"
           class="bg-gray-200 rounded-full flex items-center w-6 h-6 justify-center hover:bg-gray-300 font-extrabold transition">‹</button>
         <div class="text-sm font-medium">{{ monthLabel }} {{ currentYear }}</div>
@@ -23,7 +23,7 @@
           class="bg-gray-200 rounded-full flex items-center w-6 h-6 justify-center hover:bg-gray-300 font-extrabold transition">›</button>
       </div>
 
-      <div class="grid grid-cols-7 gap-1 text-xs text-center text-gray-600 mb-2">
+      <div class="grid grid-cols-7 gap-1 text-xs text-center text-gray-600 py-2">
         <div v-for="d in weekDays" :key="d" class="bg-gray-400 text-white rounded-md border-r-2 border-white">{{ d }}</div>
       </div>
 

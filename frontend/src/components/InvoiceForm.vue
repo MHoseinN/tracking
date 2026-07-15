@@ -3,7 +3,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="$emit('close')">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh]">
         <!-- Header -->
         <div class="flex items-center justify-between p-5 border-b">
           <h3 class="text-lg font-bold text-gray-800">
@@ -25,31 +25,27 @@
             </label>
             <div class="relative">
               <div class="relative">
-                <input
-                  v-model="customerSearch"
-                  @focus="showDropdown = true"
-                  @input="onCustomerInput"
-                  @keydown.down.prevent="focusNext()"
-                  @keydown.up.prevent="focusPrev()"
-                  @keydown.enter.prevent="handleCustomerEnter()"
-                  @blur="onBlur"
-                  type="text"
+                <input v-model="customerSearch" @focus="showDropdown = true" @input="onCustomerInput"
+                  @keydown.down.prevent="focusNext()" @keydown.up.prevent="focusPrev()"
+                  @keydown.enter.prevent="handleCustomerEnter()" @blur="onBlur" type="text"
                   placeholder="جستجو یا انتخاب مشتری"
                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  :class="{ 'border-red-500': errors.customer_id }"
-                />
+                  :class="{ 'border-red-500': errors.customer_id }" />
 
                 <button v-if="form.customer_id" type="button" @click="clearCustomer"
                   class="absolute inset-y-0 left-0 px-2 text-sm text-gray-500">پاک</button>
 
-                <ul v-if="showDropdown && filteredCustomers.length" class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md max-h-48 overflow-auto">
-                  <li v-for="(c, idx) in filteredCustomers" :key="c.id"
-                    @mousedown.prevent="selectCustomer(c)"
-                    :class="{'bg-blue-50': highlightedIndex === idx}"
-                    class="px-3 py-2 hover:bg-blue-50 cursor-pointer">{{ c.name }}</li>
+                <ul v-if="showDropdown && filteredCustomers.length"
+                  class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md max-h-48 overflow-auto">
+                  <li v-for="(c, idx) in filteredCustomers" :key="c.id" @mousedown.prevent="selectCustomer(c)"
+                    :class="{ 'bg-blue-50': highlightedIndex === idx }"
+                    class="px-3 py-2 hover:bg-blue-50 cursor-pointer">
+                    {{ c.name }}</li>
                 </ul>
 
-                <p v-if="showDropdown && !filteredCustomers.length" class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-500">موردی یافت نشد</p>
+                <p v-if="showDropdown && !filteredCustomers.length"
+                  class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-500">
+                  موردی یافت نشد</p>
               </div>
               <p v-if="errors.customer_id" class="text-red-500 text-xs mt-1">{{ errors.customer_id }}</p>
             </div>
@@ -60,7 +56,8 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">
               تاریخ (شمسی) <span class="text-red-500">*</span>
             </label>
-            <JalaliDatePicker v-model="form.persianDate" :error="!!errors.date" />
+            <JalaliDatePicker v-model="form.persianDate" :error="!!errors.date" class="col-span-1" trigger-mode="button"
+              button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-md font-medium text-slate-700 shadow-sm" />
             <p v-if="errors.date" class="text-red-500 text-xs mt-1">{{ errors.date }}</p>
           </div>
 
@@ -77,9 +74,9 @@
           </div>
 
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">یادداشت فاکتور</label>
+            <label class="mb-1 block text-sm font-medium text-gray-700">توضیحات فاکتور</label>
             <textarea v-model="form.notes" rows="4" placeholder="توضیح یا یادداشت مرتبط با این فاکتور..."
-              class="w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+              class="w-full rounded-xl max-h-36 border overflow-scroll border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
 
           <!-- Buttons -->
@@ -312,4 +309,3 @@ async function handleSubmit() {
   saving.value = false;
 }
 </script>
-

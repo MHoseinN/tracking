@@ -7,16 +7,10 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
       </button>
-      <button @click="exportCustomerInvoices" class="app-button-secondary w-full justify-between">
-        <span>آمار مشتری</span>
+      <button @click="exportCustomerInvoices" class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
+        <span>گزارش‌گیری</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-      </button>
-      <button @click="saveCustomerForm" :disabled="customerFormSaving || !customerFormChanged" class="app-button-success w-full justify-between">
-        <span>{{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات' }}</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
         </svg>
       </button>
       <button @click="goBack" class="app-button-secondary w-full justify-between">
@@ -27,9 +21,9 @@
       </button>
     </Teleport>
 
-      <section class="overflow-hidden rounded-xl bg-white shadow-md ring-1 ring-gray-100">
+      <section class="overflow-hidden rounded-xl bg-white mb-4 shadow-md">
         <button type="button" @click="isCustomerInfoOpen = !isCustomerInfoOpen"
-          class="flex w-full items-center justify-between border-b border-white-100 bg-white-50/70 px-5 py-4 text-right transition hover:bg-gray-100/80 sm:px-6">
+          class="flex w-full items-center justify-between border-b border-white-100 bg-white-50/70 px-5 py-4 text-right transition hover:bg-gray-50 sm:px-6">
           <div>
             <h1 class="truncate text-xl font-black text-slate-800 sm:text-2xl">
               {{ customer?.name || 'کاربر' }}
@@ -125,24 +119,6 @@
           <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false" :show-icon-input="false" :searchIcon="false"
             @update:date-model-value="searchDate = $event" @update:filter-model-value="statusFilter = $event"
             @clear="clearSearch" />
-
-          <div class="flex items-center gap-3">
-            <button @click="openAddModal"
-              class="inline-flex items-center gap-2 rounded-xl bg-blue-600 p-4 text-sm font-semibold text-white transition hover:bg-blue-700">
-              <span>افزودن حساب</span>
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-            <button @click="exportCustomerInvoices"
-              class="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
-              آمار
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <AppContentState

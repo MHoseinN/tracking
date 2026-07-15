@@ -42,9 +42,9 @@
           <td class="px-4 py-3 text-gray-500">{{ index + 1 }}</td>
 
           <!-- Customer name (clickable) -->
-          <td v-if="showCustomerColumn" class="px-4 py-3">
-            <button @click="$emit('customer-click', invoice.customer_id)"
-              class="text-slate-700 hover:text-slate-500 font-medium transition">
+          <td v-if="showCustomerColumn" @click="$emit('customer-click', invoice.customer_id)" class="p-3 hover:bg-blue-100 transiton rounded-sm">
+            <button 
+              class="text-slate-700 font-medium">
               {{ invoice.customer_name }}
             </button>
           </td>

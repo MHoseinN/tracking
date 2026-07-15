@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
     <div
-      class="flex min-h-12 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-sm transition focus-within:ring-4 focus-within:ring-blue-100">
+      class="flex min-h-12 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-md transition focus-within:ring-4 focus-within:ring-blue-100">
 
       <svg v-if="searchIcon" class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor"
         viewBox="0 0 24 24">
