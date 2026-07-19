@@ -69,12 +69,12 @@
               <h3 class="text-base font-bold text-slate-800">وضعیت رزرو</h3>
             </div>
             <div class="space-y-3 text-center">
-              <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <p class="text-xs text-slate-500">واحدهای آزاد</p>
                 <p class="mt-2 text-lg font-black text-emerald-700">{{ formatNumber(inventorySummary.total_available) }}
                 </p>
               </div>
-              <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <p class="text-xs text-slate-500">واحدهای رزروشده</p>
                 <p class="mt-2 text-lg font-black text-rose-600">{{ formatNumber(inventorySummary.total_reserved) }}</p>
               </div>

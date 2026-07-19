@@ -4,12 +4,12 @@
       <button type="button" @click="openProductModal()" class="app-button-primary w-full">افزودن محصول</button>
       <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
       <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)"
-        class="app-button w-full bg-amber-200/80 disabled:opacity-50">ویرایش ‌دسته‌بندی</button>
+        class="app-button-secondary w-ful disabled:opacity-50">ویرایش ‌دسته‌بندی</button>
       <button type="button" :disabled="!selectedCategoryObject"
         @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })"
-        class="app-button-sucess w-full disabled:opacity-50">افزودن زیرشاخه</button>
+        class="app-button-secondary w-full disabled:opacity-50">افزودن زیرشاخه</button>
       <button type="button" :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true"
-        class="app-button w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف
+        class="app-button-secondary w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف
         دسته</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به
         رزرو</button>
@@ -17,10 +17,10 @@
 
     <div class="grid items-start gap-2 grid-cols-[250px_minmax(0,1fr)]">
       <aside
-        class="rounded-xl border border-slate-200 bg-white p-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem)] overflow-hidden">
+        class="rounded-lg border border-slate-200 bg-white p-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem)] overflow-hidden">
         <div class="flex h-full min-h-0 flex-col space-y-4">
           <div class="min-h-0 flex-1 space-y-2">
-            <button type="button" class="w-full rounded-xl px-3 py-2 text-right text-sm font-semibold transition"
+            <button type="button" class="w-full rounded-lg px-3 py-2 text-right text-sm font-semibold transition"
               :class="selectedCategoryId ? 'text-slate-700' : 'bg-blue-100 text-blue-700'"
               @click="selectedCategoryId = null">
               همه محصولات
@@ -31,25 +31,18 @@
               <CategoryTreeItem v-for="node in filteredTree" :key="node.id" :node="node"
                 :selected-id="selectedCategoryId" @select="selectedCategoryId = $event.id" />
             </div>
-            <p v-else class="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
+            <p v-else class="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
           </div>
         </div>
       </aside>
 
       <section class="space-y-6">
         <section class="rounded-lg border border-gray-200 bg-white shadow-md">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-2">
             <div>
               <h2 class="text-xl font-black text-slate-900">محصولات {{ selectedCategoryObject?.name || 'همه شاخه‌ها' }}
               </h2>
-              <p class="mt-2 text-sm text-slate-500">{{ visibleProducts.length.toLocaleString('fa-IR') }} محصول نمایش
-                داده می‌شود.</p>
-            </div>
-          </div>
-
-          <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4">
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-              <div class="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 shadow-sm">
+               <div class="flex min-h-12 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 shadow-sm">
                 <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
@@ -57,24 +50,12 @@
                 <input v-model.trim="productSearch" type="text" placeholder="جستجوی لحظه‌ای در محصولات همین شاخه..."
                   class="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
               </div>
+            </div>
+          </div>
 
-              <div class="flex flex-wrap gap-3">
-                <button type="button" :disabled="!selectedCategoryObject"
-                  class="inline-flex h-12 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">
-                  افزودن زیرشاخه
-                </button>
-                <button type="button" :disabled="!selectedCategoryObject"
-                  class="inline-flex h-12 items-center rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  @click="openCategoryModal(selectedCategoryObject)">
-                  ویرایش دسته
-                </button>
-                <button type="button" :disabled="!selectedCategoryObject"
-                  class="inline-flex h-12 items-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  @click="showDeleteCategoryModal = true">
-                  حذف دسته
-                </button>
-              </div>
+          <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+             
             </div>
           </div>
 
@@ -101,12 +82,12 @@
 
               <div class="flex flex-wrap gap-2">
                 <button type="button"
-                  class="inline-flex h-11 items-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                  class="inline-flex h-11 items-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
                   @click="openProductModal(product)">
                   ویرایش
                 </button>
                 <button type="button"
-                  class="inline-flex h-11 items-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                  class="inline-flex h-11 items-center rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                   @click="openDeleteProduct(product)">
                   حذف
                 </button>
@@ -130,6 +111,9 @@
 
     <ConfirmModal :is-open="showDeleteProductModal" title="حذف محصول" :message="deleteProductMessage"
       :loading="deleting" @confirm="handleDeleteProduct" @cancel="showDeleteProductModal = false" />
+
+    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+      @close="clearUndo" />
   </div>
 </template>
 
@@ -142,6 +126,7 @@ import CategoryTreeItem from '../CategoryTreeItem.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import InventoryCategoryModal from '../InventoryCategoryModal.vue';
 import InventoryProductModal from '../InventoryProductModal.vue';
+import UndoBar from '../UndoBar.vue';
 import { useInventoryStore } from '../../stores/inventoryStore';
 
 const router = useRouter();
@@ -161,6 +146,13 @@ const deleting = ref(false);
 const selectedCategoryForModal = ref(null);
 const selectedProduct = ref(null);
 const deleteProductTarget = ref(null);
+const undoState = ref({
+  visible: false,
+  title: '',
+  message: '',
+  handler: null,
+  timerId: null
+});
 
 onMounted(async () => {
   await loadData();
@@ -271,6 +263,7 @@ function openDeleteProduct(product) {
 async function handleSaveCategory(payload) {
   savingCategory.value = true;
   const isEdit = Boolean(selectedCategoryForModal.value?.id);
+  const previousCategory = isEdit ? { ...selectedCategoryForModal.value } : null;
   const result = isEdit
     ? await inventoryStore.updateCategory(selectedCategoryForModal.value.id, payload)
     : await inventoryStore.createCategory(payload);
@@ -284,15 +277,34 @@ async function handleSaveCategory(payload) {
   closeCategoryModal();
   await loadData();
   toast.success(isEdit ? 'دسته‌بندی ویرایش شد' : 'دسته‌بندی ثبت شد');
+  showUndo({
+    title: isEdit ? 'ویرایش دسته‌بندی ثبت شد' : 'دسته‌بندی ثبت شد',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const undoResult = isEdit
+        ? await inventoryStore.updateCategory(previousCategory.id, {
+          name: previousCategory.name,
+          parent_id: previousCategory.parent_id || null
+        })
+        : await inventoryStore.deleteCategory(result.data.id);
+
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 async function handleSaveProduct(payload) {
   savingProduct.value = true;
+  const isEdit = Boolean(selectedProduct.value?.id);
+  const previousProduct = isEdit ? { ...selectedProduct.value } : null;
   const normalizedPayload = {
     ...payload,
     category_id: payload.category_id || selectedCategoryId.value || null
   };
-  const isEdit = Boolean(selectedProduct.value?.id);
   const result = isEdit
     ? await inventoryStore.updateProduct(selectedProduct.value.id, normalizedPayload)
     : await inventoryStore.createProduct(normalizedPayload);
@@ -306,10 +318,31 @@ async function handleSaveProduct(payload) {
   closeProductModal();
   await loadData();
   toast.success(isEdit ? 'محصول ویرایش شد' : 'محصول ثبت شد');
+  showUndo({
+    title: isEdit ? 'ویرایش محصول ثبت شد' : 'محصول ثبت شد',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const undoResult = isEdit
+        ? await inventoryStore.updateProduct(previousProduct.id, {
+          name: previousProduct.name,
+          total_quantity: previousProduct.total_quantity,
+          category_id: previousProduct.category_id || null,
+          notes: previousProduct.notes || null
+        })
+        : await inventoryStore.deleteProduct(result.data.id);
+
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 async function handleDeleteCategory() {
   if (!selectedCategoryObject.value?.id) return;
+  const categorySnapshot = { ...selectedCategoryObject.value };
   deleting.value = true;
   const result = await inventoryStore.deleteCategory(selectedCategoryObject.value.id);
   deleting.value = false;
@@ -323,10 +356,27 @@ async function handleDeleteCategory() {
   selectedCategoryId.value = null;
   await loadData();
   toast.success('دسته‌بندی حذف شد');
+  showUndo({
+    title: 'دسته‌بندی حذف شد',
+    message: 'در صورت نیاز، همین حالا بازگردانی کن.',
+    handler: async () => {
+      const undoResult = await inventoryStore.createCategory({
+        name: categorySnapshot.name,
+        parent_id: categorySnapshot.parent_id || null
+      });
+
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 async function handleDeleteProduct() {
   if (!deleteProductTarget.value?.id) return;
+  const productSnapshot = { ...deleteProductTarget.value };
   deleting.value = true;
   const result = await inventoryStore.deleteProduct(deleteProductTarget.value.id);
   deleting.value = false;
@@ -340,5 +390,48 @@ async function handleDeleteProduct() {
   deleteProductTarget.value = null;
   await loadData();
   toast.success('محصول حذف شد');
+  showUndo({
+    title: 'محصول حذف شد',
+    message: 'در صورت نیاز، همین حالا بازگردانی کن.',
+    handler: async () => {
+      const undoResult = await inventoryStore.createProduct({
+        name: productSnapshot.name,
+        total_quantity: productSnapshot.total_quantity,
+        category_id: productSnapshot.category_id || null,
+        notes: productSnapshot.notes || null
+      });
+
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
+}
+
+function clearUndo() {
+  if (undoState.value.timerId) {
+    window.clearTimeout(undoState.value.timerId);
+  }
+  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
+}
+
+function showUndo({ title, message, handler }) {
+  clearUndo();
+  const timerId = window.setTimeout(() => clearUndo(), 5000);
+  undoState.value = { visible: true, title, message, handler, timerId };
+}
+
+async function handleUndo() {
+  if (!undoState.value.handler) return;
+  const undoHandler = undoState.value.handler;
+  clearUndo();
+  try {
+    await undoHandler();
+    toast.success('بازگردانی انجام شد');
+  } catch (error) {
+    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
+  }
 }
 </script>

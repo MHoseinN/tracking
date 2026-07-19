@@ -7,10 +7,12 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
       </button>
-      <button @click="exportCustomerInvoices" class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
+      <button @click="exportCustomerInvoices"
+        class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
         <span>گزارش‌گیری</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
       </button>
       <button @click="goBack" class="app-button-secondary w-full justify-between">
@@ -21,16 +23,36 @@
       </button>
     </Teleport>
 
-      <section class="overflow-hidden rounded-xl bg-white mb-4 shadow-md">
-        <button type="button" @click="isCustomerInfoOpen = !isCustomerInfoOpen"
-          class="flex w-full items-center justify-between border-b border-white-100 bg-white-50/70 px-5 py-4 text-right transition hover:bg-gray-50 sm:px-6">
+    <section ref="tableSectionRef" class="overflow-hidden rounded-lg bg-white mb-2 shadow-md">
+      <section class="flex w-full items-center justify-between border-b bg-white p-4">
+        <div class="flex gap-3 justify-between">
           <div>
-            <h1 class="truncate text-xl font-black text-slate-800 sm:text-2xl">
-              {{ customer?.name || 'کاربر' }}
-            </h1>
+            <span><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+            </span>
           </div>
+          <div class="flex flex-col justify-around">
+            <div>
+              <span class="text-xl font-black text-slate-800 sm:text-xl">
+                {{ customer?.name || 'کاربر' }}
+                <span class="text-gray-500 bg-gray-100 p-2 rounded-lg text-xs">{{ customer?.referrer }}
+                </span>
+              </span>
+            </div>
+            <p class="app-button-secondary max-w-[150px] !p-1">{{ customer?.phone }} </p>
+          </div>
+        </div>
+        <div class="flex justify-center gap-2">
+          <AppStatCard label="مبلغ تسویه شده" :value="settledAmountFormatted" value-class="text-emerald-700 "
+            container-class="h-24" />
+          <AppStatCard label="مبلغ تسویه نشده" :value="remainingAmountFormatted" value-class="text-rose-600 text-md"
+            container-class="h-24" />
+        </div>
+        <button @click="isCustomerInfoOpen = !isCustomerInfoOpen">
           <span
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200">
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-white hover:bg-gray-100 transition-all text-slate-600 shadow-sm ring-1 ring-slate-200">
             <svg class="h-5 w-5 transition" :class="isCustomerInfoOpen ? 'rotate-180' : ''" fill="none"
               stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -38,124 +60,99 @@
           </span>
         </button>
 
-        <div v-if="isCustomerInfoOpen" class="space-y-5 px-5 py-5 sm:px-6">
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <AppStatCard
-              label="مبلغ تسویه شده"
-              :value="settledAmountFormatted"
-              value-class="text-emerald-700"
-              container-class="bg-gradient-to-br from-emerald-50 to-lime-50"
-            />
-            <AppStatCard
-              label="مبلغ تسویه نشده"
-              :value="remainingAmountFormatted"
-              value-class="text-rose-600"
-              container-class="bg-gradient-to-br from-rose-50 to-orange-50"
-            />
+      </section>
+
+      <div v-if="isCustomerInfoOpen" class="space-y-5 px-5 py-5 sm:px-6">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">نام</label>
+            <input v-model="customerProfileDraft.first_name" type="text" placeholder="نام"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">نام خانوادگی</label>
+            <input v-model="customerProfileDraft.last_name" type="text" placeholder="نام خانوادگی"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">شماره تماس</label>
+            <input v-model="customerProfileDraft.phone" type="text" placeholder="شماره تماس"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              :class="{ 'border-rose-300 focus:border-rose-400 focus:ring-rose-100': phoneDuplicateError }" />
+            <p v-if="phoneDuplicateError" class="mt-1 text-xs text-rose-500">{{ phoneDuplicateError }}</p>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">معرف</label>
+            <input v-model="customerProfileDraft.referrer" type="text" placeholder="معرف"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت حساب</label>
+            <CustomSelect :model-value="customerProfileDraft.account_status" :options="accountStatusSelectOptions"
+              placeholder="وضعیت حساب"
+              trigger-class="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              @update:model-value="customerProfileDraft.account_status = $event" />
+          </div>
+        </div>
+
+        <div class="grid gap-4 xl:grid-cols-[1fr_280px] xl:items-start">
+          <div>
+            <textarea v-model="customerNotesDraft" rows="7" placeholder="درباره این مشتری بنویسید..."
+              class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"></textarea>
           </div>
 
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">نام</label>
-              <input v-model="customerProfileDraft.first_name" type="text" placeholder="نام"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">نام خانوادگی</label>
-              <input v-model="customerProfileDraft.last_name" type="text" placeholder="نام خانوادگی"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">شماره تماس</label>
-              <input v-model="customerProfileDraft.phone" type="text" placeholder="شماره تماس"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                :class="{ 'border-rose-300 focus:border-rose-400 focus:ring-rose-100': phoneDuplicateError }" />
-              <p v-if="phoneDuplicateError" class="mt-1 text-xs text-rose-500">{{ phoneDuplicateError }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">معرف</label>
-              <input v-model="customerProfileDraft.referrer" type="text" placeholder="معرف"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت حساب</label>
-              <CustomSelect :model-value="customerProfileDraft.account_status" :options="accountStatusSelectOptions"
-                placeholder="وضعیت حساب"
-                trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                @update:model-value="customerProfileDraft.account_status = $event" />
-            </div>
-          </div>
-
-          <div class="grid gap-4 xl:grid-cols-[1fr_280px] xl:items-start">
-            <div>
-              <textarea v-model="customerNotesDraft" rows="7" placeholder="درباره این مشتری بنویسید..."
-                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"></textarea>
-            </div>
-
-            <div class="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div class="space-y-2">
-                <p class="text-sm font-semibold text-slate-700">وضعیت فرم</p>
-                <div class="rounded-xl bg-white px-3 py-3 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-                  <span v-if="customerFormChanged" class="font-semibold text-amber-600">تغییرات ذخیره نشده</span>
-                  <span v-else class="font-semibold text-emerald-600">همه چیز به روز است</span>
-                </div>
+          <div class="flex h-full flex-col justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div class="space-y-2">
+              <p class="text-sm font-semibold text-slate-700">وضعیت فرم</p>
+              <div class="rounded-lg bg-white px-3 py-3 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
+                <span v-if="customerFormChanged" class="font-semibold text-amber-600">تغییرات ذخیره نشده</span>
+                <span v-else class="font-semibold text-emerald-600">همه چیز به روز است</span>
               </div>
-
-              <button :disabled="customerFormSaving || !customerFormChanged" @click="saveCustomerForm"
-                class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50">
-                <svg v-if="customerFormSaving" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات ' }}
-              </button>
             </div>
+
+            <button :disabled="customerFormSaving || !customerFormChanged" @click="saveCustomerForm"
+              class="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50">
+              <svg v-if="customerFormSaving" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات ' }}
+            </button>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="overflow-hidden rounded-xl bg-white shadow">
-        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-4">
-          <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false" :show-icon-input="false" :searchIcon="false"
-            @update:date-model-value="searchDate = $event" @update:filter-model-value="statusFilter = $event"
-            @clear="clearSearch" />
-        </div>
+    <section class="overflow-hidden rounded-lg bg-white shadow">
+      <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-4">
+        <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false"
+          :show-icon-input="false" :searchIcon="false" @update:date-model-value="searchDate = $event"
+          @update:filter-model-value="statusFilter = $event" @clear="clearSearch" />
+      </div>
 
-        <AppContentState
-          v-if="invoiceStore.loading"
-          loading
-          message="در حال بارگذاری..."
-          surface-class="border-0 bg-transparent py-16 shadow-none"
-          text-class="text-gray-500"
-        />
+      <AppContentState v-if="invoiceStore.loading" loading message="در حال بارگذاری..."
+        surface-class="border-0 bg-transparent py-16 shadow-none" text-class="text-gray-500" />
 
-        <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="false" :show-actions="true"
-          :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort" @edit="openEditModal"
-          @delete="openDeleteModal" @status-change="handleStatusChange" />
+      <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="false" :show-actions="true"
+        :row-clickable="true" :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort"
+        @edit="openEditModal" @delete="openDeleteModal" @status-change="handleStatusChange" />
 
-        <AppPagination
-          v-if="!invoiceStore.loading"
-          :total-rows="totalRows"
-          :row-start-index="rowStartIndex"
-          :page-size="pageSize"
-          :page-size-options="pageSizeSelectOptions"
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :visible-page-numbers="visiblePageNumbers"
-          @update:page-size="pageSize = $event"
-          @go-to-page="goToPage"
-        />
-      </section>
+      <AppPagination v-if="!invoiceStore.loading" :total-rows="totalRows" :row-start-index="rowStartIndex"
+        :page-size="pageSize" :page-size-options="pageSizeSelectOptions" :current-page="currentPage"
+        :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event"
+        @go-to-page="goToPage" />
+    </section>
   </div>
 
-    <InvoiceForm :is-open="showInvoiceForm" :customer-id="customerId" :invoice-data="selectedInvoice"
-      :customers-list="[]" @save="handleSaveInvoice" @close="closeInvoiceForm" />
+  <InvoiceForm :is-open="showInvoiceForm" :customer-id="customerId" :invoice-data="selectedInvoice"
+    :customers-list="allCustomers" :allow-customer-selection="true" @save="handleSaveInvoice"
+    @close="closeInvoiceForm" />
 
-    <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
-      message="آیا از حذف این فاکتور مطمئن هستید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
-      @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
-    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
-      @close="clearUndo" />
+  <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
+    message="آیا از حذف این فاکتور مطمئن هستید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
+    @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
+  <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+    @close="clearUndo" />
 </template>
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
@@ -185,6 +182,7 @@ const invoiceStore = useInvoiceStore();
 
 
 const customerId = computed(() => parseInt(props.id));
+const tableSectionRef = ref(null);
 const customer = ref(null);
 const showInvoiceForm = ref(false);
 const selectedInvoice = ref(null);
@@ -449,6 +447,7 @@ function clearSearch() {
 function goToPage(page) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function toggleSort(column) {
@@ -581,7 +580,7 @@ async function handleStatusChange({ id, field, value }) {
 
 // Navigate back
 function goBack() {
-  router.push('/accounts');
+  router.back();
 }
 
 function exportCustomerInvoices() {

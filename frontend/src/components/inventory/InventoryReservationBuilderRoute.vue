@@ -1,211 +1,133 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
-      <button type="button" :disabled="saving || cartItems.length === 0" class="app-button-success w-full" @click="submitReservation">
+      <button type="button" :disabled="saving || cartItems.length === 0" class="app-button-success w-full"
+        @click="submitReservation">
         {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
       </button>
-      <button type="button" :disabled="cartItems.length === 0" class="app-button-secondary w-full" @click="showClearCartConfirm = true">
+      <button type="button" :disabled="cartItems.length === 0" class="app-button-secondary w-full"
+        @click="showClearCartConfirm = true">
         خالی کردن سبد
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به
+        انبار</button>
     </Teleport>
 
     <div class="max-w-6xl">
-      <section class="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-        <!-- <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
-          <div>
-            <h2 class="text-xl font-black text-slate-900">مشتری و اقلام سبد</h2>
-            <p class="mt-2 text-sm text-slate-500">هم مشتری را انتخاب کن، هم محصولات را با جست‌وجوی دراپ‌داونی اضافه کن و در همان بالا رزرو را ثبت نهایی بزن.</p>
+      <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+        <div class="space-y-5">
+          <div class="grid gap-5 grid-cols-6">
+            <label class="space-y-2 col-span-3">
+              <span class="text-sm font-semibold text-slate-700">مشتری</span>
+              <SearchableLookupInput v-model="customerName" :options="customerOptions" header-text="مشتری‌ها"
+                no-results-text="مشتری‌ای پیدا نشد. می‌توانی نام جدید را دستی وارد کنی."
+                placeholder="نام مشتری را بنویس یا از لیست انتخاب کن" @select="handleCustomerSelect"
+                @clear="customerId = null" />
+            </label>
+
+            <label class="space-y-2 col-span-1">
+              <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
+              <JalaliDatePicker :model-value="startDatePersian"
+                input-class="h-12 rounded-lg border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                @update:model-value="startDatePersian = $event" />
+            </label>
+
+            <label class="space-y-2 col-span-1">
+              <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
+              <JalaliDatePicker :model-value="endDatePersian"
+                input-class="h-12 rounded-lg border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                @update:model-value="endDatePersian = $event" />
+            </label>
+
+            <label class="space-y-2 max-w-[70px]">
+              <span class="text-sm font-semibold text-slate-700">مدت رزرو</span>
+              <div class="flex h-12 items-center rounded-lg bg-amber-100/90 px-4 text-sm font-semibold text-rose-700">
+                {{ durationLabel }}
+              </div>
+            </label>
           </div>
 
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              :disabled="saving || cartItems.length === 0"
-              class="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="submitReservation"
-            >
-              {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
-            </button>
-            <button
-              type="button"
-              :disabled="cartItems.length === 0"
-              class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="showClearCartConfirm = true"
-            >
-              خالی کردن سبد
-            </button>
-          </div>
-        </div> -->
-
-        <div class="mt-5 grid gap-5 ">
-          <div class="space-y-5">
-            <div class="grid gap-5 md:grid-cols-3">
-              <label class="space-y-2 md:col-span-3">
-                <span class="text-sm font-semibold text-slate-700">مشتری</span>
-                <SearchableLookupInput
-                  v-model="customerName"
-                  :options="customerOptions"
-                  header-text="مشتری‌ها"
-                  no-results-text="مشتری‌ای پیدا نشد. می‌توانی نام جدید را دستی وارد کنی."
-                  placeholder="نام مشتری را بنویس یا از لیست انتخاب کن"
-                  @select="handleCustomerSelect"
-                  @clear="customerId = null"
-                />
-              </label>
-
-              <label class="space-y-2">
-                <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
-                <JalaliDatePicker
-                  :model-value="startDatePersian"
-                  input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  @update:model-value="startDatePersian = $event"
-                />
-              </label>
-
-              <label class="space-y-2">
-                <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
-                <JalaliDatePicker
-                  :model-value="endDatePersian"
-                  input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  @update:model-value="endDatePersian = $event"
-                />
-              </label>
-
-              <label class="space-y-2">
-                <span class="text-sm font-semibold text-slate-700">مدت رزرو</span>
-                <div class="flex h-12 items-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
-                  {{ durationLabel }}
-                </div>
-              </label>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-base font-black text-slate-900">افزودن محصول به سبد</h3>
-                  <p class="mt-1 text-xs text-slate-500">فقط محصولات آزاد این بازه نمایش داده می‌شوند.</p>
-                </div>
-                <div class="w-full max-w-md">
-                  <SearchableLookupInput
-                    v-model="productSearch"
-                    :options="productSearchOptions"
-                    header-text="محصولات آزاد"
-                    no-results-text="محصول آزادی برای این جستجو پیدا نشد."
-                    placeholder="محصول را جست‌وجو و از لیست انتخاب کن"
-                    @select="handleProductSelect"
-                    @clear="productSearch = ''"
-                  />
-                </div>
+          <div class="rounded-lg border border-slate-200 p-4">
+            <div class="grid grid-cols-4 gap-3">
+              <div class="col-span-1 flex items-center">
+                <h3 class="text-base font-black text-slate-900">افزودن محصول به سبد</h3>
               </div>
-            </div>
-
-            <p v-if="errorMessage" class="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-              {{ errorMessage }}
-            </p>
-
-            <div v-if="cartItems.length === 0" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-              سبد رزرو خالی است. از انبار یا همین جست‌وجو محصولات را اضافه کن.
-            </div>
-
-            <div v-else class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
-                <span>محصول</span>
-                <span class="text-center">آزاد</span>
-                <span class="text-center">تعداد</span>
-                <span class="text-center">عملیات</span>
-              </div>
-
-              <div class="divide-y divide-slate-100">
-                <div
-                  v-for="item in cartItems"
-                  :key="item.product_id"
-                  class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] items-center gap-3 px-3 py-3"
-                >
-                  <div class="min-w-0">
-                    <p class="truncate text-sm font-bold text-slate-900">{{ item.product_name }}</p>
-                    <p class="mt-1 truncate text-[11px] text-slate-500">{{ item.category_name || 'بدون دسته‌بندی' }}</p>
-                  </div>
-
-                  <div class="text-center text-xs font-semibold" :class="isLineOverLimit(item) ? 'text-rose-600' : 'text-slate-600'">
-                    {{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}
-                  </div>
-
-                  <div class="flex items-center justify-center gap-1 rounded-xl bg-slate-50 px-2 py-2">
-                    <button
-                      type="button"
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                      @click="decrementCartItem(item)"
-                    >
-                      -
-                    </button>
-                    <input
-                      :value="item.quantity"
-                      type="number"
-                      min="1"
-                      class="h-8 w-14 rounded-xl border border-slate-200 bg-white px-2 text-center text-sm outline-none transition focus:border-blue-400"
-                      @input="updateQuantity(item, $event.target.value)"
-                    />
-                    <button
-                      type="button"
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                      :disabled="item.quantity >= getAvailableQuantity(item.product_id)"
-                      @click="incrementCartItem(item)"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <div class="flex justify-center">
-                    <button
-                      type="button"
-                      class="inline-flex h-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
-                      @click="reservationCart.removeProduct(item.product_id)"
-                    >
-                      حذف
-                    </button>
-                  </div>
-                </div>
+              <div class="col-span-3">
+                <SearchableLookupInput v-model="productSearch" :options="productSearchOptions"
+                  header-text="محصولات آزاد" no-results-text="محصول آزادی برای این جستجو پیدا نشد."
+                  placeholder="محصول را جست‌وجو و از لیست انتخاب کن" @select="handleProductSelect"
+                  @clear="productSearch = ''" />
               </div>
             </div>
           </div>
 
-          <!-- <aside class="space-y-4">
-            <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <p class="text-sm font-semibold text-slate-500">تعداد آیتم‌های سبد</p>
-              <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.totalQuantity.toLocaleString('fa-IR') }}</p>
-            </article>
-            <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <p class="text-sm font-semibold text-slate-500">محصولات متفاوت</p>
-              <p class="mt-3 text-3xl font-black text-slate-900">{{ reservationCart.uniqueProductsCount.toLocaleString('fa-IR') }}</p>
-            </article>
-            <article class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <p class="text-sm font-semibold text-slate-500">بازه انتخابی</p>
-              <p class="mt-3 text-sm font-bold text-slate-900">{{ startDatePersian }} تا {{ endDatePersian }}</p>
-            </article>
-          </aside> -->
+          <p v-if="errorMessage" class="rounded-lg bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            {{ errorMessage }}
+          </p>
+
+          <div v-if="cartItems.length === 0"
+            class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+            سبد رزرو خالی است. از انبار یا همین جست‌وجو محصولات را اضافه کن.
+          </div>
+
+          <div v-else class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <div
+              class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] gap-3 border-b border-gray-200 bg-slate-50 p-2 text-xs font-bold text-slate-500">
+              <span>محصولات</span>
+              <span class="text-center">آزاد</span>
+              <span class="text-center">تعداد</span>
+              <span class="text-center">عملیات</span>
+            </div>
+
+            <div class="divide-y divide-gray-100">
+              <div v-for="item in cartItems" :key="item.product_id"
+                class="grid grid-cols-[minmax(0,1.3fr)_110px_130px_92px] items-center gap-3 px-2">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-bold text-slate-900">{{ item.product_name }}</p>
+                </div>
+
+                <div class="text-center text-xs font-semibold"
+                  :class="isLineOverLimit(item) ? 'text-rose-600' : 'text-slate-600'">
+                  {{ getAvailableQuantity(item.product_id).toLocaleString('fa-IR') }}
+                </div>
+
+                <div class="flex items-center justify-center gap-1 rounded-lg px-2 py-2">
+                  <button type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    @click="decrementCartItem(item)">
+                    -
+                  </button>
+                  <input :value="item.quantity" type="number" min="1"
+                    class="h-8 w-14 rounded-lg border border-slate-200 bg-white px-2 text-center text-sm outline-none transition focus:border-blue-400"
+                    @input="updateQuantity(item, $event.target.value)" />
+                  <button type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    :disabled="item.quantity >= getAvailableQuantity(item.product_id)" @click="incrementCartItem(item)">
+                    +
+                  </button>
+                </div>
+
+                <div class="flex justify-center">
+                  <button type="button"
+                    class="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                    @click="reservationCart.removeProduct(item.product_id)">
+                    حذف
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <ConfirmModal
-        :is-open="showClearCartConfirm"
-        title="خالی کردن سبد"
-        message="همه اقلام سبد رزرو حذف می‌شوند. ادامه می‌دهی؟"
-        confirm-text="بله، سبد خالی شود"
-        @confirm="confirmClearCart"
-        @cancel="showClearCartConfirm = false"
-      />
+      <ConfirmModal :is-open="showClearCartConfirm" title="خالی کردن سبد"
+        message="همه اقلام سبد رزرو حذف می‌شوند. ادامه می‌دهی؟" confirm-text="بله، سبد خالی شود"
+        @confirm="confirmClearCart" @cancel="showClearCartConfirm = false" />
 
-      <ConfirmModal
-        :is-open="showSubmitConfirm"
-        title="ثبت نهایی رزرو"
-        message="اطلاعات این رزرو ثبت شود؟ بعد از ثبت، اقلام از سبد حذف می‌شوند."
-        :loading="saving"
-        confirm-text="بله، ثبت نهایی شود"
-        loading-text="در حال ثبت رزرو..."
-        @confirm="confirmSubmitReservation"
-        @cancel="showSubmitConfirm = false"
-      />
+      <ConfirmModal :is-open="showSubmitConfirm" title="ثبت نهایی رزرو"
+        message="اطلاعات این رزرو ثبت شود؟ بعد از ثبت، اقلام از سبد حذف می‌شوند." :loading="saving"
+        confirm-text="بله، ثبت نهایی شود" loading-text="در حال ثبت رزرو..." @confirm="confirmSubmitReservation"
+        @cancel="showSubmitConfirm = false" />
     </div>
   </div>
 </template>

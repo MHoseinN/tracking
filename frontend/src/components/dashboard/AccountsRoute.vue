@@ -17,8 +17,8 @@
       </button>
     </Teleport>
     <!-- Invoice table -->
-    <div class="app-panel">
-      <div class="border-b border-slate-200  px-4 py-4 sm:px-5">
+    <div ref="tableSectionRef" class="app-panel">
+      <div class="px-4 py-4">
         <div class="w-full">
           <InvoiceSearchBar :text-model-value="searchCustomerName" :date-model-value="searchDate"
             :filter-model-value="statusFilter" @update:text-model-value="searchCustomerName = $event"
@@ -82,6 +82,7 @@ const invoiceStore = useInvoiceStore();
 
 // State
 const showInvoiceForm = ref(false);
+const tableSectionRef = ref(null);
 const showCustomerForm = ref(false);
 const selectedInvoice = ref(null);
 const showConfirmDelete = ref(false);
@@ -189,6 +190,7 @@ async function clearSearch() {
 function goToPage(page) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function toggleSort(column) {

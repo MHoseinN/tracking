@@ -3,7 +3,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="$emit('close')">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh]">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh]">
         <!-- Header -->
         <div class="flex items-center justify-between p-5 border-b">
           <h3 class="text-lg font-bold text-gray-800">
@@ -18,8 +18,8 @@
 
         <!-- Body -->
         <form @submit.prevent="handleSubmit" class="p-5 space-y-4">
-          <!-- Customer dropdown (only shown when not in customer-specific mode) -->
-          <div v-if="!customerId">
+          <!-- Customer dropdown -->
+          <div v-if="allowCustomerSelection || !customerId">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               مشتری <span class="text-red-500">*</span>
             </label>
@@ -57,7 +57,7 @@
               تاریخ (شمسی) <span class="text-red-500">*</span>
             </label>
             <JalaliDatePicker v-model="form.persianDate" :error="!!errors.date" class="col-span-1" trigger-mode="button"
-              button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-md font-medium text-slate-700 shadow-sm" />
+              button-class="h-11 w-full justify-between rounded-lg border border-slate-200 bg-white px-4 text-md font-medium text-slate-700 shadow-sm" />
             <p v-if="errors.date" class="text-red-500 text-xs mt-1">{{ errors.date }}</p>
           </div>
 
@@ -76,7 +76,7 @@
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">توضیحات فاکتور</label>
             <textarea v-model="form.notes" rows="4" placeholder="توضیح یا یادداشت مرتبط با این فاکتور..."
-              class="w-full rounded-xl max-h-36 border overflow-scroll border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+              class="w-full rounded-lg max-h-36 border overflow-scroll border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
 
           <!-- Buttons -->
@@ -114,7 +114,8 @@ const props = defineProps({
   isOpen: { type: Boolean, default: false },
   customerId: { type: [Number, String], default: null },
   invoiceData: { type: Object, default: null },
-  customersList: { type: Array, default: () => [] }
+  customersList: { type: Array, default: () => [] },
+  allowCustomerSelection: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['save', 'close']);
@@ -208,7 +209,7 @@ function validate() {
   errors.price = '';
 
   // Only validate customer if no customerId prop
-  if (!props.customerId && !form.customer_id) {
+  if (!form.customer_id) {
     errors.customer_id = 'انتخاب مشتری الزامی است';
     valid = false;
   }
@@ -298,7 +299,7 @@ async function handleSubmit() {
 
   const normalizedNotes = String(form.notes || '').trim();
   const invoiceData = {
-    customer_id: props.customerId || form.customer_id,
+    customer_id: form.customer_id || props.customerId,
     date: gregorianDate,
     price: form.price,
     description: normalizedNotes || null,

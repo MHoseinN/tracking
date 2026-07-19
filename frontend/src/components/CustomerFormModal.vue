@@ -5,7 +5,7 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="close"
     >
-      <div class="w-full max-w-lg rounded-xl bg-white shadow-xl" dir="rtl">
+      <div class="w-full max-w-lg rounded-lg bg-white shadow-xl" dir="rtl">
         <div class="flex items-center justify-between border-b p-5">
           <h3 class="text-lg font-bold text-gray-800">
             {{ isEditMode ? 'ویرایش کاربر' : 'افزودن کاربر' }}
@@ -68,7 +68,7 @@
               :model-value="form.account_status"
               :options="accountStatusSelectOptions"
               placeholder="وضعیت حساب"
-              trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              trigger-class="rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:border-slate-300 hover:shadow-md"
               @update:model-value="form.account_status = $event"
             />
           </div>

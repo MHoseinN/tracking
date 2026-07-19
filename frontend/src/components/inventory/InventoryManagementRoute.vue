@@ -8,14 +8,12 @@
         <span class="rounded-full bg-white/60 px-2 py-0.5 text-xs font-bold">{{
           reservationCart.totalQuantity.toLocaleString('fa-IR') }}</span>
       </button>
-      <button type="button" class="app-button-success w-full"
-        @click="router.push('/inventory/reservations/active')">رزروهای فعال</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت به خانه</button>
     </Teleport>
 
     <div class="grid items-start gap-2 grid-cols-[250px_minmax(0,1fr)]">
       <aside
-        class="rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem] overflow-hidden">
+        class="rounded-lg border border-slate-200 bg-white px-2 py-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem] overflow-hidden">
         <div class="flex h-full min-h-0 flex-col space-y-4">
           <div class="min-h-0 flex-1 space-y-2">
             <button type="button" class="w-full rounded-lg px-3 py-2 text-right text-sm font-semibold transition"
@@ -27,13 +25,13 @@
               <CategoryTreeItem v-for="node in filteredTree" :key="node.id" :node="node"
                 :selected-id="selectedCategoryId" @select="selectedCategoryId = $event.id" />
             </div>
-            <p v-else class="rounded-xl bg-white px-3 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
+            <p v-else class="rounded-lg bg-white px-3 py-3 text-sm text-slate-500">شاخه‌ای پیدا نشد.</p>
           </div>
         </div>
       </aside>
 
       <section class="space-y-4">
-        <section class="rounded-lg border border-gray-200 bg-white shadow-md">
+        <section ref="tableSectionRef" class="rounded-lg border border-gray-200 bg-white shadow-md">
           <div class="p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -44,24 +42,24 @@
             </div>
             <div class="mt-4 grid gap-3 grid-cols-4">
               <div
-                class="flex min-h-11 col-span-4 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
+                class="flex min-h-11 col-span-4 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-sm">
                 <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
                 </svg>
-                <input v-model.trim="searchTerm" type="text" placeholder="جستجو"
+                <input v-model.trim="searchTerm" type="search" placeholder="جستجو"
                   class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
               </div>
               <CustomSelect class="col-span-1" :model-value="statusFilter" :options="statusOptions" placeholder="وضعیت"
-                trigger-class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
+                trigger-class="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium shadow-sm"
                 @update:model-value="statusFilter = $event" />
               <JalaliDatePicker class="col-span-1" :model-value="rangeStartPersian" trigger-mode="button"
                 button-placeholder="از تاریخ"
-                button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm"
+                button-class="h-11 w-full justify-between rounded-lg border border-slate-200 bg-white px-4 text-md font-medium text-slate-700 shadow-sm"
                 @update:model-value="rangeStartPersian = $event" />
               <JalaliDatePicker class="col-span-1" :model-value="rangeEndPersian" trigger-mode="button"
                 button-placeholder="تا تاریخ"
-                button-class="h-11 w-full justify-between rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm"
+                button-class="h-11 w-full justify-between rounded-lg border border-slate-200 bg-white px-4 text-md font-medium text-slate-700 shadow-sm"
                 @update:model-value="rangeEndPersian = $event" />
             </div>
           </div>
@@ -74,7 +72,7 @@
           <div v-else class="space-y-4 px-4">
             <article v-for="group in paginatedGroups" :key="group.product_id"
               class="rounded-lg bg-neutral-50 border border-slate-300">
-              <div class="p-3  bg-gray-100">
+              <div class="p-3 bg-gray-100">
                 <div class="min-w-0 flex items-center justify-between gap-2">
                   <div class="flex gap-4">
                     <h3 class="truncate text-base font-black text-slate-900">{{ group.product_name }}</h3>
@@ -89,14 +87,14 @@
                       </span>
                     </div>
                   </div>
-                  <div class="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                  <div class="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
                     {{ formatNumber(group.total_units) }}عدد </div>
                 </div>
               </div>
 
               <div class="grid grid-cols-2 md:grid-cols-5 gap-2 rounded-lg bg-gray-50 p-2">
                 <article v-for="unit in group.units" :key="unit.unit_id"
-                  class="w-30 rounded-xl border p-2 transition hover:-translate-y-0.5 hover:shadow-lg"
+                  class="w-30 rounded-lg border p-2 transition hover:-translate-y-0.5 hover:shadow-lg"
                   :class="unit.status === 'reserved' ? 'border-rose-200 bg-rose-50/80' : 'border-emerald-200 bg-emerald-50/80'">
                   <button type="button" class="block w-full text-right" @click="openUnitModal(unit)">
                     <div class="flex items-start justify-between gap-2">
@@ -118,18 +116,18 @@
 
                   <div v-if="unit.status !== 'reserved'" class="mt-3 grid gap-2">
                     <button type="button"
-                      class="inline-flex h-8 items-center justify-center rounded-xl bg-blue-600 px-2 text-[11px] font-semibold text-white transition hover:bg-blue-700"
+                      class="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-2 text-[11px] font-semibold text-white transition hover:bg-blue-700"
                       @click.stop="openUnitModal(unit)">
                       رزرو
                     </button>
                     <button type="button"
-                      class="inline-flex h-8 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                      class="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
                       @click.stop="addUnitToCart(group)">
                       افزودن به سبد
                     </button>
                   </div>
 
-                  <div v-else class="mt-3 rounded-xl bg-white/70 px-2 py-2 text-[10px] text-rose-700">
+                  <div v-else class="mt-3 rounded-lg bg-white/70 px-2 py-2 text-[10px] text-rose-700">
                     برای ویرایش یا آزادسازی روی همین آیتم کلیک کن
                   </div>
                 </article>
@@ -150,6 +148,9 @@
       :customers="inventoryStore.lookups.customers" :saving="directReserveSaving"
       :initial-start-persian="rangeStartPersian" :initial-end-persian="rangeEndPersian" @close="closeDirectReserve"
       @save="submitDirectReserve" @clear="clearUnitReservation" />
+
+    <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+      @close="clearUndo" />
   </div>
 </template>
 
@@ -162,6 +163,7 @@ import AppPagination from '../AppPagination.vue';
 import CategoryTreeItem from '../CategoryTreeItem.vue';
 import CustomSelect from '../CustomSelect.vue';
 import InventoryDirectReserveModal from '../InventoryDirectReserveModal.vue';
+import UndoBar from '../UndoBar.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import { useReservationCartStore } from '../../stores/reservationCartStore';
 import { useInventoryStore } from '../../stores/inventoryStore';
@@ -181,11 +183,19 @@ const searchTerm = ref('');
 const treeSearch = ref('');
 const statusFilter = ref('all');
 const selectedCategoryId = ref(null);
+const tableSectionRef = ref(null);
 const currentPage = ref(1);
 const pageSize = ref(8);
 const directReserveOpen = ref(false);
 const directReserveSaving = ref(false);
 const selectedUnit = ref(null);
+const undoState = ref({
+  visible: false,
+  title: '',
+  message: '',
+  handler: null,
+  timerId: null
+});
 
 const pageSizeOptions = [6, 8, 10, 12].map((size) => ({ label: size.toLocaleString('fa-IR'), value: size }));
 const statusOptions = [
@@ -367,6 +377,7 @@ async function submitDirectReserve(payload) {
 async function clearUnitReservation(unit) {
   if (!unit?.reservation_item_id) return;
 
+  const unitSnapshot = { ...unit };
   directReserveSaving.value = true;
   const result = await inventoryStore.deleteUnitAssignment(unit.unit_id, unit.reservation_item_id);
   directReserveSaving.value = false;
@@ -379,6 +390,18 @@ async function clearUnitReservation(unit) {
   toast.success('محصول آزاد شد');
   closeDirectReserve();
   await loadData();
+  showUndo({
+    title: 'آزادسازی ثبت شد',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const undoResult = await inventoryStore.restoreUnitAssignment(unitSnapshot.unit_id, unitSnapshot.reservation_item_id);
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 function addUnitToCart(group) {
@@ -401,6 +424,31 @@ function addUnitToCart(group) {
   toast.success('محصول به سبد رزرو اضافه شد');
 }
 
+function clearUndo() {
+  if (undoState.value.timerId) {
+    window.clearTimeout(undoState.value.timerId);
+  }
+  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
+}
+
+function showUndo({ title, message, handler }) {
+  clearUndo();
+  const timerId = window.setTimeout(() => clearUndo(), 5000);
+  undoState.value = { visible: true, title, message, handler, timerId };
+}
+
+async function handleUndo() {
+  if (!undoState.value.handler) return;
+  const undoHandler = undoState.value.handler;
+  clearUndo();
+  try {
+    await undoHandler();
+    toast.success('بازگردانی انجام شد');
+  } catch (error) {
+    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
+  }
+}
+
 async function reloadDashboard() {
   await loadData();
 }
@@ -419,5 +467,6 @@ function resetFilters() {
 function goToPage(page) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>

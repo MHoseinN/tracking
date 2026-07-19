@@ -1,44 +1,28 @@
 <template>
   <div ref="rootRef" class="relative" :class="wrapperClass">
-    <button
-      ref="triggerRef"
-      type="button"
-      :disabled="disabled"
-      :class="triggerClasses"
-      :aria-expanded="isOpen ? 'true' : 'false'"
-      @click="toggleDropdown"
-    >
+    <button ref="triggerRef" type="button" :disabled="disabled" :class="triggerClasses"
+      :aria-expanded="isOpen ? 'true' : 'false'" @click="toggleDropdown">
       <span class="min-w-0 truncate text-right" :class="selectedOption ? labelClass : placeholderClass">
         {{ selectedOption?.label || placeholder }}
       </span>
-      <svg class="h-5 w-5 shrink-0 text-slate-500 transition duration-200" :class="isOpen ? 'rotate-180' : ''"
+      <svg class="h-4 w-4 shrink-0 text-slate-500 transition duration-200" :class="isOpen ? 'rotate-180' : ''"
         fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
       </svg>
     </button>
 
     <Teleport to="body">
-      <div v-if="isOpen" class="fixed inset-0  z-[140]" @click="closeDropdown">
-        <div
-          class="fixed z-[141] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
-          :style="dropdownStyle"
-          @click.stop
-        >
-          <div class="overflow-y-auto p-2" :style="{ maxHeight: dropdownStyle.maxHeight }">
-            <button
-              v-for="option in normalizedOptions"
-              :key="String(option.value)"
-              type="button"
-              class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-right text-sm font-medium transition"
-              :class="optionClasses(option)"
-              @click="selectOption(option)"
-            >
+      <div v-if="isOpen" class="fixed inset-0 z-[140]" @click="closeDropdown">
+        <div class="fixed z-[141] -mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+          :style="dropdownStyle" @click.stop>
+          <div class="overflow-y-auto p-1 flex flex-col gap-2" :style="{ maxHeight: dropdownStyle.maxHeight }">
+            <button v-for="option in normalizedOptions" :key="String(option.value)" type="button"
+              class="flex w-full items-center justify-between gap-3 rounded-lg px-1 py-3 text-right text-xs font-medium transition"
+              :class="optionClasses(option)" @click="selectOption(option)">
               <span class="truncate">{{ option.label }}</span>
-              <span
-                v-if="isSelected(option)"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-600"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span v-if="isSelected(option)"
+                class="inline-flex h-5 w-5 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
               </span>
@@ -86,7 +70,7 @@ const selectedOption = computed(() =>
 );
 
 const triggerClasses = computed(() => [
-  'flex w-full items-center justify-between gap-3 text-right',
+  'flex w-full items-center justify-between gap-2 text-right',
   props.triggerClass
 ]);
 
@@ -96,10 +80,10 @@ function isSelected(option) {
 
 function optionClasses(option) {
   if (isSelected(option)) {
-    return 'bg-gradient-to-r from-blue-50 to-cyan-50 text-slate-900 shadow-sm ring-1 ring-blue-100';
+    return 'bg-blue-50 text-slate-900 shadow-md ring-1 ring-blue-200';
   }
 
-  return 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
+  return 'text-slate-600 hover:bg-blue-50 hover:text-slate-900';
 }
 
 function closeDropdown() {

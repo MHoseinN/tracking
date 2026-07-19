@@ -16,8 +16,11 @@ const {
   updateReservationOrder,
   updateUnitAssignment,
   deleteUnitAssignment,
+  restoreUnitAssignment,
   releaseReservationOrder,
-  releaseAllReservations
+  restoreReservationOrder,
+  releaseAllReservations,
+  restoreAllReservations
 } = require('../controllers/inventoryController');
 
 const router = express.Router();
@@ -87,7 +90,10 @@ router.put('/units/:unitId/assignment', [
 ], updateUnitAssignment);
 
 router.delete('/units/:unitId/assignment', deleteUnitAssignment);
+router.post('/units/:unitId/assignment/restore', restoreUnitAssignment);
 router.post('/reservations/:reservationOrderId/release', releaseReservationOrder);
+router.post('/reservations/:reservationOrderId/restore', restoreReservationOrder);
 router.post('/reservations/release-all', releaseAllReservations);
+router.post('/reservations/restore-all', restoreAllReservations);
 
 module.exports = router;

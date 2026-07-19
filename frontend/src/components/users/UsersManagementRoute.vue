@@ -22,12 +22,12 @@
         </svg>
       </button>
     </Teleport>
-    <div v-if="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">
+    <div v-if="errorMessage" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">
       {{ errorMessage }}
     </div>
 
-    <div class="bg-white border border-gray-200 rounded-lg px-5 py-4">
-      <div class="grid gap-4 grid-cols-6 items-center">
+    <div class="bg-white border border-gray-200 rounded-lg">
+      <div class="grid gap-4 grid-cols-6 items-center p-4">
         <div class="relative col-span-4">
           <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
@@ -36,11 +36,11 @@
           </svg>
           <input v-model="searchQuery" type="search" placeholder="جستجو"
             class="w-full rounded-lg h-12 border border-gray-200 bg-white p-4 pr-10 pl-3 shadow-md text-sm text-slate-700 focus:outline-none focus-within:ring-4 focus-within:ring-blue-100" />
-          
+
         </div>
         <div class="col-span-2">
           <CustomSelect :model-value="statusFilter" :options="accountStatusFilterOptions"
-            trigger-class="rounded-xl h-12 border border-gray-200 bg-white p-4 text-sm shadow-md transition hover:bg-slate-50"
+            trigger-class="rounded-lg h-12 border border-gray-200 bg-white p-4 text-sm shadow-md transition hover:bg-slate-50"
             @update:model-value="statusFilter = $event" />
         </div>
       </div>
@@ -49,45 +49,46 @@
       <AppContentState v-if="loading" loading message="در حال بارگذاری..."
         surface-class="border-0 bg-transparent py-16 shadow-none" text-class="text-gray-500" />
 
-      <div v-else class="overflow-x-auto mt-2">
-        <table class="w-full min-w-[920px]">
-          <thead class="bg-blue-50 border-b border-gray-100">
-            <tr>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">شماره</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">نام مشتری</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">وضعیت حساب</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">تعداد فاکتور</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">مبلغ کل فاکتور ها</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">شماره تماس</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">معرف</th>
-              <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase">عملیات</th>
+      <div ref="tableSectionRef" v-else class="table-container">
+        <table class="w-full w bg-white text-sm">
+          <thead class="bg-blue-50 rounded-lg">
+            <tr class="rounded-lg">
+              <th class="p-3 border border-gray-200 text-center font-semibold">شماره</th>
+              <th class="p-3 border border-gray-200 text-right font-semibold">نام مشتری</th>
+              <th class="p-3 border border-gray-200 text-center font-semibold">وضعیت حساب</th>
+              <th class="p-3 border border-gray-200 text-right font-semibold">تعداد فاکتور</th>
+              <th class="p-3 border border-gray-200 text-center font-semibold">مبلغ کل فاکتورها</th>
+              <th class="p-3 border border-gray-200 text-center font-semibold">شماره تماس</th>
+              <th class="p-3 border border-gray-200 text-right font-semibold">معرف</th>
+              <th class="p-3 border border-gray-200 text-center font-semibold">عملیات</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, index) in paginatedRows" :key="row.id"
-              class="border-b border-gray-100 hover:bg-blue-50 cursor-pointer" @click="navigateToCustomer(row.id)">
-              <td class="px-4 py-3 text-sm text-gray-700 font-medium">{{ formatNumber(rowStartIndex + index + 1) }}
+            <tr v-for="(row, index) in paginatedRows" :key="row.id" class="hover:bg-blue-50 transition-all">
+              <td class="px-4 py-3 text-sm border border-gray-100 font-medium">{{ formatNumber(rowStartIndex + index +
+                1) }}
               </td>
-              <td class="p-3 text-sm text-gray-700 hover:bg-blue-100 rounded-md transition font-medium">{{
-                row.first_name }} {{ row.last_name }}</td>
-
-              <td class="px-4 py-3 text-sm text-gray-600">
+              <td
+                class="px-4 py-3 text-sm border border-gray-100 font-medium  hover:bg-blue-100 transition cursor-pointer"
+                @click="navigateToCustomer(row.id)">{{
+                  row.first_name }} {{ row.last_name }}</td>
+              <td class="px-4 py-3 text-sm border border-gray-100">
                 <div @click.stop @mousedown.stop>
                   <CustomSelect :model-value="row.account_status || ''" :options="accountStatusSelectOptions"
                     :disabled="statusSavingId === row.id" :trigger-class="statusTriggerClass(row.account_status)"
                     @update:model-value="handleStatusChange(row, $event)" />
                 </div>
               </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ formatNumber(row.invoice_count) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ formatCurrency(row.total_invoices_amount) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ row.phone || '-' }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ row.referrer || '-' }}</td>
-              <td class="px-4 py-3 text-sm">
+              <td class="px-4 py-3 border border-gray-100">{{ formatNumber(row.invoice_count) }}</td>
+              <td class="px-4 py-3 border border-gray-100">{{ formatCurrency(row.total_invoices_amount) }}</td>
+              <td class="px-4 py-3 border border-gray-100">{{ row.phone || '-' }}</td>
+              <td class="px-4 py-3 border border-gray-100">{{ row.referrer || '-' }}</td>
+              <td class="px-4 py-3 border border-gray-100">
                 <div class="flex items-center justify-center gap-2">
                   <button @click.stop="openEditModal(row)"
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition hover:bg-blue-200"
                     title="ویرایش">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
@@ -95,7 +96,7 @@
                   <button @click.stop="handleDelete(row)"
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-700 transition hover:bg-red-200"
                     title="حذف">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -105,7 +106,7 @@
             </tr>
 
             <tr v-if="!filteredRows.length">
-              <td colspan="9" class="px-4 py-10 text-center text-sm text-gray-400">
+              <td colspan="9" class="px-4 py-10 text-center text-sm">
                 {{ rows.length ? 'کاربری با این جستجو پیدا نشد' : 'کاربری ثبت نشده است' }}
               </td>
             </tr>
@@ -131,7 +132,7 @@
   <Teleport to="body">
     <div v-if="false && showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="closeModal">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
         <div class="flex items-center justify-between p-5 border-b">
           <h3 class="text-lg font-bold text-gray-800">{{ editingId ? 'ویرایش کاربر' : 'افزودن کاربر' }}</h3>
           <button @click="closeModal" class="text-gray-400 hover:text-gray-600 transition">
@@ -222,6 +223,7 @@ const statusSavingId = ref(null);
 const errorMessage = ref('');
 
 const showForm = ref(false);
+const tableSectionRef = ref(null);
 const editingId = ref(null);
 const selectedCustomer = ref(null);
 const showDeleteConfirm = ref(false);
@@ -360,6 +362,7 @@ function formatCurrency(value) {
 function goToPage(page) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function clearFilters() {
@@ -373,8 +376,8 @@ function accountStatusSelectClass(status) {
 
 function statusTriggerClass(status) {
   return [
-    'min-w-[180px] rounded-xl border px-3 py-2.5 text-sm font-medium shadow-sm transition hover:shadow-md',
-    status ? accountStatusSelectClass(status) : 'border-gray-300 bg-white text-gray-400 hover:border-slate-300'
+    'min-w-[120px] rounded-lg border p-2 text-xs transition shadow-sm',
+    status ? accountStatusSelectClass(status) : 'border-gray-300 bg-white text-gray-400'
   ];
 }
 

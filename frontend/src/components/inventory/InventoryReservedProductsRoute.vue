@@ -1,75 +1,45 @@
 <template>
   <div>
     <Teleport defer to="#app-shell-actions">
-      <button type="button" :disabled="releasingAll || !orders.length" class="app-button-danger w-full" @click="showReleaseAllConfirm = true">
+      <button type="button" :disabled="releasingAll || !orders.length" class="app-button-danger w-full"
+        @click="showReleaseAllConfirm = true">
         {{ releasingAll ? 'در حال آزادسازی...' : 'آزادسازی همه محصولات' }}
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به انبار</button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت 
+        </button>
     </Teleport>
 
     <div class="max-w-7xl">
-      <section class="mb-5 grid gap-4 md:grid-cols-3">
-        <AppStatCard
-          label="رزروهای فعال"
-          :value="orders.length.toLocaleString('fa-IR')"
-          value-class="text-slate-900 text-3xl"
-          container-class="rounded-xl border-white/80 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
-        />
-        <AppStatCard
-          label="محصولات رزروشده"
-          :value="totalItems.toLocaleString('fa-IR')"
-          value-class="text-slate-900 text-3xl"
-          container-class="rounded-xl border-white/80 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
-        />
-        <AppStatCard
-          label="نوع مستقیم"
-          :value="directReservations.toLocaleString('fa-IR')"
-          value-class="text-slate-900 text-3xl"
-          container-class="rounded-xl border-white/80 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
-        />
-      </section>
+      <AppContentState v-if="inventoryStore.loading" loading message="در حال بارگذاری رزروهای فعال..."
+        surface-class="rounded-lg bg-white/92 px-4 py-16 shadow-md" />
 
-      <AppContentState
-        v-if="inventoryStore.loading"
-        loading
-        message="در حال بارگذاری رزروهای فعال..."
-        surface-class="rounded-xl bg-white/92 px-4 py-16 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
-      />
+      <AppContentState v-else-if="filteredOrders.length === 0" message="فعلا محصول رزروشده‌ای وجود ندارد."
+        surface-class="rounded-lg bg-white/92 px-4 py-16 shadow-[0_20px_70px_rgba(15,23,42,0.06)]" />
 
-      <AppContentState
-        v-else-if="filteredOrders.length === 0"
-        message="فعلا محصول رزروشده‌ای وجود ندارد."
-        surface-class="rounded-xl bg-white/92 px-4 py-16 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
-      />
-
-      <section v-else class="space-y-3">
-        <section class="rounded-xl border border-slate-200 bg-white/92 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <div class="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
-            <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-            </svg>
-            <input
-              v-model.trim="customerSearch"
-              type="text"
-              class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="جست‌وجوی لحظه‌ای بر اساس نام مشتری"
-            />
+      <section class="space-y-3">
+          <div class="grid grid-cols-4 min-h-11 gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-md">
+            <div class="grid items-center gap- col-span-3">
+              <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+              </svg>
+              <input v-model.trim="customerSearch" type="search"
+                class="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                placeholder="جستجو" />
+            </div>
+            <JalaliDatePicker
+              button-class="h-11 rounded-lg border border-slate-200 bg-white px-4 text-md font-medium text-slate-700 shadow-sm" />
           </div>
-        </section>
 
-        <article
-          v-for="order in filteredOrders"
-          :key="order.reservation_order_id"
-          class="overflow-hidden rounded-xl border border-slate-200 bg-white/92 shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
-        >
-          <button
-            type="button"
+        <article v-for="order in filteredOrders" :key="order.reservation_order_id"
+          class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+          <button type="button"
             class="flex w-full flex-wrap items-center justify-between gap-4 px-4 py-4 text-right transition hover:bg-slate-50/80"
-            @click="toggleOrder(order.reservation_order_id)"
-          >
+            @click="toggleOrder(order.reservation_order_id)">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="order.reservation_type === 'bulk' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="order.reservation_type === 'bulk' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'">
                   {{ order.reservation_type === 'bulk' ? 'رزرو یک‌جا' : 'رزرو مستقیم' }}
                 </span>
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -79,31 +49,31 @@
                   {{ toPersianDate(order.start_date) }} تا {{ toPersianDate(order.end_date) }}
                 </span>
               </div>
-              <h2 class="mt-2 truncate text-lg font-black text-slate-900">{{ order.customer_name || 'مشتری بدون نام' }}</h2>
+              <h2 class="mt-2 truncate text-lg font-black text-slate-900">{{ order.customer_name || 'مشتری بدون نام' }}
+              </h2>
               <p class="mt-1 text-sm text-slate-500">
-                {{ expandedOrders[order.reservation_order_id] ? 'برای بستن جزئیات دوباره کلیک کن' : summarizeItems(order.items) }}
+                {{ expandedOrders[order.reservation_order_id] ? 'برای بستن جزئیات دوباره کلیک کن' :
+                  summarizeItems(order.items) }}
               </p>
-              <p v-if="order.notes && expandedOrders[order.reservation_order_id]" class="mt-2 text-sm text-slate-500">{{ order.notes }}</p>
+              <p v-if="order.notes && expandedOrders[order.reservation_order_id]" class="mt-2 text-sm text-slate-500">{{
+                order.notes }}</p>
             </div>
 
             <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                @click.stop="openEditor(order)"
-              >
+              <button type="button"
+                class="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                @click.stop="openEditor(order)">
                 ویرایش رزرو
               </button>
-              <button
-                type="button"
-                :disabled="Boolean(releasingOrders[order.reservation_order_id])"
-                class="inline-flex h-10 items-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                @click.stop="pendingReleaseOrder = order"
-              >
+              <button type="button" :disabled="Boolean(releasingOrders[order.reservation_order_id])"
+                class="inline-flex h-10 items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                @click.stop="pendingReleaseOrder = order">
                 {{ releasingOrders[order.reservation_order_id] ? 'در حال آزادسازی...' : 'آزادسازی کل رزرو' }}
               </button>
-              <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
-                <svg class="h-4 w-4 transition" :class="expandedOrders[order.reservation_order_id] ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span
+                class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
+                <svg class="h-4 w-4 transition" :class="expandedOrders[order.reservation_order_id] ? 'rotate-180' : ''"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </span>
@@ -111,8 +81,9 @@
           </button>
 
           <div v-if="expandedOrders[order.reservation_order_id]" class="border-t border-slate-100 px-4 py-4">
-            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
+            <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div
+                class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold text-slate-500">
                 <span>محصول</span>
                 <span class="text-center">تعداد</span>
                 <span class="text-center">تغییر تعداد</span>
@@ -120,46 +91,36 @@
               </div>
 
               <div class="divide-y divide-slate-100">
-                <div
-                  v-for="groupedItem in getGroupedOrderItems(order)"
+                <div v-for="groupedItem in getGroupedOrderItems(order)"
                   :key="`${order.reservation_order_id}-${groupedItem.product_id}`"
-                  class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] items-center gap-3 px-3 py-3"
-                >
+                  class="grid grid-cols-[minmax(0,1.3fr)_86px_120px_90px] items-center gap-3 px-3 py-3">
                   <div class="min-w-0">
                     <p class="truncate text-sm font-black text-slate-900">{{ groupedItem.product_name }}</p>
-                    <p class="mt-1 truncate text-[11px] text-slate-500">{{ groupedItem.category_name || 'بدون دسته‌بندی' }}</p>
+                    <p class="mt-1 truncate text-[11px] text-slate-500">{{ groupedItem.category_name || 'بدون دسته‌بندی'
+                      }}</p>
                   </div>
 
                   <div class="text-center text-sm font-bold text-slate-700">
                     {{ groupedItem.quantity.toLocaleString('fa-IR') }}
                   </div>
 
-                  <div class="flex items-center justify-center gap-1 rounded-xl bg-slate-50 px-2 py-2">
-                    <button
-                      type="button"
-                      :disabled="Boolean(updatingOrders[order.reservation_order_id])"
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      @click="changeGroupedItemQuantity(order, groupedItem.product_id, -1)"
-                    >
+                  <div class="flex items-center justify-center gap-1 rounded-lg bg-slate-50 px-2 py-2">
+                    <button type="button" :disabled="Boolean(updatingOrders[order.reservation_order_id])"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="changeGroupedItemQuantity(order, groupedItem.product_id, -1)">
                       -
                     </button>
-                    <button
-                      type="button"
-                      :disabled="Boolean(updatingOrders[order.reservation_order_id])"
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      @click="changeGroupedItemQuantity(order, groupedItem.product_id, 1)"
-                    >
+                    <button type="button" :disabled="Boolean(updatingOrders[order.reservation_order_id])"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="changeGroupedItemQuantity(order, groupedItem.product_id, 1)">
                       +
                     </button>
                   </div>
 
                   <div class="flex justify-center">
-                    <button
-                      type="button"
-                      :disabled="Boolean(updatingOrders[order.reservation_order_id])"
-                      class="inline-flex h-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      @click="removeGroupedItem(order, groupedItem.product_id)"
-                    >
+                    <button type="button" :disabled="Boolean(updatingOrders[order.reservation_order_id])"
+                      class="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="removeGroupedItem(order, groupedItem.product_id)">
                       حذف
                     </button>
                   </div>
@@ -170,37 +131,24 @@
         </article>
       </section>
 
-      <InventoryReservationOrderEditorModal
-        :is-open="showEditor"
-        :reservation="editingOrder"
-        :customer-options="customerOptions"
-        :product-options="editorProductOptions"
-        :loading="editorSaving"
-        @cancel="closeEditor"
-        @save="saveReservationOrder"
-      />
+      <InventoryReservationOrderEditorModal :is-open="showEditor" :reservation="editingOrder"
+        :customer-options="customerOptions" :product-options="editorProductOptions" :loading="editorSaving"
+        @cancel="closeEditor" @save="saveReservationOrder" />
 
-      <ConfirmModal
-        :is-open="showReleaseAllConfirm"
-        title="آزادسازی همه رزروها"
+      <ConfirmModal :is-open="showReleaseAllConfirm" title="آزادسازی همه رزروها"
         message="همه رزروهای فعال آزاد می‌شوند و محصولات دوباره در انبار آزاد خواهند شد. ادامه می‌دهی؟"
-        :loading="releasingAll"
-        confirm-text="بله، همه آزاد شوند"
-        loading-text="در حال آزادسازی..."
-        @confirm="confirmReleaseAll"
-        @cancel="showReleaseAllConfirm = false"
-      />
+        :loading="releasingAll" confirm-text="بله، همه آزاد شوند" loading-text="در حال آزادسازی..."
+        @confirm="confirmReleaseAll" @cancel="showReleaseAllConfirm = false" />
 
-      <ConfirmModal
-        :is-open="Boolean(pendingReleaseOrder)"
-        title="آزادسازی این رزرو"
+      <ConfirmModal :is-open="Boolean(pendingReleaseOrder)" title="آزادسازی این رزرو"
         :message="pendingReleaseOrder ? `رزرو مشتری «${pendingReleaseOrder.customer_name || 'بدون نام'}» آزاد شود؟` : ''"
         :loading="pendingReleaseOrder ? Boolean(releasingOrders[pendingReleaseOrder.reservation_order_id]) : false"
-        confirm-text="بله، این رزرو آزاد شود"
-        loading-text="در حال آزادسازی رزرو..."
+        confirm-text="بله، این رزرو آزاد شود" loading-text="در حال آزادسازی رزرو..."
         @confirm="pendingReleaseOrder ? releaseOrder(pendingReleaseOrder) : null"
-        @cancel="pendingReleaseOrder = null"
-      />
+        @cancel="pendingReleaseOrder = null" />
+
+      <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
+        @close="clearUndo" />
     </div>
   </div>
 </template>
@@ -213,8 +161,10 @@ import AppContentState from '../AppContentState.vue';
 import AppStatCard from '../AppStatCard.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import InventoryReservationOrderEditorModal from '../InventoryReservationOrderEditorModal.vue';
+import UndoBar from '../UndoBar.vue';
 import { useInventoryStore } from '../../stores/inventoryStore';
 import { toPersianDate } from '../../utils/dateConverter';
+import JalaliDatePicker from '../JalaliDatePicker.vue';
 
 const router = useRouter();
 const toast = useToast();
@@ -231,6 +181,13 @@ const editingOrder = ref(null);
 const editorSaving = ref(false);
 const customerSearch = ref('');
 const pendingReleaseOrder = ref(null);
+const undoState = ref({
+  visible: false,
+  title: '',
+  message: '',
+  handler: null,
+  timerId: null
+});
 
 const orders = computed(() => inventoryStore.activeReservations || []);
 const totalItems = computed(() => orders.value.reduce((sum, order) => sum + (order.items_count || 0), 0));
@@ -358,6 +315,7 @@ async function releaseItem(item) {
 }
 
 async function releaseOrder(order) {
+  const orderSnapshot = JSON.parse(JSON.stringify(order));
   releasingOrders.value = { ...releasingOrders.value, [order.reservation_order_id]: true };
   const result = await inventoryStore.releaseReservationOrder(order.reservation_order_id);
   releasingOrders.value = { ...releasingOrders.value, [order.reservation_order_id]: false };
@@ -370,9 +328,22 @@ async function releaseOrder(order) {
 
   toast.success('کل رزرو آزاد شد');
   await loadData();
+  showUndo({
+    title: 'رزرو آزاد شد',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const undoResult = await inventoryStore.restoreReservationOrder(orderSnapshot.reservation_order_id);
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 async function confirmReleaseAll() {
+  const snapshotOrders = JSON.parse(JSON.stringify(orders.value));
   releasingAll.value = true;
   const result = await inventoryStore.releaseAllReservations();
   releasingAll.value = false;
@@ -385,9 +356,22 @@ async function confirmReleaseAll() {
 
   toast.success('همه محصولات رزروشده آزاد شدند');
   await loadData();
+  showUndo({
+    title: 'همه رزروها آزاد شدند',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const undoResult = await inventoryStore.restoreAllReservations();
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 async function saveReservationOrder(payload) {
+  const previousOrder = JSON.parse(JSON.stringify(editingOrder.value || payload));
   editorSaving.value = true;
   const result = await inventoryStore.updateReservationOrder(payload.reservation_order_id, payload);
   editorSaving.value = false;
@@ -400,6 +384,18 @@ async function saveReservationOrder(payload) {
   toast.success('رزرو با موفقیت ویرایش شد');
   closeEditor();
   await loadData();
+  showUndo({
+    title: 'ویرایش رزرو ثبت شد',
+    message: 'اگر اشتباه بوده، بازگردانی کن.',
+    handler: async () => {
+      const undoResult = await inventoryStore.updateReservationOrder(previousOrder.reservation_order_id, buildGroupedOrderPayload(previousOrder, getGroupedOrderItems(previousOrder)));
+      if (!undoResult.success) {
+        throw new Error(undoResult.message);
+      }
+
+      await loadData();
+    }
+  });
 }
 
 function buildGroupedOrderPayload(order, groupedItems) {
@@ -418,7 +414,7 @@ function buildGroupedOrderPayload(order, groupedItems) {
   };
 }
 
-async function persistGroupedOrderChanges(order, groupedItems, successMessage) {
+async function persistGroupedOrderChanges(order, groupedItems, successMessage, previousOrder = null) {
   const payload = buildGroupedOrderPayload(order, groupedItems);
   if (payload.items.length === 0) {
     toast.error('حداقل یک محصول باید در رزرو باقی بماند');
@@ -440,9 +436,28 @@ async function persistGroupedOrderChanges(order, groupedItems, successMessage) {
     ...expandedOrders.value,
     [order.reservation_order_id]: true
   };
+  if (previousOrder) {
+    showUndo({
+      title: successMessage,
+      message: 'اگر اشتباه بوده، بازگردانی کن.',
+      handler: async () => {
+        const undoResult = await inventoryStore.updateReservationOrder(
+          previousOrder.reservation_order_id,
+          buildGroupedOrderPayload(previousOrder, getGroupedOrderItems(previousOrder))
+        );
+
+        if (!undoResult.success) {
+          throw new Error(undoResult.message);
+        }
+
+        await loadData();
+      }
+    });
+  }
 }
 
 async function changeGroupedItemQuantity(order, productId, delta) {
+  const previousOrder = JSON.parse(JSON.stringify(order));
   const groupedItems = getGroupedOrderItems(order).map((item) => ({ ...item }));
   const target = groupedItems.find((item) => Number(item.product_id) === Number(productId));
   if (!target) return;
@@ -454,11 +469,37 @@ async function changeGroupedItemQuantity(order, productId, delta) {
   }
 
   target.quantity = nextQuantity;
-  await persistGroupedOrderChanges(order, groupedItems, 'تعداد محصول در رزرو به‌روزرسانی شد');
+  await persistGroupedOrderChanges(order, groupedItems, 'تعداد محصول در رزرو به‌روزرسانی شد', previousOrder);
 }
 
 async function removeGroupedItem(order, productId) {
+  const previousOrder = JSON.parse(JSON.stringify(order));
   const groupedItems = getGroupedOrderItems(order).filter((item) => Number(item.product_id) !== Number(productId));
-  await persistGroupedOrderChanges(order, groupedItems, 'محصول از این رزرو حذف شد');
+  await persistGroupedOrderChanges(order, groupedItems, 'محصول از این رزرو حذف شد', previousOrder);
+}
+
+function clearUndo() {
+  if (undoState.value.timerId) {
+    window.clearTimeout(undoState.value.timerId);
+  }
+  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
+}
+
+function showUndo({ title, message, handler }) {
+  clearUndo();
+  const timerId = window.setTimeout(() => clearUndo(), 5000);
+  undoState.value = { visible: true, title, message, handler, timerId };
+}
+
+async function handleUndo() {
+  if (!undoState.value.handler) return;
+  const undoHandler = undoState.value.handler;
+  clearUndo();
+  try {
+    await undoHandler();
+    toast.success('بازگردانی انجام شد');
+  } catch (error) {
+    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
+  }
 }
 </script>

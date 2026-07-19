@@ -1210,6 +1210,38 @@ function deleteUnitAssignment(req, res) {
   }
 }
 
+function restoreUnitAssignment(req, res) {
+  const unitId = normalizeInteger(req.params?.unitId);
+  const reservationItemId = normalizeInteger(req.query?.reservationItemId);
+
+  try {
+    if (!unitId || !reservationItemId) {
+      return res.status(400).json({ message: 'اطلاعات بازگردانی کامل نیست' });
+    }
+
+    const item = db.prepare(`
+      SELECT id, reservation_order_id
+      FROM inventory_reservation_items
+      WHERE id = ? AND unit_id = ?
+    `).get(reservationItemId, unitId);
+
+    if (!item) {
+      return res.status(404).json({ message: 'رکورد رزرو پیدا نشد' });
+    }
+
+    db.prepare(`
+      UPDATE inventory_reservation_items
+      SET released_at = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(reservationItemId);
+
+    res.json({ message: 'محصول بازگردانی شد' });
+  } catch (err) {
+    console.error('Restore unit assignment error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 function releaseReservationOrder(req, res) {
   const reservationOrderId = normalizeInteger(req.params?.reservationOrderId);
 
@@ -1241,6 +1273,37 @@ function releaseReservationOrder(req, res) {
   }
 }
 
+function restoreReservationOrder(req, res) {
+  const reservationOrderId = normalizeInteger(req.params?.reservationOrderId);
+
+  try {
+    if (!reservationOrderId) {
+      return res.status(400).json({ message: 'شناسه رزرو معتبر نیست' });
+    }
+
+    const activeCount = Number(db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM inventory_reservation_items
+      WHERE reservation_order_id = ? AND released_at IS NULL
+    `).get(reservationOrderId)?.count) || 0;
+
+    if (activeCount > 0) {
+      return res.status(400).json({ message: 'این رزرو از قبل فعال است' });
+    }
+
+    db.prepare(`
+      UPDATE inventory_reservation_items
+      SET released_at = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE reservation_order_id = ?
+    `).run(reservationOrderId);
+
+    res.json({ message: 'رزرو بازگردانی شد' });
+  } catch (err) {
+    console.error('Restore reservation order error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 function releaseAllReservations(_req, res) {
   try {
     db.prepare(`
@@ -1252,6 +1315,21 @@ function releaseAllReservations(_req, res) {
     res.json({ message: 'همه محصولات رزروشده آزاد شدند' });
   } catch (err) {
     console.error('Release all reservations error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+function restoreAllReservations(_req, res) {
+  try {
+    db.prepare(`
+      UPDATE inventory_reservation_items
+      SET released_at = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE released_at IS NOT NULL
+    `).run();
+
+    res.json({ message: 'همه رزروها بازگردانی شدند' });
+  } catch (err) {
+    console.error('Restore all reservations error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
@@ -1271,6 +1349,9 @@ module.exports = {
   updateReservationOrder,
   updateUnitAssignment,
   deleteUnitAssignment,
+  restoreUnitAssignment,
   releaseReservationOrder,
-  releaseAllReservations
+  restoreReservationOrder,
+  releaseAllReservations,
+  restoreAllReservations
 };

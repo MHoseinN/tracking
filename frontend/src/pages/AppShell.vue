@@ -5,11 +5,13 @@
         <div class="py-6">
           <div class="flex items-center gap-3">
             <button type="button" class="app-shell__toggle" @click="toggleSidebar('nav')">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  :d="navCollapsed ? 'm18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5' : 'm5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5'" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                <path d="M15 4v16" />
               </svg>
             </button>
+
             <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 text-white">
               <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -26,7 +28,7 @@
         <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide py-2">
           <div v-for="group in navGroups" :key="group.key" class="py-1 last-0">
             <button v-if="!group.items?.length" type="button"
-              class="flex w-full rounded-xl text-right transition app-shell__menu-button px-4"
+              class="flex w-full rounded-lg text-right transition app-shell__menu-button px-4"
               :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
               @click="navigateTo(group.to)">
               <span class="flex items-center justify-center gap-2 min-w-0">
@@ -42,26 +44,31 @@
 
             <template v-else>
               <button type="button"
-                class="flex w-full items-center justify-between rounded-xl  text-right transition app-shell__menu-button px-4"
+                class="flex w-full items-center justify-between rounded-lg  text-right transition app-shell__menu-button px-4"
                 :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
                 @click="toggleGroup(group.key)">
                 <span class="flex items-center gap-2 min-w-0">
                   <span class="app-shell__menu-icon">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      //
                       <path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round"
                         stroke-linejoin="round" stroke-width="2" :d="path" />
-
                     </svg>
                   </span>
                   <span class="truncate text-sm font-semibold app-shell__label-text">{{ group.label }}</span>
                 </span>
-                <span class="text-3xl leading-none app-shell__label-text">{{ openGroups[group.key] ? '-' : '+' }}</span>
+
+                <span class="text-3xl leading-none app-shell__label-text">
+                  <svg class="w-5 h-5 transition-transform duration-300" :class="{ '-rotate-90': isGroupActive(group) }"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </span>
               </button>
 
               <div v-if="openGroups[group.key]" class="mr-10 py-1 app-shell__submenu">
                 <button v-for="item in group.items" :key="item.key" type="button"
-                  class="flex w-full px-6 items-center justify-between rounded-xl text-right text-sm transition app-shell__menu-button"
+                  class="flex w-full px-6 items-center justify-between rounded-lg text-right text-sm transition app-shell__menu-button"
                   :class="isActiveRoute(item) ? 'app-shell__menu-button--subactive font-bold text-blue-700' : 'bg-white text-zinc-700 hover:bg-slate-50 hover:text-blue-700'"
                   @click="navigateTo(item.to)">
                   <span class="flex items-center gap-2 min-w-0">
@@ -70,6 +77,7 @@
                 </button>
               </div>
             </template>
+
           </div>
         </div>
       </div>
@@ -89,7 +97,7 @@
                 class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 placeholder="جست‌وجوی سراسری در حساب‌، مشتری‌ و محصول" @focus="handleSearchFocus"
                 @keydown.esc="closeSearchResults" />
-              <button v-if="globalSearch" type="button" class="app-icon-button h-9 w-9 rounded-xl border-0 bg-gray-300"
+              <button v-if="globalSearch" type="button" class="app-icon-button h-9 w-9 rounded-lg border-0 bg-gray-300"
                 @click="clearSearch">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -98,7 +106,7 @@
             </div>
 
             <div v-if="showSearchResults"
-              class="absolute inset-x-0 w-[75%] mt-1 z-[90] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
+              class="absolute inset-x-0 w-[75%] mt-1 z-[90] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md">
               <div v-if="searchLoading" class="px-4 py-6 text-sm text-slate-500">در حال آماده‌سازی نتایج...</div>
               <div v-else-if="searchSections.length === 0" class="px-4 py-6 text-sm text-slate-500">نتیجه‌ای پیدا نشد.
               </div>
@@ -106,7 +114,7 @@
                 <div v-for="section in searchSections" :key="section.title" class="mb-3 last:mb-0">
                   <p class="mb-2 px-2 text-xs font-bold tracking-[0.2em] text-slate-400">{{ section.title }}</p>
                   <button v-for="item in section.items" :key="item.key" type="button"
-                    class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-right transition hover:bg-slate-50"
+                    class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-slate-50"
                     @click="handleSearchSelection(item)">
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-slate-800">{{ item.label }}</p>
@@ -123,7 +131,7 @@
             <div v-if="showProfileClicked"
               class="border-2 mt-6 border-gray-200 bg-neutral-100 px-4 py-2 z-[50] rounded-lg">
               <p>محمد حسین نعمتیان</p>
-              <div class="rounded-xl bg-neutral-400 inline-block px-2 py-1">
+              <div class="rounded-lg bg-neutral-400 inline-block px-2 py-1">
                 <p class="text-xs"> ادمین ارشد</p>
               </div>
             </div>
@@ -144,15 +152,13 @@
                   d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
             </button>
-            <button type="button" title="خروج" class="app-button-danger" @click="handleLogout">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="size-5">
+            <button type="button" title="خروج" class="app-button-danger " @click="handleLogout">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
               </svg>
             </button>
           </div>
-
         </div>
       </div>
     </header>
@@ -163,9 +169,10 @@
 
           <div>
             <button type="button" class="app-shell__toggle" @click="toggleSidebar('actions')">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  :d="actionsCollapsed ? 'm5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5' : 'm18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5'" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                <path d="M9 4v16" />
               </svg>
             </button>
           </div>
@@ -232,6 +239,7 @@ const navGroups = [
   {
     key: 'accounts',
     label: 'حساب',
+    to: '/accounts',
     icon: ["M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"],
     items: [
       { key: 'accounts', label: 'مدیریت حساب‌ها', to: '/accounts' },
@@ -241,6 +249,7 @@ const navGroups = [
   {
     key: 'customers',
     label: 'کاربران',
+    to: '/users',
     icon: ['M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z'],
     items: [
       { key: 'users', label: 'مدیریت کاربران', to: '/users' }
@@ -249,6 +258,7 @@ const navGroups = [
   {
     key: 'inventory',
     label: 'رزرو',
+    to: '/inventory',
     icon: ['M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z'],
     items: [
       { key: 'dashInventory', label: 'داشبورد رزرو', to: '/inventory' },
@@ -259,6 +269,7 @@ const navGroups = [
   {
     key: 'products',
     label: 'محصولات',
+    to: '/inventory/manage',
     icon: ['m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9'],
     items: [
       { key: 'inventory-manage', label: 'مدیریت محصولات', to: '/inventory/manage' }

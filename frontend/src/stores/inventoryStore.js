@@ -170,6 +170,17 @@ export const useInventoryStore = defineStore('inventory', {
       }
     },
 
+    async restoreUnitAssignment(unitId, reservationItemId) {
+      try {
+        const response = await api.post(`/inventory/units/${unitId}/assignment/restore`, null, {
+          params: { reservationItemId }
+        });
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, message: getErrorMessage(error, 'خطا در بازگردانی محصول') };
+      }
+    },
+
     async releaseReservationOrder(reservationOrderId) {
       try {
         await api.post(`/inventory/reservations/${reservationOrderId}/release`);
@@ -179,12 +190,30 @@ export const useInventoryStore = defineStore('inventory', {
       }
     },
 
+    async restoreReservationOrder(reservationOrderId) {
+      try {
+        const response = await api.post(`/inventory/reservations/${reservationOrderId}/restore`);
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, message: getErrorMessage(error, 'خطا در بازگردانی رزرو') };
+      }
+    },
+
     async releaseAllReservations() {
       try {
         await api.post('/inventory/reservations/release-all');
         return { success: true };
       } catch (error) {
         return { success: false, message: getErrorMessage(error, 'خطا در آزادسازی همه رزروها') };
+      }
+    },
+
+    async restoreAllReservations() {
+      try {
+        const response = await api.post('/inventory/reservations/restore-all');
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, message: getErrorMessage(error, 'خطا در بازگردانی همه رزروها') };
       }
     }
   }

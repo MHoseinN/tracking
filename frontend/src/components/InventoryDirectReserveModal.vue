@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="isOpen && unit" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 p-4">
-      <div class="h-[80vh] overflow-y-auto rounded-xl bg-white shadow-md">
+      <div class="h-[80vh] overflow-y-auto rounded-lg bg-white shadow-md">
         <div class="border-b border-slate-100 px-4 py-4">
           <div class="flex items-center justify-between gap-4">
             <div class="flex justify-between gap-2">
@@ -15,7 +15,7 @@
               </div>
             </div>
             <button type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
               @click="$emit('close')">
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -36,40 +36,40 @@
             <label class="space-y-2">
               <span class="text-sm font-semibold text-slate-700">تاریخ رفت</span>
               <JalaliDatePicker :model-value="startDatePersian"
-                input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                input-class="h-12 rounded-lg border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 @update:model-value="startDatePersian = $event" />
             </label>
 
             <label class="space-y-2">
               <span class="text-sm font-semibold text-slate-700">تاریخ برگشت</span>
               <JalaliDatePicker :model-value="endDatePersian"
-                input-class="h-12 rounded-xl border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                input-class="h-12 rounded-lg border border-slate-200 px-4 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 @update:model-value="endDatePersian = $event" />
             </label>
           </div>
 
-          <div class="rounded-xl inline-flex bg-amber-50 px-4 py-3 text-sm text-slate-600">
+          <div class="rounded-lg inline-flex bg-amber-50 px-4 py-3 text-sm text-slate-600">
             <span class="font-semibold text-rose-600"> {{ durationLabel }} </span>
           </div>
 
-          <p v-if="errorMessage" class="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          <p v-if="errorMessage" class="rounded-lg bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
             {{ errorMessage }}
           </p>
 
           <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-40 sm:flex-row sm:justify-between">
             <button v-if="unit?.reservation_item_id" type="button"
-              class="h-12 rounded-xl border border-rose-200 bg-rose-50 px-5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+              class="h-12 rounded-lg border border-rose-200 bg-rose-50 px-5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
               @click="$emit('clear', unit)">
               آزادسازی این واحد
             </button>
             <div class="flex flex-col-reverse gap-3 sm:mr-auto sm:flex-row">
               <button type="button"
-                class="h-12 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                class="h-12 rounded-lg border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 @click="$emit('close')">
                 انصراف
               </button>
               <button type="submit" :disabled="saving"
-                class="h-12 rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+                class="h-12 rounded-lg bg-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
                 {{ saving ? 'در حال ثبت...' : unit?.reservation_item_id ? 'ذخیره تغییرات رزرو' : 'ثبت رزرو مستقیم' }}
               </button>
             </div>

@@ -14,12 +14,12 @@
       surface-class="border-0 bg-transparent py-24 shadow-none" text-class="text-gray-500" />
 
     <div v-else class="space-y-6">
-      <div v-if="errorMessage" class="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-4">
+      <div v-if="errorMessage" class="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-4">
         {{ errorMessage }}
       </div>
 
       <section
-        class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
+        class="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] space-y-6">
         <div class="absolute inset-0 pointer-events-none">
         </div>
         <div class="relative flex flex-wrap items-start justify-between gap-4">
@@ -31,7 +31,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <div class="min-w-[180px]">
               <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
-                trigger-class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                trigger-class="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
                 @update:model-value="selectedYear = $event" />
             </div>
           </div>
@@ -44,7 +44,7 @@
 
         <div class="relative grid gap-6">
           <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-5 h-[460px]">
               <div class="mb-4 flex items-center justify-between">
                 <h3 class="font-bold text-slate-800">{{ incomeChartTitle }}</h3>
                 <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">درآمد</span>
@@ -52,7 +52,7 @@
               <canvas ref="incomeChartCanvas" class="w-full h-[380px]"></canvas>
             </div>
 
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 h-[460px]">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-5 h-[460px]">
               <div class="mb-4 flex items-center justify-between">
                 <h3 class="font-bold text-slate-800">{{ countChartTitle }}</h3>
                 <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">حجم</span>
@@ -62,7 +62,7 @@
           </div>
 
           <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] mt-8">
-            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
               <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                   <h3 class="text-base font-bold text-slate-800">جدول تحلیل دوره‌ای</h3>
@@ -101,13 +101,13 @@
             </div>
 
             <div class="grid gap-6">
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div class="mb-4 flex items-center justify-between">
                   <h3 class="text-base font-bold text-slate-800">وضعیت عملیاتی</h3>
                   <span class="text-xs text-slate-500">ارسال و تسویه</span>
                 </div>
                 <div class="space-y-3">
-                  <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-xl bg-white px-4 py-3">
+                  <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-lg bg-white px-4 py-3">
                     <div class="mb-2 flex items-center justify-between">
                       <p class="font-semibold text-slate-700">{{ item.label }}</p>
                       <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
@@ -119,14 +119,14 @@
                 </div>
               </div>
 
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div class="mb-4 flex items-center justify-between">
                   <h3 class="text-base font-bold text-slate-800">برترین مشتری‌ها</h3>
                   <span class="text-xs text-slate-500">بر اساس مبلغ فاکتور</span>
                 </div>
                 <div v-if="topCustomers.length" class="space-y-3">
                   <div v-for="customer in topCustomers" :key="customer.name"
-                    class="flex items-center justify-between rounded-xl bg-white px-4 py-3">
+                    class="flex items-center justify-between rounded-lg bg-white px-4 py-3">
                     <div>
                       <p class="font-semibold text-slate-800">{{ customer.name }}</p>
                       <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
@@ -134,17 +134,17 @@
                     <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
                   </div>
                 </div>
-                <p v-else class="rounded-xl bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
+                <p v-else class="rounded-lg bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای
                   نمایش نیست</p>
               </div>
 
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div class="mb-4 flex items-center justify-between">
                   <h3 class="text-base font-bold text-slate-800">مرور سریع</h3>
                   <span class="text-xs text-slate-500">خلاصه کاربردی</span>
                 </div>
                 <div class="space-y-4">
-                  <div v-for="item in reportHighlights" :key="item.label" class="rounded-xl bg-white px-4 py-4">
+                  <div v-for="item in reportHighlights" :key="item.label" class="rounded-lg bg-white px-4 py-4">
                     <p class="text-xs text-slate-500">{{ item.label }}</p>
                     <p class="mt-2 text-lg font-bold" :class="item.valueClass">{{ item.value }}</p>
                   </div>
