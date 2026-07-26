@@ -1,282 +1,175 @@
 import { defineStore } from 'pinia';
-import api from '../utils/api';
+import { invoiceService } from '../modules/invoices/api/invoice.service';
+import { getApiErrorMessage } from '../utils/apiError';
 
-function customerErrorMessage(err, fallback) {
-  const message = err.response?.data?.message;
-  if (message === 'Customer with this phone already exists') {
-    return 'کاربری با این شماره تماس قبلا ثبت شده است';
-  }
-  if (message === 'Customer with this name already exists') {
-    return 'کاربری با این نام قبلا ثبت شده است';
-  }
-  return message || fallback;
+const customerErrorMessage = (error, fallback) => getApiErrorMessage(error, fallback);
+
+function replaceInvoice(lists, id, invoice) {
+  lists.forEach((list) => {
+    const index = list.findIndex((entry) => entry.id === id);
+    if (index !== -1) list[index] = invoice;
+  });
 }
 
 export const useInvoiceStore = defineStore('invoice', {
   state: () => ({
-    currentInvoices: [],
-    allInvoices: [],
-    customers: [],
-    customersOverview: [],
-    loading: false,
-    error: null
+    currentInvoices: [], allInvoices: [], customers: [], customersOverview: [], loading: false, error: null
   }),
 
   actions: {
-    // Fetch invoices for a specific Gregorian year/month
     async fetchInvoices(filters = {}) {
-      this.loading = true;
-      this.error = null;
+      this.loading = true; this.error = null;
       try {
         const params = {};
         if (filters.year) params.year = filters.year;
         if (filters.month) params.month = filters.month;
-        const response = await api.get('/invoices', { params });
-        this.currentInvoices = response.data;
-      } catch (err) {
-        this.error = err.response?.data?.message || 'خطا در دریافت حساب‌ها';
-        throw err;
-      } finally {
-        this.loading = false;
-      }
+        this.currentInvoices = (await invoiceService.getInvoices(params)).data;
+      } catch (error) {
+        this.error = getApiErrorMessage(error, 'خطا در دریافت حساب‌ها'); throw error;
+      } finally { this.loading = false; }
     },
 
-    // Fetch all invoices for global stats
     async fetchAllInvoices() {
       try {
-        const response = await api.get('/invoices');
-        this.allInvoices = response.data;
-        return response.data;
-      } catch (err) {
-        this.error = err.response?.data?.message || 'خطا در دریافت آمار کل';
-        throw err;
+        this.allInvoices = (await invoiceService.getInvoices()).data;
+        return this.allInvoices;
+      } catch (error) {
+        this.error = getApiErrorMessage(error, 'خطا در دریافت آمار کل'); throw error;
       }
     },
 
-    // Fetch invoices for a specific customer
     async fetchCustomerInvoices(customerId) {
-      this.loading = true;
-      this.error = null;
+      this.loading = true; this.error = null;
       try {
-        const response = await api.get(`/invoices/customer/${customerId}`);
-        this.currentInvoices = response.data.invoices;
-        return response.data.customer;
-      } catch (err) {
-        this.error = err.response?.data?.message || 'خطا در دریافت حساب های مشتری';
-        throw err;
-      } finally {
-        this.loading = false;
-      }
+        const snapshot = (await invoiceService.getCustomerInvoices(customerId)).data;
+        this.currentInvoices = snapshot.invoices;
+        return snapshot.customer;
+      } catch (error) {
+        this.error = getApiErrorMessage(error, 'خطا در دریافت حساب های مشتری'); throw error;
+      } finally { this.loading = false; }
     },
 
-    // Search invoices
+    async fetchCustomerInvoiceSnapshot(customerId) {
+      try { return (await invoiceService.getCustomerInvoices(customerId)).data; }
+      catch (error) { this.error = getApiErrorMessage(error, 'خطا در دریافت اطلاعات فاکتورهای مشتری'); throw error; }
+    },
+
     async searchInvoices(searchParams) {
-      this.loading = true;
-      this.error = null;
-      try {
-        const response = await api.get('/invoices/search', { params: searchParams });
-        this.currentInvoices = response.data;
-      } catch (err) {
-        this.error = err.response?.data?.message || 'خطا در جستجو';
-        throw err;
-      } finally {
-        this.loading = false;
-      }
+      this.loading = true; this.error = null;
+      try { this.currentInvoices = (await invoiceService.searchInvoices(searchParams)).data; }
+      catch (error) { this.error = getApiErrorMessage(error, 'خطا در جستجو'); throw error; }
+      finally { this.loading = false; }
     },
 
-    // Add a new invoice
     async addInvoice(invoiceData) {
       try {
-        const response = await api.post('/invoices', invoiceData);
-        if (response.data) {
-          this.allInvoices.unshift(response.data);
-        }
-        return { success: true, data: response.data };
-      } catch (err) {
-        const message = err.response?.data?.message || 'خطا در افزودن حساب';
-        return { success: false, message };
-      }
+        const data = (await invoiceService.createInvoice(invoiceData)).data;
+        if (data) this.allInvoices.unshift(data);
+        return { success: true, data };
+      } catch (error) { return { success: false, message: getApiErrorMessage(error, 'خطا در افزودن حساب') }; }
     },
 
-    // Update an invoice
     async updateInvoice(id, invoiceData) {
       try {
-        const response = await api.put(`/invoices/${id}`, invoiceData);
-        const updateListItem = (list) => {
-          const index = list.findIndex(inv => inv.id === id);
-          if (index !== -1) {
-            list[index] = response.data;
-          }
-        };
-        updateListItem(this.currentInvoices);
-        updateListItem(this.allInvoices);
-        return { success: true, data: response.data };
-      } catch (err) {
-        const message = err.response?.data?.message || 'خطا در ویرایش حساب';
-        return { success: false, message };
-      }
+        const data = (await invoiceService.updateInvoice(id, invoiceData)).data;
+        replaceInvoice([this.currentInvoices, this.allInvoices], id, data);
+        return { success: true, data };
+      } catch (error) { return { success: false, message: getApiErrorMessage(error, 'خطا در ویرایش حساب') }; }
     },
 
-    // Delete an invoice
     async deleteInvoice(id) {
       try {
-        const removedInvoice = this.currentInvoices.find(inv => inv.id === id) || this.allInvoices.find(inv => inv.id === id) || null;
-        await api.delete(`/invoices/${id}`);
-        this.currentInvoices = this.currentInvoices.filter(inv => inv.id !== id);
-        this.allInvoices = this.allInvoices.filter(inv => inv.id !== id);
+        const removedInvoice = this.currentInvoices.find((invoice) => invoice.id === id)
+          || this.allInvoices.find((invoice) => invoice.id === id) || null;
+        await invoiceService.deleteInvoice(id);
+        this.currentInvoices = this.currentInvoices.filter((invoice) => invoice.id !== id);
+        this.allInvoices = this.allInvoices.filter((invoice) => invoice.id !== id);
         return { success: true, data: removedInvoice };
-      } catch (err) {
-        const message = err.response?.data?.message || 'خطا در حذف حساب';
-        return { success: false, message };
-      }
+      } catch (error) { return { success: false, message: getApiErrorMessage(error, 'خطا در حذف حساب') }; }
     },
 
-  
-
-    // Update invoice status (is_shipped or is_settled)
     async updateStatus(id, field, value) {
       try {
-        const response = await api.patch(`/invoices/${id}/status`, { field, value });
-        // Update locally for instant feedback
-        const updateListItem = (list) => {
-          const index = list.findIndex(inv => inv.id === id);
-          if (index !== -1) {
-            list[index] = response.data;
-          }
-        };
-        updateListItem(this.currentInvoices);
-        updateListItem(this.allInvoices);
-        return { success: true, data: response.data };
-      } catch (err) {
-        const message = err.response?.data?.message || 'خطا در تغییر وضعیت';
-        return { success: false, message };
-      }
+        const data = (await invoiceService.updateStatus(id, field, value)).data;
+        replaceInvoice([this.currentInvoices, this.allInvoices], id, data);
+        return { success: true, data };
+      } catch (error) { return { success: false, message: getApiErrorMessage(error, 'خطا در تغییر وضعیت') }; }
     },
 
-    // Fetch all customers
     async fetchCustomers() {
-      try {
-        const response = await api.get('/customers');
-        this.customers = response.data;
-      } catch (err) {
-        this.error = err.response?.data?.message || 'خطا در دریافت مشتریان';
-        throw err;
-      }
+      try { this.customers = (await invoiceService.getCustomers()).data; }
+      catch (error) { this.error = getApiErrorMessage(error, 'خطا در دریافت مشتریان'); throw error; }
     },
 
-    // Fetch customers with invoice aggregates for admin table
     async fetchCustomersOverview() {
-      this.loading = true;
-      this.error = null;
+      this.loading = true; this.error = null;
       try {
-        const response = await api.get('/customers/overview');
-        this.customersOverview = response.data;
-        return response.data;
-      } catch (err) {
-        this.error = err.response?.data?.message || 'خطا در دریافت لیست کاربران';
-        throw err;
-      } finally {
-        this.loading = false;
-      }
+        this.customersOverview = (await invoiceService.getCustomersOverview()).data;
+        return this.customersOverview;
+      } catch (error) {
+        this.error = getApiErrorMessage(error, 'خطا در دریافت لیست کاربران'); throw error;
+      } finally { this.loading = false; }
     },
 
-    // Add a customer
-    async addCustomer(customerData, options = {}) {
-      const { allowExisting = true } = options;
+    async addCustomer(customerData, { allowExisting = true } = {}) {
       try {
-        const response = await api.post('/customers', customerData);
-        this.customers.push(response.data);
-        return { success: true, data: response.data };
-      } catch (err) {
-        // If customer already exists, return existing id
-        if (allowExisting && err.response?.data?.id) {
-          return { success: true, data: { id: err.response.data.id, name: customerData.name } };
+        const data = (await invoiceService.createCustomer(customerData)).data;
+        this.customers.push(data);
+        return { success: true, data };
+      } catch (error) {
+        if (allowExisting && error.response?.data?.id) {
+          return { success: true, data: { id: error.response.data.id, name: customerData.name } };
         }
-        const message = customerErrorMessage(err, 'خطا در افزودن مشتری');
-        return { success: false, message };
+        return { success: false, message: customerErrorMessage(error, 'خطا در افزودن مشتری') };
       }
     },
 
-    // Update a customer
     async updateCustomer(id, customerData) {
       try {
-        const response = await api.put(`/customers/${id}`, customerData);
-        const index = this.customers.findIndex(c => c.id === id);
-        if (index !== -1) this.customers[index] = response.data;
-        return { success: true, data: response.data };
-      } catch (err) {
-        const message = customerErrorMessage(err, 'خطا در ویرایش مشتری');
-        return { success: false, message };
-      }
+        const data = (await invoiceService.updateCustomer(id, customerData)).data;
+        const index = this.customers.findIndex((customer) => customer.id === id);
+        if (index !== -1) this.customers[index] = data;
+        return { success: true, data };
+      } catch (error) { return { success: false, message: customerErrorMessage(error, 'خطا در ویرایش مشتری') }; }
     },
 
-    // Update customer profile fields (phone/referrer/account status)
     async updateCustomerProfile(id, payload) {
       try {
-        const response = await api.patch(`/customers/${id}/profile`, payload);
-
-        const customerIndex = this.customers.findIndex(c => c.id === id);
-        if (customerIndex !== -1) {
-          this.customers[customerIndex] = response.data;
-        }
-
-        const overviewIndex = this.customersOverview.findIndex(c => c.id === id);
+        const data = (await invoiceService.updateCustomerProfile(id, payload)).data;
+        const customerIndex = this.customers.findIndex((customer) => customer.id === id);
+        if (customerIndex !== -1) this.customers[customerIndex] = data;
+        const overviewIndex = this.customersOverview.findIndex((customer) => customer.id === id);
         if (overviewIndex !== -1) {
           this.customersOverview[overviewIndex] = {
             ...this.customersOverview[overviewIndex],
-            name: response.data.name || '',
-            first_name: response.data.first_name || '',
-            last_name: response.data.last_name || '',
-            phone: response.data.phone || '',
-            referrer: response.data.referrer || '',
-            account_status: response.data.account_status || ''
+            name: data.name || '', first_name: data.first_name || '', last_name: data.last_name || '',
+            phone: data.phone || '', referrer: data.referrer || '', account_status: data.account_status || ''
           };
         }
-
-        return { success: true, data: response.data };
-      } catch (err) {
-        const message = customerErrorMessage(err, 'خطا در ذخیره مشخصات مشتری');
-        return { success: false, message };
-      }
+        return { success: true, data };
+      } catch (error) { return { success: false, message: customerErrorMessage(error, 'خطا در ذخیره مشخصات مشتری') }; }
     },
 
-    // Update customer notes
     async updateCustomerNotes(id, notes) {
       try {
-        const response = await api.patch(`/customers/${id}/notes`, { notes: notes || null });
-
-        const customerIndex = this.customers.findIndex(c => c.id === id);
-        if (customerIndex !== -1) {
-          this.customers[customerIndex] = response.data;
-        }
-
-        const overviewIndex = this.customersOverview.findIndex(c => c.id === id);
-        if (overviewIndex !== -1) {
-          this.customersOverview[overviewIndex] = {
-            ...this.customersOverview[overviewIndex],
-            notes: response.data.notes || ''
-          };
-        }
-
-        return { success: true, data: response.data };
-      } catch (err) {
-        const message = err.response?.data?.message || 'خطا در ذخیره توضیحات مشتری';
-        return { success: false, message };
-      }
+        const data = (await invoiceService.updateCustomerNotes(id, notes)).data;
+        const customerIndex = this.customers.findIndex((customer) => customer.id === id);
+        if (customerIndex !== -1) this.customers[customerIndex] = data;
+        const overviewIndex = this.customersOverview.findIndex((customer) => customer.id === id);
+        if (overviewIndex !== -1) this.customersOverview[overviewIndex] = { ...this.customersOverview[overviewIndex], notes: data.notes || '' };
+        return { success: true, data };
+      } catch (error) { return { success: false, message: getApiErrorMessage(error, 'خطا در ذخیره توضیحات مشتری') }; }
     },
 
-    // Delete a customer
     async deleteCustomer(id) {
       try {
-        const removedCustomer = this.customers.find(c => c.id === id) || this.customersOverview.find(c => c.id === id) || null;
-        await api.delete(`/customers/${id}`);
-        this.customers = this.customers.filter(c => c.id !== id);
-        this.customersOverview = this.customersOverview.filter(c => c.id !== id);
+        const removedCustomer = this.customers.find((customer) => customer.id === id)
+          || this.customersOverview.find((customer) => customer.id === id) || null;
+        await invoiceService.deleteCustomer(id);
+        this.customers = this.customers.filter((customer) => customer.id !== id);
+        this.customersOverview = this.customersOverview.filter((customer) => customer.id !== id);
         return { success: true, data: removedCustomer };
-      } catch (err) {
-        const message = err.response?.data?.message || 'خطا در حذف مشتری';
-        return { success: false, message };
-      }
+      } catch (error) { return { success: false, message: getApiErrorMessage(error, 'خطا در حذف مشتری') }; }
     }
   }
 });

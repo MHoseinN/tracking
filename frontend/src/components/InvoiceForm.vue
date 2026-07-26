@@ -106,9 +106,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { toPersianDate, toGregorianDate } from '../utils/dateConverter';
 import JalaliDatePicker from './JalaliDatePicker.vue';
+import { useFormState } from '../composables/useFormState';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -121,7 +122,6 @@ const props = defineProps({
 const emit = defineEmits(['save', 'close']);
 
 const isEditMode = computed(() => !!props.invoiceData);
-const saving = ref(false);
 
 // Searchable customer UI state
 const customerSearch = ref('');
@@ -134,18 +134,43 @@ const filteredCustomers = computed(() => {
   return props.customersList.filter(c => c.name.includes(q) || c.name.toLowerCase().includes(q.toLowerCase()));
 });
 
-const form = reactive({
+const {
+  form,
+  errors,
+  saving,
+  setValues,
+  resetForm: resetInvoiceForm,
+  submit
+} = useFormState({
   customer_id: '',
   persianDate: '',
   price: '',
   description: '',
   notes: ''
-});
+}, {
+  validate: (values) => {
+    const validationErrors = {
+      customer_id: '',
+      date: '',
+      price: ''
+    };
 
-const errors = reactive({
-  customer_id: '',
-  date: '',
-  price: ''
+    if (!values.customer_id) {
+      validationErrors.customer_id = 'انتخاب مشتری الزامی است';
+    }
+
+    if (!values.persianDate) {
+      validationErrors.date = 'تاریخ الزامی است';
+    } else if (!/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(values.persianDate)) {
+      validationErrors.date = 'فرمت تاریخ صحیح نیست (YYYY/MM/DD)';
+    }
+
+    if (!values.price || Number(values.price) <= 0) {
+      validationErrors.price = 'قیمت الزامی است و باید بزرگتر از صفر باشد';
+    }
+
+    return validationErrors;
+  }
 });
 
 const formattedPrice = computed(() => {
@@ -166,20 +191,22 @@ function resolveInvoiceNotes(invoice) {
 // Populate form when editing or when modal opens
 watch(() => props.isOpen, (open) => {
   if (open) {
-    resetForm();
+    resetInvoiceForm();
     if (props.invoiceData) {
       const resolvedNotes = resolveInvoiceNotes(props.invoiceData);
       // Edit mode: populate fields
-      form.customer_id = props.invoiceData.customer_id || '';
-      form.persianDate = toPersianDate(props.invoiceData.date);
-      form.price = props.invoiceData.price || '';
-      form.description = resolvedNotes;
-      form.notes = resolvedNotes;
+      setValues({
+        customer_id: props.invoiceData.customer_id,
+        persianDate: toPersianDate(props.invoiceData.date),
+        price: props.invoiceData.price,
+        description: resolvedNotes,
+        notes: resolvedNotes
+      });
       // Set customerSearch to existing name if available
       customerSearch.value = props.invoiceData.customer_name || '';
     } else {
       // Add mode
-      form.customer_id = props.customerId || '';
+      setValues({ customer_id: props.customerId });
       if (props.customerId) {
         const c = props.customersList.find(x => String(x.id) === String(props.customerId));
         customerSearch.value = c ? c.name : '';
@@ -187,52 +214,6 @@ watch(() => props.isOpen, (open) => {
     }
   }
 });
-
-function resetForm() {
-  form.customer_id = '';
-  form.persianDate = '';
-  form.price = '';
-  form.description = '';
-  form.notes = '';
-  customerSearch.value = '';
-  showDropdown.value = false;
-  highlightedIndex.value = -1;
-  errors.customer_id = '';
-  errors.date = '';
-  errors.price = '';
-}
-
-function validate() {
-  let valid = true;
-  errors.customer_id = '';
-  errors.date = '';
-  errors.price = '';
-
-  // Only validate customer if no customerId prop
-  if (!form.customer_id) {
-    errors.customer_id = 'انتخاب مشتری الزامی است';
-    valid = false;
-  }
-
-  if (!form.persianDate) {
-    errors.date = 'تاریخ الزامی است';
-    valid = false;
-  } else {
-    // Validate persian date format YYYY/MM/DD
-    const dateRegex = /^\d{4}\/\d{1,2}\/\d{1,2}$/;
-    if (!dateRegex.test(form.persianDate)) {
-      errors.date = 'فرمت تاریخ صحیح نیست (YYYY/MM/DD)';
-      valid = false;
-    }
-  }
-
-  if (!form.price || form.price <= 0 || form.price.length < 4) {
-    errors.price = 'قیمت الزامی است و باید بزرگتر از صفر باشد';
-    valid = false;
-  }
-
-  return valid;
-}
 
 function onCustomerInput() {
   // when typing, clear selected id until user picks
@@ -284,29 +265,27 @@ function handleCustomerEnter() {
 }
 
 async function handleSubmit() {
-  if (!validate()) return;
+  await submit(async (values) => {
+    const gregorianDate = toGregorianDate(values.persianDate);
 
-  saving.value = true;
+    if (!gregorianDate) {
+      errors.date = 'تاریخ وارد شده معتبر نیست';
+      return { success: false, validation: true };
+    }
 
-  // Convert Persian date to Gregorian
-  const gregorianDate = toGregorianDate(form.persianDate);
+    const normalizedNotes = String(values.notes || '').trim();
+    emit('save', {
+      data: {
+        customer_id: values.customer_id || props.customerId,
+        date: gregorianDate,
+        price: values.price,
+        description: normalizedNotes || null,
+        notes: normalizedNotes || null
+      },
+      isEdit: isEditMode.value
+    });
 
-  if (!gregorianDate) {
-    errors.date = 'تاریخ وارد شده معتبر نیست';
-    saving.value = false;
-    return;
-  }
-
-  const normalizedNotes = String(form.notes || '').trim();
-  const invoiceData = {
-    customer_id: form.customer_id || props.customerId,
-    date: gregorianDate,
-    price: form.price,
-    description: normalizedNotes || null,
-    notes: normalizedNotes || null
-  };
-
-  emit('save', { data: invoiceData, isEdit: isEditMode.value });
-  saving.value = false;
+    return { success: true };
+  });
 }
 </script>

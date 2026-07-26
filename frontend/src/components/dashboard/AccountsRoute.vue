@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport defer to="#app-shell-actions">
+    <Teleport to="#app-shell-actions">
       <button @click="openAddModal" class="app-button-primary w-full justify-between">
         <span> حساب جدید</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,6 +73,8 @@ import ConfirmModal from '../ConfirmModal.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
 import InvoiceSearchBar from '../InvoiceSearchBar.vue';
 import UndoBar from '../UndoBar.vue';
+import { usePaginatedList } from '../../composables/usePaginatedList';
+import { useUndoAction } from '../../composables/useUndoAction';
 import { toGregorianDate, toPersianDate } from '../../utils/dateConverter';
 import { exportRowsToExcel } from '../../utils/exportToExcel';
 
@@ -93,19 +95,9 @@ const searchCustomerName = ref('');
 const statusFilter = ref('all');
 const sortKey = ref('date');
 const sortDirection = ref('desc');
-const currentPage = ref(1);
-const pageSize = ref(15);
 const pageSizeOptions = [10, 15, 20, 50, 100];
-const pageSizeSelectOptions = computed(() => pageSizeOptions.map((size) => ({
-  label: size.toLocaleString('fa-IR'),
-  value: size
-})));
-const undoState = ref({
-  visible: false,
-  title: '',
-  message: '',
-  handler: null,
-  timerId: null
+const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({
+  onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد')
 });
 
 const displayedInvoices = computed(() => {
@@ -145,31 +137,22 @@ const sortedInvoices = computed(() => {
   return invoices;
 });
 
-const totalRows = computed(() => sortedInvoices.value.length);
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)));
-const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
-const paginatedInvoices = computed(() =>
-  sortedInvoices.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value)
-);
-const visiblePageNumbers = computed(() => {
-  const start = Math.max(1, currentPage.value - 1);
-  const end = Math.min(totalPages.value, start + 2);
-  const adjustedStart = Math.max(1, end - 2);
-  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
-});
-
-watch(pageSize, () => {
-  currentPage.value = 1;
-});
-
-watch([displayedInvoices, totalPages], () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value;
-  }
-
-  if (currentPage.value < 1) {
-    currentPage.value = 1;
-  }
+const {
+  currentPage,
+  pageSize,
+  pageSizeOptions: pageSizeSelectOptions,
+  totalRows,
+  totalPages,
+  rowStartIndex,
+  paginatedItems: paginatedInvoices,
+  visiblePageNumbers,
+  resetPage,
+  goToPage
+} = usePaginatedList(sortedInvoices, {
+  initialPageSize: 15,
+  pageSizeOptions,
+  resetSources: [searchCustomerName, searchDate, statusFilter],
+  scrollTarget: tableSectionRef
 });
 
 // Load initial data
@@ -181,16 +164,10 @@ onMounted(async () => {
 });
 
 async function clearSearch() {
-  currentPage.value = 1;
   searchCustomerName.value = '';
   searchDate.value = '';
   statusFilter.value = 'all';
-}
-
-function goToPage(page) {
-  if (page < 1 || page > totalPages.value) return;
-  currentPage.value = page;
-  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  resetPage();
 }
 
 function toggleSort(column) {
@@ -218,10 +195,6 @@ function openEditModal(invoice) {
 function closeInvoiceForm() {
   showInvoiceForm.value = false;
   selectedInvoice.value = null;
-}
-
-function openAddCustomerModal() {
-  showCustomerForm.value = true;
 }
 
 function closeCustomerForm() {
@@ -322,20 +295,6 @@ function navigateToCustomer(customerId) {
   router.push(`/customer/${customerId}`);
 }
 
-// Navigate to charts page
-function navigateToCharts() {
-  router.push('/reports');
-}
-
-// Navigate to users management page
-function navigateToUsers() {
-  router.push('/users');
-}
-
-function navigateToInventory() {
-  router.push('/inventory');
-}
-
 function exportInvoices() {
   exportRowsToExcel({
     fileName: 'invoices-export',
@@ -352,33 +311,7 @@ function exportInvoices() {
   });
 }
 
-function clearUndo() {
-  if (undoState.value.timerId) {
-    window.clearTimeout(undoState.value.timerId);
-  }
-  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
-}
-
-function showUndo({ title, message, handler }) {
-  clearUndo();
-  const timerId = window.setTimeout(() => {
-    clearUndo();
-  }, 5000);
-  undoState.value = { visible: true, title, message, handler, timerId };
-}
-
-async function handleUndo() {
-  if (!undoState.value.handler) return;
-  const undoHandler = undoState.value.handler;
-  clearUndo();
-  try {
-    await undoHandler();
-  } catch (error) {
-    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
-  }
-}
-
 watch([searchCustomerName, searchDate, statusFilter], () => {
-  currentPage.value = 1;
+  resetPage();
 });
 </script>

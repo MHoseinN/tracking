@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport defer to="#app-shell-actions">
+    <Teleport to="#app-shell-actions">
       <button type="button" @click="openAddModal" class="app-button-primary w-full justify-between">
         <span>افزودن کاربر</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +93,7 @@
                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
-                  <button @click.stop="handleDelete(row)"
+                  <button @click.stop="openDeleteModal(row)"
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-700 transition hover:bg-red-200"
                     title="حذف">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,126 +129,32 @@
   <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
     @close="clearUndo" />
 
-  <Teleport to="body">
-    <div v-if="false && showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="closeModal">
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
-        <div class="flex items-center justify-between p-5 border-b">
-          <h3 class="text-lg font-bold text-gray-800">{{ editingId ? 'ویرایش کاربر' : 'افزودن کاربر' }}</h3>
-          <button @click="closeModal" class="text-gray-400 hover:text-gray-600 transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form @submit.prevent="saveCustomer" class="p-5 space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">نام <span
-                  class="text-red-500">*</span></label>
-              <input v-model="form.first_name" type="text"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                :class="{ 'border-red-500': errors.first_name }" />
-              <p v-if="errors.first_name" class="text-red-500 text-xs mt-1">{{ errors.first_name }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">نام خانوادگی <span
-                  class="text-red-500">*</span></label>
-              <input v-model="form.last_name" type="text"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                :class="{ 'border-red-500': errors.last_name }" />
-              <p v-if="errors.last_name" class="text-red-500 text-xs mt-1">{{ errors.last_name }}</p>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">شماره تماس</label>
-            <input v-model="form.phone" type="text"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">معرف</label>
-            <input v-model="form.referrer" type="text"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">وضعیت حساب</label>
-            <select v-model="form.account_status"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">وضعیت حساب</option>
-              <option v-for="option in accountStatusOptions" :key="option" :value="option">{{ option }}</option>
-            </select>
-          </div>
-
-          <div class="flex gap-3 pt-2">
-            <button type="submit" :disabled="saving"
-              class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50">
-              {{ saving ? 'در حال ذخیره...' : (editingId ? 'ذخیره تغییرات' : 'افزودن کاربر') }}
-            </button>
-            <button type="button" @click="closeModal"
-              class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">انصراف</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </Teleport>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import AppContentState from '../AppContentState.vue';
 import AppPagination from '../AppPagination.vue';
-import AppStatCard from '../AppStatCard.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomSelect from '../CustomSelect.vue';
 import UndoBar from '../UndoBar.vue';
-import api from '../../utils/api';
 import { exportRowsToExcel } from '../../utils/exportToExcel';
 import { getAccountStatusTone } from '../../utils/statusStyles';
+import { usePaginatedList } from '../../composables/usePaginatedList';
+import { useUndoAction } from '../../composables/useUndoAction';
+import { useUserManagementActions } from '../../composables/useUserManagementActions';
 
 const router = useRouter();
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
 
 const loading = ref(false);
-const saving = ref(false);
-const statusSavingId = ref(null);
 const errorMessage = ref('');
-
-const showForm = ref(false);
 const tableSectionRef = ref(null);
-const editingId = ref(null);
-const selectedCustomer = ref(null);
-const showDeleteConfirm = ref(false);
-const deletingCustomer = ref(false);
-const deleteTargetCustomer = ref(null);
-const undoState = ref({
-  visible: false,
-  title: '',
-  message: '',
-  handler: null,
-  timerId: null
-});
-
-const form = reactive({
-  first_name: '',
-  last_name: '',
-  phone: '',
-  referrer: '',
-  account_status: ''
-});
-
-const errors = reactive({
-  first_name: '',
-  last_name: ''
-});
 
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
 const pageSizeOptions = [10, 15, 20, 50, 100];
@@ -260,34 +166,10 @@ const accountStatusFilterOptions = computed(() => ([
   { label: 'همه وضعیت‌ها', value: 'all' },
   ...accountStatusOptions.map((option) => ({ label: option, value: option }))
 ]));
-const pageSizeSelectOptions = computed(() => pageSizeOptions.map((size) => ({
-  label: size.toLocaleString('fa-IR'),
-  value: size
-})));
 
 const rows = computed(() => invoiceStore.customersOverview);
 const searchQuery = ref('');
 const statusFilter = ref('all');
-const currentPage = ref(1);
-const pageSize = ref(15);
-
-const totalCustomers = computed(() => rows.value.length);
-const deleteConfirmMessage = computed(() => {
-  const customer = deleteTargetCustomer.value;
-  if (!customer) {
-    return 'آیا از حذف این کاربر اطمینان دارید؟ این عملیات قابل بازگشت نیست.';
-  }
-
-  return `آیا از حذف کاربر ${customer.first_name} ${customer.last_name} مطمئن هستید؟ این عملیات قابل بازگشت نیست.`;
-});
-
-function countCustomersByStatus(status) {
-  return rows.value.filter((row) => row.account_status === status).length;
-}
-
-const currentStatusFilterLabel = computed(() => statusFilter.value === 'all'
-  ? 'نمایش همه وضعیت‌ها'
-  : `فیلتر فعال: ${statusFilter.value}`);
 
 function normalizeForSearch(value) {
   return String(value ?? '')
@@ -318,37 +200,47 @@ const filteredRows = computed(() => {
   });
 });
 
-const totalRows = computed(() => filteredRows.value.length);
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)));
-const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
-const paginatedRows = computed(() => filteredRows.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value));
-const visiblePageNumbers = computed(() => {
-  const start = Math.max(1, currentPage.value - 1);
-  const end = Math.min(totalPages.value, start + 2);
-  const adjustedStart = Math.max(1, end - 2);
-  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
+const {
+  currentPage,
+  pageSize,
+  pageSizeOptions: pageSizeSelectOptions,
+  totalRows,
+  totalPages,
+  rowStartIndex,
+  paginatedItems: paginatedRows,
+  visiblePageNumbers,
+  goToPage
+} = usePaginatedList(filteredRows, {
+  initialPageSize: 15,
+  pageSizeOptions,
+  resetSources: [searchQuery, statusFilter],
+  scrollTarget: tableSectionRef
 });
 
-watch(pageSize, () => {
-  currentPage.value = 1;
+const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({
+  onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد')
 });
 
-watch(searchQuery, () => {
-  currentPage.value = 1;
-});
-
-watch(statusFilter, () => {
-  currentPage.value = 1;
-});
-
-watch([rows, totalPages], () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value;
-  }
-
-  if (currentPage.value < 1) {
-    currentPage.value = 1;
-  }
+const {
+  statusSavingId,
+  showForm,
+  selectedCustomer,
+  showDeleteConfirm,
+  deletingCustomer,
+  deleteConfirmMessage,
+  openAddModal,
+  openEditModal,
+  closeModal,
+  openDeleteModal,
+  closeDeleteModal,
+  handleCustomerSaved,
+  handleStatusChange,
+  confirmDeleteCustomer
+} = useUserManagementActions({
+  invoiceStore,
+  toast,
+  reloadOverview: loadOverview,
+  showUndo
 });
 
 function formatNumber(value) {
@@ -357,17 +249,6 @@ function formatNumber(value) {
 
 function formatCurrency(value) {
   return `${formatNumber(value)} تومان`;
-}
-
-function goToPage(page) {
-  if (page < 1 || page > totalPages.value) return;
-  currentPage.value = page;
-  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function clearFilters() {
-  searchQuery.value = '';
-  statusFilter.value = 'all';
 }
 
 function accountStatusSelectClass(status) {
@@ -381,36 +262,6 @@ function statusTriggerClass(status) {
   ];
 }
 
-function resetForm() {
-  editingId.value = null;
-  form.first_name = '';
-  form.last_name = '';
-  form.phone = '';
-  form.referrer = '';
-  form.account_status = '';
-  errors.first_name = '';
-  errors.last_name = '';
-}
-
-function validate() {
-  errors.first_name = '';
-  errors.last_name = '';
-
-  let valid = true;
-
-  if (!String(form.first_name || '').trim()) {
-    errors.first_name = 'نام الزامی است';
-    valid = false;
-  }
-
-  if (!String(form.last_name || '').trim()) {
-    errors.last_name = 'نام خانوادگی الزامی است';
-    valid = false;
-  }
-
-  return valid;
-}
-
 async function loadOverview() {
   loading.value = true;
   errorMessage.value = '';
@@ -420,183 +271,6 @@ async function loadOverview() {
     errorMessage.value = 'دریافت لیست کاربران با خطا مواجه شد.';
   } finally {
     loading.value = false;
-  }
-}
-
-function openAddModal() {
-  resetForm();
-  selectedCustomer.value = null;
-  showForm.value = true;
-}
-
-function openEditModal(row) {
-  selectedCustomer.value = row;
-  editingId.value = row.id;
-  form.first_name = row.first_name || '';
-  form.last_name = row.last_name || '';
-  form.phone = row.phone || '';
-  form.referrer = row.referrer || '';
-  form.account_status = row.account_status || '';
-  errors.first_name = '';
-  errors.last_name = '';
-  showForm.value = true;
-}
-
-function closeModal() {
-  showForm.value = false;
-  selectedCustomer.value = null;
-  resetForm();
-}
-
-function closeDeleteModal() {
-  if (deletingCustomer.value) return;
-  showDeleteConfirm.value = false;
-  deleteTargetCustomer.value = null;
-}
-
-async function handleCustomerSaved() {
-  await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
-}
-
-async function saveCustomer() {
-  if (!validate()) return;
-
-  saving.value = true;
-
-  const payload = {
-    first_name: form.first_name.trim(),
-    last_name: form.last_name.trim(),
-    phone: String(form.phone || '').trim() || null,
-    referrer: String(form.referrer || '').trim() || null,
-    account_status: String(form.account_status || '').trim() || null
-  };
-
-  let result;
-  if (editingId.value) {
-    result = await invoiceStore.updateCustomer(editingId.value, payload);
-  } else {
-    result = await invoiceStore.addCustomer(payload, { allowExisting: false });
-  }
-
-  saving.value = false;
-
-  if (!result.success) {
-    toast.error(result.message || 'عملیات با خطا مواجه شد');
-    return;
-  }
-
-  toast.success(editingId.value ? 'کاربر با موفقیت ویرایش شد' : 'کاربر با موفقیت اضافه شد');
-  closeModal();
-  await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
-}
-
-async function handleStatusChange(row, value) {
-  const previousStatus = row.account_status || '';
-  row.account_status = String(value || '').trim() || '';
-  statusSavingId.value = row.id;
-
-  const result = await invoiceStore.updateCustomer(row.id, {
-    first_name: row.first_name || '',
-    last_name: row.last_name || '',
-    phone: row.phone || null,
-    referrer: row.referrer || null,
-    account_status: String(value || '').trim() || null
-  });
-
-  statusSavingId.value = null;
-
-  if (!result.success) {
-    row.account_status = previousStatus;
-    toast.error(result.message || 'به‌روزرسانی وضعیت حساب با خطا مواجه شد');
-    return;
-  }
-
-  toast.success('وضعیت حساب با موفقیت ثبت شد');
-  showUndo({
-    title: 'وضعیت حساب تغییر کرد',
-    message: 'در صورت نیاز، بازگردانی کن.',
-    handler: async () => {
-      const revertResult = await invoiceStore.updateCustomer(row.id, {
-        first_name: row.first_name || '',
-        last_name: row.last_name || '',
-        phone: row.phone || null,
-        referrer: row.referrer || null,
-        account_status: previousStatus || null
-      });
-      if (!revertResult.success) {
-        throw new Error(revertResult.message);
-      }
-      await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
-      toast.success('وضعیت حساب بازگردانی شد');
-    }
-  });
-  await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
-}
-
-async function handleDelete(row) {
-  deleteTargetCustomer.value = row;
-  showDeleteConfirm.value = true;
-}
-
-async function confirmDeleteCustomer() {
-  if (!deleteTargetCustomer.value?.id) return;
-
-  try {
-    const customerSnapshotResponse = await api.get(`/invoices/customer/${deleteTargetCustomer.value.id}`);
-    const customerSnapshot = customerSnapshotResponse.data?.customer;
-    const invoiceSnapshots = customerSnapshotResponse.data?.invoices || [];
-
-    deletingCustomer.value = true;
-    const result = await invoiceStore.deleteCustomer(deleteTargetCustomer.value.id);
-    deletingCustomer.value = false;
-
-    if (!result.success) {
-      toast.error(result.message || 'حذف کاربر با خطا مواجه شد');
-      return;
-    }
-
-    toast.success('کاربر با موفقیت حذف شد');
-    closeDeleteModal();
-    if (customerSnapshot) {
-      showUndo({
-        title: 'کاربر حذف شد',
-        message: 'در 5 ثانیه آینده می‌توانی او را برگردانی.',
-        handler: async () => {
-          const restoredCustomer = await invoiceStore.addCustomer({
-            first_name: customerSnapshot.first_name || '',
-            last_name: customerSnapshot.last_name || '',
-            phone: customerSnapshot.phone || null,
-            referrer: customerSnapshot.referrer || null,
-            notes: customerSnapshot.notes || null,
-            account_status: customerSnapshot.account_status || null
-          }, { allowExisting: false });
-
-          if (!restoredCustomer.success || !restoredCustomer.data?.id) {
-            throw new Error(restoredCustomer.message || 'بازگردانی کاربر ممکن نشد');
-          }
-
-          for (const invoice of invoiceSnapshots) {
-            const invoiceResult = await invoiceStore.addInvoice({
-              customer_id: restoredCustomer.data.id,
-              date: invoice.date,
-              price: invoice.price,
-              description: invoice.description || null,
-              notes: invoice.notes || null
-            });
-            if (!invoiceResult.success) {
-              throw new Error(invoiceResult.message || 'بازگردانی یکی از فاکتورها با خطا مواجه شد');
-            }
-          }
-
-          await Promise.all([loadOverview(), invoiceStore.fetchCustomers(), invoiceStore.fetchAllInvoices()]);
-          toast.success('کاربر و فاکتورهایش بازگردانی شدند');
-        }
-      });
-    }
-    await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]);
-  } catch (error) {
-    deletingCustomer.value = false;
-    toast.error(error.response?.data?.message || error.message || 'حذف کاربر با خطا مواجه شد');
   }
 }
 
@@ -615,30 +289,6 @@ function exportCustomers() {
       row.referrer || ''
     ])
   });
-}
-
-function clearUndo() {
-  if (undoState.value.timerId) {
-    window.clearTimeout(undoState.value.timerId);
-  }
-  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
-}
-
-function showUndo({ title, message, handler }) {
-  clearUndo();
-  const timerId = window.setTimeout(() => clearUndo(), 5000);
-  undoState.value = { visible: true, title, message, handler, timerId };
-}
-
-async function handleUndo() {
-  if (!undoState.value.handler) return;
-  const undoHandler = undoState.value.handler;
-  clearUndo();
-  try {
-    await undoHandler();
-  } catch (error) {
-    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
-  }
 }
 
 function goBack() {

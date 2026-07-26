@@ -57,64 +57,53 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/authStore';
+import { useFormState } from '../composables/useFormState';
 
 const router = useRouter();
 const toast = useToast();
 const authStore = useAuthStore();
 
-const form = reactive({
+const {
+  form,
+  errors,
+  saving: loading,
+  submit
+} = useFormState({
   username: '',
   password: ''
+}, {
+  validate: (values) => ({
+    username: String(values.username || '').trim() ? '' : 'نام کاربری الزامی است',
+    password: values.password ? '' : 'رمز عبور الزامی است'
+  })
 });
 
-const errors = reactive({
-  username: '',
-  password: ''
-});
-
-const loading = ref(false);
 const loginError = ref('');
 
-function validate() {
-  errors.username = '';
-  errors.password = '';
-  let valid = true;
-
-  if (!form.username.trim()) {
-    errors.username = 'نام کاربری الزامی است';
-    toast.error("نام کاربری را وارد کنید ");
-    valid = false;
-  }
-
-  if (!form.password) {
-    errors.password = 'رمز عبور الزامی است';
-    toast.error("رمز عبور را وارد کنید.")
-    valid = false;
-  }
-
-  return valid;
-}
-
 async function handleLogin() {
-  if (!validate()) return;
-
-  loading.value = true;
   loginError.value = '';
 
-  const result = await authStore.login(form.username, form.password);
+  const result = await submit(async (values) => {
+    const loginResult = await authStore.login(values.username, values.password);
 
-  loading.value = false;
+    if (loginResult.success) {
+      toast.success('خوش اومدی رئیس');
+      await router.push('/home');
+    } else {
+      toast.error('نام کاربری یا رمز عبور اشتباه است');
+      loginError.value = loginResult.message || 'نام کاربری یا رمز عبور اشتباه است';
+    }
 
-  if (result.success) {
-    toast.success('خوش اومدی رئیس');
-    router.push('/home');
-  } else {
-    toast.error("نام کاربری یا رمز عبور اشتباه است");
-    loginError.value = result.message || 'نام کاربری یا رمز عبور اشتباه است';
+    return loginResult;
+  });
+
+  if (result.validation) {
+    if (result.errors.username) toast.error('نام کاربری را وارد کنید');
+    if (result.errors.password) toast.error('رمز عبور را وارد کنید');
   }
 }
 </script>

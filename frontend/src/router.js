@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/authStore';
+import { usePermissions } from './composables/usePermissions';
 
 const routes = [
   {
@@ -70,14 +71,20 @@ const routes = [
     }
   },
   {
-    path: '/inventory/manage',
-    name: 'InventoryProductManagement',
-    component: () => import('./components/inventory/InventoryProductManagementRoute.vue'),
+    path: '/products',
+    name: 'ProductsManagement',
+    component: () => import('./components/products/ProductsManagementRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'مدیریت محصولات',
       subtitle: 'ساختار دسته‌بندی، موجودی و ویرایش محصولات را در همین نمای ثابت انجام بده'
     }
+  },
+  {
+    path: '/inventory/manage',
+    name: 'LegacyInventoryProductManagement',
+    redirect: '/products',
+    meta: { requiresAuth: true }
   },
   {
     path: '/inventory/reservations/new',
@@ -117,11 +124,14 @@ const router = createRouter({
 // Navigation guard: protect authenticated routes
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
+  const { canAccess } = usePermissions();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login');
   } else if (to.name === 'Login' && authStore.isAuthenticated) {
     next('/home');
+  } else if (!canAccess(to.meta)) {
+    next({ name: 'Home' });
   } else {
     next();
   }

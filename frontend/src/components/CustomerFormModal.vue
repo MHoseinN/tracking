@@ -96,10 +96,12 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
 import CustomSelect from './CustomSelect.vue';
+import { validateCustomerIdentity } from '../utils/validators/customerValidators';
+import { useFormState } from '../composables/useFormState';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -111,7 +113,6 @@ const emit = defineEmits(['close', 'saved']);
 
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
-const saving = ref(false);
 
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
 const accountStatusSelectOptions = computed(() => ([
@@ -119,18 +120,23 @@ const accountStatusSelectOptions = computed(() => ([
   ...accountStatusOptions.map((option) => ({ label: option, value: option }))
 ]));
 
-const form = reactive({
+const {
+  form,
+  errors,
+  saving,
+  setValues,
+  submit
+} = useFormState({
   first_name: '',
   last_name: '',
   phone: '',
   referrer: '',
   account_status: ''
-});
-
-const errors = reactive({
-  first_name: '',
-  last_name: '',
-  phone: ''
+}, {
+  validate: (values) => validateCustomerIdentity(values, {
+    existingCustomers: props.existingCustomers,
+    currentCustomerId: props.customer?.id
+  })
 });
 
 const isEditMode = computed(() => !!props.customer?.id);
@@ -151,63 +157,22 @@ watch(() => props.existingCustomers, () => {
   validatePhoneDuplicate();
 }, { deep: true });
 
-function normalizePhone(value) {
-  return String(value || '')
-    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-    .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
-    .replace(/[^\d+]/g, '');
-}
-
 function fillForm() {
-  form.first_name = props.customer?.first_name || '';
-  form.last_name = props.customer?.last_name || '';
-  form.phone = props.customer?.phone || '';
-  form.referrer = props.customer?.referrer || '';
-  form.account_status = props.customer?.account_status || '';
-  clearErrors();
-}
-
-function clearErrors() {
-  errors.first_name = '';
-  errors.last_name = '';
-  errors.phone = '';
+  setValues({
+    first_name: props.customer?.first_name,
+    last_name: props.customer?.last_name,
+    phone: props.customer?.phone,
+    referrer: props.customer?.referrer,
+    account_status: props.customer?.account_status
+  });
 }
 
 function validatePhoneDuplicate() {
-  const normalizedPhone = normalizePhone(form.phone);
-  errors.phone = '';
-  if (!normalizedPhone) return true;
-
-  const duplicate = props.existingCustomers.find((customer) => {
-    if (String(customer.id) === String(props.customer?.id || '')) return false;
-    return normalizePhone(customer.phone) === normalizedPhone;
-  });
-
-  if (duplicate) {
-    errors.phone = 'کاربری با این شماره تماس قبلا ثبت شده است';
-    return false;
-  }
-
-  return true;
-}
-
-function validate() {
-  clearErrors();
-  let valid = true;
-
-  if (!String(form.first_name || '').trim()) {
-    errors.first_name = 'نام الزامی است';
-    valid = false;
-  }
-
-  if (!String(form.last_name || '').trim()) {
-    errors.last_name = 'نام خانوادگی الزامی است';
-    valid = false;
-  }
-
-  if (!validatePhoneDuplicate()) valid = false;
-
-  return valid;
+  errors.phone = validateCustomerIdentity(form, {
+    existingCustomers: props.existingCustomers,
+    currentCustomerId: props.customer?.id
+  }).phone;
+  return !errors.phone;
 }
 
 function close() {
@@ -216,22 +181,21 @@ function close() {
 }
 
 async function saveCustomer() {
-  if (!validate()) return;
+  const result = await submit(async (values) => {
+    const payload = {
+      first_name: values.first_name.trim(),
+      last_name: values.last_name.trim(),
+      phone: String(values.phone || '').trim() || null,
+      referrer: String(values.referrer || '').trim() || null,
+      account_status: String(values.account_status || '').trim() || null
+    };
 
-  saving.value = true;
-  const payload = {
-    first_name: form.first_name.trim(),
-    last_name: form.last_name.trim(),
-    phone: String(form.phone || '').trim() || null,
-    referrer: String(form.referrer || '').trim() || null,
-    account_status: String(form.account_status || '').trim() || null
-  };
+    return isEditMode.value
+      ? invoiceStore.updateCustomer(props.customer.id, payload)
+      : invoiceStore.addCustomer(payload, { allowExisting: false });
+  });
 
-  const result = isEditMode.value
-    ? await invoiceStore.updateCustomer(props.customer.id, payload)
-    : await invoiceStore.addCustomer(payload, { allowExisting: false });
-
-  saving.value = false;
+  if (result.validation || result.saving) return;
 
   if (!result.success) {
     toast.error(result.message || 'عملیات با خطا مواجه شد');

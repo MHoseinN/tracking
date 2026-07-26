@@ -2,7 +2,7 @@
   <div ref="pickerRoot" class="relative">
     <input v-if="triggerMode === 'input'" v-model="displayValue" @focus="openCalendar" readonly
       :placeholder="placeholder"
-      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 cursor-pointer"
+      class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 cursor-pointer"
       :class="[inputClass, { 'border-red-500': error }]" />
     <button v-else type="button" @click="toggleCalendar"
       class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm bgro font-medium transition"

@@ -1,6 +1,6 @@
 ﻿<template>
   <div>
-    <Teleport defer to="#app-shell-actions">
+    <Teleport to="#app-shell-actions">
       <button @click="openAddModal" class="app-button-primary w-full justify-between">
         <span>افزودن حساب</span>
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,107 +23,14 @@
       </button>
     </Teleport>
 
-    <section ref="tableSectionRef" class="overflow-hidden rounded-lg bg-white mb-2 shadow-md">
-      <section class="flex w-full items-center justify-between border-b bg-white p-4">
-        <div class="flex gap-3 justify-between">
-          <div>
-            <span><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              </svg>
-            </span>
-          </div>
-          <div class="flex flex-col justify-around">
-            <div>
-              <span class="text-xl font-black text-slate-800 sm:text-xl">
-                {{ customer?.name || 'کاربر' }}
-                <span class="text-gray-500 bg-gray-100 p-2 rounded-lg text-xs">{{ customer?.referrer }}
-                </span>
-              </span>
-            </div>
-            <p class="app-button-secondary max-w-[150px] !p-1">{{ customer?.phone }} </p>
-          </div>
-        </div>
-        <div class="flex justify-center gap-2">
-          <AppStatCard label="مبلغ تسویه شده" :value="settledAmountFormatted" value-class="text-emerald-700 "
-            container-class="h-24" />
-          <AppStatCard label="مبلغ تسویه نشده" :value="remainingAmountFormatted" value-class="text-rose-600 text-md"
-            container-class="h-24" />
-        </div>
-        <button @click="isCustomerInfoOpen = !isCustomerInfoOpen">
-          <span
-            class="flex h-10 w-10 items-center justify-center rounded-lg bg-white hover:bg-gray-100 transition-all text-slate-600 shadow-sm ring-1 ring-slate-200">
-            <svg class="h-5 w-5 transition" :class="isCustomerInfoOpen ? 'rotate-180' : ''" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
-        </button>
+    <CustomerSummaryPanel :customer="customer" :settled-amount="settledAmountFormatted"
+      :remaining-amount="remainingAmountFormatted" :open="isCustomerInfoOpen" :draft="customerProfileDraft"
+      :notes="customerNotesDraft" :account-status-select-options="accountStatusSelectOptions"
+      :phone-duplicate-error="phoneDuplicateError" :changed="customerFormChanged" :saving="customerFormSaving"
+      @toggle="isCustomerInfoOpen = !isCustomerInfoOpen" @update-field="updateProfileField"
+      @update:notes="customerNotesDraft = $event" @save="saveCustomerForm" />
 
-      </section>
-
-      <div v-if="isCustomerInfoOpen" class="space-y-5 px-5 py-5 sm:px-6">
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">نام</label>
-            <input v-model="customerProfileDraft.first_name" type="text" placeholder="نام"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">نام خانوادگی</label>
-            <input v-model="customerProfileDraft.last_name" type="text" placeholder="نام خانوادگی"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">شماره تماس</label>
-            <input v-model="customerProfileDraft.phone" type="text" placeholder="شماره تماس"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              :class="{ 'border-rose-300 focus:border-rose-400 focus:ring-rose-100': phoneDuplicateError }" />
-            <p v-if="phoneDuplicateError" class="mt-1 text-xs text-rose-500">{{ phoneDuplicateError }}</p>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">معرف</label>
-            <input v-model="customerProfileDraft.referrer" type="text" placeholder="معرف"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت حساب</label>
-            <CustomSelect :model-value="customerProfileDraft.account_status" :options="accountStatusSelectOptions"
-              placeholder="وضعیت حساب"
-              trigger-class="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
-              @update:model-value="customerProfileDraft.account_status = $event" />
-          </div>
-        </div>
-
-        <div class="grid gap-4 xl:grid-cols-[1fr_280px] xl:items-start">
-          <div>
-            <textarea v-model="customerNotesDraft" rows="7" placeholder="درباره این مشتری بنویسید..."
-              class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"></textarea>
-          </div>
-
-          <div class="flex h-full flex-col justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div class="space-y-2">
-              <p class="text-sm font-semibold text-slate-700">وضعیت فرم</p>
-              <div class="rounded-lg bg-white px-3 py-3 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-                <span v-if="customerFormChanged" class="font-semibold text-amber-600">تغییرات ذخیره نشده</span>
-                <span v-else class="font-semibold text-emerald-600">همه چیز به روز است</span>
-              </div>
-            </div>
-
-            <button :disabled="customerFormSaving || !customerFormChanged" @click="saveCustomerForm"
-              class="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50">
-              <svg v-if="customerFormSaving" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ customerFormSaving ? 'در حال ذخیره...' : 'ذخیره اطلاعات ' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="overflow-hidden rounded-lg bg-white shadow">
+    <section ref="tableSectionRef" class="overflow-hidden rounded-lg bg-white shadow">
       <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-4">
         <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false"
           :show-icon-input="false" :searchIcon="false" @update:date-model-value="searchDate = $event"
@@ -155,22 +62,26 @@
     @close="clearUndo" />
 </template>
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 
 import AppContentState from '../AppContentState.vue';
 import AppPagination from '../AppPagination.vue';
-import AppStatCard from '../AppStatCard.vue';
-import CustomSelect from '../CustomSelect.vue';
+import CustomerSummaryPanel from './CustomerSummaryPanel.vue';
 import InvoiceTable from '../InvoiceTable.vue';
 import InvoiceForm from '../InvoiceForm.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import InvoiceSearchBar from '../InvoiceSearchBar.vue';
 import UndoBar from '../UndoBar.vue';
 import { exportRowsToExcel } from '../../utils/exportToExcel';
-import { toGregorianDate, toPersianDate } from '../../utils/dateConverter';
+import { toPersianDate } from '../../utils/dateConverter';
+import { usePaginatedList } from '../../composables/usePaginatedList';
+import { useCustomerInvoiceList } from '../../composables/useCustomerInvoiceList';
+import { useCustomerInvoiceActions } from '../../composables/useCustomerInvoiceActions';
+import { useCustomerProfileForm } from '../../composables/useCustomerProfileForm';
+import { useUndoAction } from '../../composables/useUndoAction';
 
 const props = defineProps({
   id: { type: [String, Number], required: true }
@@ -184,144 +95,82 @@ const invoiceStore = useInvoiceStore();
 const customerId = computed(() => parseInt(props.id));
 const tableSectionRef = ref(null);
 const customer = ref(null);
-const showInvoiceForm = ref(false);
-const selectedInvoice = ref(null);
-const showConfirmDelete = ref(false);
-const deleteTargetId = ref(null);
-const deleting = ref(false);
 const searchDate = ref('');
 const statusFilter = ref('all');
 const sortKey = ref('date');
 const sortDirection = ref('desc');
 const allCustomerInvoices = ref([]);
 const isCustomerInfoOpen = ref(false);
-const customerNotesDraft = ref('');
-const customerFormSaving = ref(false);
-const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
-const currentPage = ref(1);
-const pageSize = ref(15);
-const pageSizeOptions = [10, 15, 20, 50, 100];
-const accountStatusSelectOptions = computed(() => ([
-  { label: 'وضعیت حساب', value: '' },
-  ...accountStatusOptions.map((option) => ({ label: option, value: option }))
-]));
-const pageSizeSelectOptions = computed(() => pageSizeOptions.map((size) => ({
-  label: size.toLocaleString('fa-IR'),
-  value: size
-})));
-const customerProfileDraft = ref({
-  first_name: '',
-  last_name: '',
-  phone: '',
-  referrer: '',
-  account_status: ''
-});
 const allCustomers = ref([]);
-const undoState = ref({
-  visible: false,
-  title: '',
-  message: '',
-  handler: null,
-  timerId: null
+const pageSizeOptions = [10, 15, 20, 50, 100];
+const {
+  customerProfileDraft,
+  customerNotesDraft,
+  accountStatusSelectOptions,
+  customerFormSaving,
+  customerFormChanged,
+  phoneDuplicateError,
+  resetFromCustomer,
+  updateProfileField,
+  saveCustomerForm
+} = useCustomerProfileForm({
+  customer,
+  allCustomers,
+  customerId,
+  invoiceStore,
+  toast,
+  reloadCustomers: loadCustomers
 });
 
-const profileChanged = computed(() => {
-  const currentFirstName = String(customer.value?.first_name || '').trim();
-  const currentLastName = String(customer.value?.last_name || '').trim();
-  const currentPhone = String(customer.value?.phone || '').trim();
-  const currentReferrer = String(customer.value?.referrer || '').trim();
-  const currentStatus = String(customer.value?.account_status || '').trim();
-
-  return (
-    currentFirstName !== String(customerProfileDraft.value.first_name || '').trim() ||
-    currentLastName !== String(customerProfileDraft.value.last_name || '').trim() ||
-    currentPhone !== String(customerProfileDraft.value.phone || '').trim() ||
-    currentReferrer !== String(customerProfileDraft.value.referrer || '').trim() ||
-    currentStatus !== String(customerProfileDraft.value.account_status || '').trim()
-  );
+const { filteredInvoices, sortedInvoices } = useCustomerInvoiceList({
+  invoices: allCustomerInvoices,
+  searchDate,
+  statusFilter,
+  sortKey,
+  sortDirection
 });
 
-const notesChanged = computed(() => {
-  const currentNotes = String(customer.value?.notes || '').trim();
-  const draft = String(customerNotesDraft.value || '').trim();
-  return currentNotes !== draft;
+const {
+  currentPage,
+  pageSize,
+  pageSizeOptions: pageSizeSelectOptions,
+  totalRows,
+  totalPages,
+  rowStartIndex,
+  paginatedItems: paginatedInvoices,
+  visiblePageNumbers,
+  goToPage
+} = usePaginatedList(sortedInvoices, {
+  initialPageSize: 15,
+  pageSizeOptions,
+  resetSources: [searchDate, statusFilter],
+  scrollTarget: tableSectionRef
 });
 
-const customerFormChanged = computed(() => profileChanged.value || notesChanged.value);
-const phoneDuplicateError = computed(() => {
-  const normalized = normalizePhone(customerProfileDraft.value.phone);
-  if (!normalized) return '';
-  const duplicate = allCustomers.value.find((item) => String(item.id) !== String(customerId.value) && normalizePhone(item.phone) === normalized);
-  return duplicate ? 'کاربری با این شماره تماس قبلا ثبت شده است' : '';
+const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({
+  onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد')
 });
-
-const filteredInvoices = computed(() => {
-  const gregorianDate = searchDate.value ? toGregorianDate(searchDate.value) : '';
-
-  return allCustomerInvoices.value.filter((invoice) => {
-    const matchesDate = !gregorianDate || invoice.date === gregorianDate;
-    const matchesStatus = statusFilter.value === 'all'
-      || (statusFilter.value === 'not_shipped' && !invoice.is_shipped)
-      || (statusFilter.value === 'unsettled' && !invoice.is_settled);
-
-    return matchesDate && matchesStatus;
-  });
-});
-
-const sortedInvoices = computed(() => {
-  const invoices = [...filteredInvoices.value];
-
-  invoices.sort((left, right) => {
-    let comparison = 0;
-
-    if (sortKey.value === 'price') {
-      comparison = (Number(left.price) || 0) - (Number(right.price) || 0);
-    } else {
-      comparison = String(left.date || '').localeCompare(String(right.date || ''));
-      if (comparison === 0) {
-        comparison = (Number(left.id) || 0) - (Number(right.id) || 0);
-      }
-    }
-
-    return sortDirection.value === 'asc' ? comparison : -comparison;
-  });
-
-  return invoices;
-});
-
-const totalRows = computed(() => sortedInvoices.value.length);
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)));
-const rowStartIndex = computed(() => (currentPage.value - 1) * pageSize.value);
-const paginatedInvoices = computed(() =>
-  sortedInvoices.value.slice(rowStartIndex.value, rowStartIndex.value + pageSize.value)
-);
-const visiblePageNumbers = computed(() => {
-  const start = Math.max(1, currentPage.value - 1);
-  const end = Math.min(totalPages.value, start + 2);
-  const adjustedStart = Math.max(1, end - 2);
-  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
-});
-
-watch(pageSize, () => {
-  currentPage.value = 1;
-});
-
-watch([totalRows, totalPages], () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value;
-  }
-
-  if (currentPage.value < 1) {
-    currentPage.value = 1;
-  }
+const {
+  showInvoiceForm,
+  selectedInvoice,
+  showConfirmDelete,
+  deleting,
+  openAddModal,
+  openEditModal,
+  closeInvoiceForm,
+  openDeleteModal,
+  handleSaveInvoice,
+  handleDeleteInvoice,
+  handleStatusChange
+} = useCustomerInvoiceActions({
+  invoiceStore,
+  customerId,
+  reloadInvoices: loadCustomerInvoices,
+  toast,
+  showUndo
 });
 
 // Computed stats
-const totalInvoicesCount = computed(() => allCustomerInvoices.value.length);
-const settledCount = computed(() =>
-  allCustomerInvoices.value.filter(i => i.is_settled).length
-);
-
 const settledAmount = computed(() => {
   return allCustomerInvoices.value
     .filter(i => i.is_settled)
@@ -351,14 +200,7 @@ async function loadCustomerInvoices() {
     currentPage.value = 1;
     customer.value = await invoiceStore.fetchCustomerInvoices(customerId.value);
     allCustomerInvoices.value = [...invoiceStore.currentInvoices];
-    customerProfileDraft.value = {
-      first_name: customer.value?.first_name || '',
-      last_name: customer.value?.last_name || '',
-      phone: customer.value?.phone || '',
-      referrer: customer.value?.referrer || '',
-      account_status: customer.value?.account_status || ''
-    };
-    customerNotesDraft.value = customer.value?.notes || '';
+    resetFromCustomer();
   } catch (err) {
     toast.error('خطا در بارگذاری فاکتورهای مشتری');
     if (err.response?.status === 404) {
@@ -367,87 +209,10 @@ async function loadCustomerInvoices() {
   }
 }
 
-async function saveCustomerForm() {
-  if (!customerFormChanged.value) return;
-
-  customerFormSaving.value = true;
-
-  try {
-    if (profileChanged.value) {
-      const firstName = String(customerProfileDraft.value.first_name || '').trim();
-      const lastName = String(customerProfileDraft.value.last_name || '').trim();
-      if (!firstName || !lastName) {
-        toast.error('نام و نام خانوادگی الزامی است');
-        return;
-      }
-      if (phoneDuplicateError.value) {
-        toast.error(phoneDuplicateError.value);
-        return;
-      }
-
-      const profileResult = await invoiceStore.updateCustomerProfile(customerId.value, {
-        first_name: firstName,
-        last_name: lastName,
-        phone: String(customerProfileDraft.value.phone || '').trim() || null,
-        referrer: String(customerProfileDraft.value.referrer || '').trim() || null,
-        account_status: String(customerProfileDraft.value.account_status || '').trim() || null
-      });
-
-      if (!profileResult.success) {
-        toast.error(profileResult.message || 'ذخیره مشخصات مشتری با خطا مواجه شد');
-        return;
-      }
-
-      customer.value = {
-        ...customer.value,
-        name: profileResult.data?.name || customer.value?.name || '',
-        first_name: profileResult.data?.first_name || '',
-        last_name: profileResult.data?.last_name || '',
-        phone: profileResult.data?.phone || '',
-        referrer: profileResult.data?.referrer || '',
-        account_status: profileResult.data?.account_status || ''
-      };
-      await loadCustomers();
-    }
-
-    if (notesChanged.value) {
-      const notesResult = await invoiceStore.updateCustomerNotes(customerId.value, customerNotesDraft.value);
-      if (!notesResult.success) {
-        toast.error(notesResult.message || 'ذخیره توضیحات با خطا مواجه شد');
-        return;
-      }
-
-      customer.value = {
-        ...customer.value,
-        notes: notesResult.data?.notes || ''
-      };
-    }
-
-    customerProfileDraft.value = {
-      first_name: customer.value?.first_name || '',
-      last_name: customer.value?.last_name || '',
-      phone: customer.value?.phone || '',
-      referrer: customer.value?.referrer || '',
-      account_status: customer.value?.account_status || ''
-    };
-    customerNotesDraft.value = customer.value?.notes || '';
-
-    toast.success('اطلاعات مشتری با موفقیت ذخیره شد');
-  } finally {
-    customerFormSaving.value = false;
-  }
-}
-
 function clearSearch() {
   currentPage.value = 1;
   searchDate.value = '';
   statusFilter.value = 'all';
-}
-
-function goToPage(page) {
-  if (page < 1 || page > totalPages.value) return;
-  currentPage.value = page;
-  tableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function toggleSort(column) {
@@ -461,91 +226,6 @@ function toggleSort(column) {
   currentPage.value = 1;
 }
 
-// Modal handlers
-function openAddModal() {
-  selectedInvoice.value = null;
-  showInvoiceForm.value = true;
-}
-
-function openEditModal(invoice) {
-  selectedInvoice.value = invoice;
-  showInvoiceForm.value = true;
-}
-
-function closeInvoiceForm() {
-  showInvoiceForm.value = false;
-  selectedInvoice.value = null;
-}
-
-function openDeleteModal(invoiceId) {
-  deleteTargetId.value = invoiceId;
-  showConfirmDelete.value = true;
-}
-
-// Save invoice
-async function handleSaveInvoice({ data, isEdit }) {
-  let result;
-
-  if (isEdit && selectedInvoice.value) {
-    result = await invoiceStore.updateInvoice(selectedInvoice.value.id, data);
-    if (result.success) {
-      toast.success('فاکتور با موفقیت ویرایش شد');
-    } else {
-      toast.error(result.message);
-      return;
-    }
-  } else {
-    result = await invoiceStore.addInvoice(data);
-    if (result.success) {
-      toast.success('فاکتور با موفقیت اضافه شد');
-    } else {
-      toast.error(result.message);
-      return;
-    }
-  }
-
-  closeInvoiceForm();
-  await loadCustomerInvoices();
-}
-
-// Delete invoice
-async function handleDeleteInvoice() {
-  if (!deleteTargetId.value) return;
-
-  deleting.value = true;
-  const result = await invoiceStore.deleteInvoice(deleteTargetId.value);
-  deleting.value = false;
-
-  if (result.success) {
-    toast.success('فاکتور با موفقیت حذف شد');
-    showConfirmDelete.value = false;
-    deleteTargetId.value = null;
-    if (result.data) {
-      showUndo({
-        title: 'فاکتور حذف شد',
-        message: 'در صورت نیاز، بازگردانی کن.',
-        handler: async () => {
-          const restoreResult = await invoiceStore.addInvoice({
-            customer_id: customerId.value,
-            date: result.data.date,
-            price: result.data.price,
-            description: result.data.description || null,
-            notes: result.data.notes || null
-          });
-          if (!restoreResult.success) {
-            throw new Error(restoreResult.message);
-          }
-          await loadCustomerInvoices();
-          toast.success('فاکتور بازگردانی شد');
-        }
-      });
-    }
-    await loadCustomerInvoices();
-  } else {
-    toast.error(result.message);
-  }
-}
-
 async function loadCustomers() {
   try {
     await invoiceStore.fetchCustomers();
@@ -553,29 +233,6 @@ async function loadCustomers() {
   } catch (error) {
     allCustomers.value = [];
   }
-}
-
-function normalizePhone(value) {
-  return String(value || '')
-    .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
-    .replace(/[\u06f0-\u06f9]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
-    .replace(/[^\d+]/g, '');
-}
-
-async function handleStatusChange({ id, field, value }) {
-  await loadCustomerInvoices();
-  showUndo({
-    title: 'وضعیت فاکتور تغییر کرد',
-    message: 'اگر اشتباه بوده، بازگردانی کن.',
-    handler: async () => {
-      const revertResult = await invoiceStore.updateStatus(id, field, !value);
-      if (!revertResult.success) {
-        throw new Error(revertResult.message);
-      }
-      await loadCustomerInvoices();
-      toast.success('وضعیت فاکتور بازگردانی شد');
-    }
-  });
 }
 
 // Navigate back
@@ -598,31 +255,4 @@ function exportCustomerInvoices() {
   });
 }
 
-function clearUndo() {
-  if (undoState.value.timerId) {
-    window.clearTimeout(undoState.value.timerId);
-  }
-  undoState.value = { visible: false, title: '', message: '', handler: null, timerId: null };
-}
-
-function showUndo({ title, message, handler }) {
-  clearUndo();
-  const timerId = window.setTimeout(() => clearUndo(), 5000);
-  undoState.value = { visible: true, title, message, handler, timerId };
-}
-
-async function handleUndo() {
-  if (!undoState.value.handler) return;
-  const undoHandler = undoState.value.handler;
-  clearUndo();
-  try {
-    await undoHandler();
-  } catch (error) {
-    toast.error(error.message || 'بازگردانی با خطا مواجه شد');
-  }
-}
-
-watch([searchDate, statusFilter], () => {
-  currentPage.value = 1;
-});
 </script>

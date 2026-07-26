@@ -1,6 +1,7 @@
 
 import { defineStore } from "pinia";
-import api from "../utils/api";
+import { login as loginRequest } from '../modules/auth/api/auth.service';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -17,7 +18,7 @@ export const useAuthStore = defineStore("auth", {
       this.error = null;
 
       try {
-        const response = await api.post("/auth/login", { username, password });
+        const response = await loginRequest({ username, password });
         const { token, user } = response.data;
 
         this.token = token;
@@ -30,7 +31,7 @@ export const useAuthStore = defineStore("auth", {
 
         return { success: true };
       } catch (err) {
-        const message = err.response?.data?.message || "خطا در ورود به سیستم";
+        const message = getApiErrorMessage(err, 'خطا در ورود به سیستم');
         this.error = message;
         return { success: false, message };
       } finally {

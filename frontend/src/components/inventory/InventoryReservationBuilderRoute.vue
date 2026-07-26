@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Teleport defer to="#app-shell-actions">
+    <Teleport to="#app-shell-actions">
       <button type="button" :disabled="saving || cartItems.length === 0" class="app-button-success w-full"
         @click="submitReservation">
         {{ saving ? 'در حال ثبت...' : 'ثبت نهایی رزرو' }}
@@ -167,7 +167,7 @@ const customerOptions = computed(() => inventoryStore.lookups.customers.map((cus
   value: customer.id
 })));
 const productSearchOptions = computed(() =>
-  inventoryStore.lookups.products
+  inventoryStore.productsForInventory
     .filter((product) => getProductRemaining(product.id) > 0)
     .map((product) => ({
       label: `${product.name}${product.category_name ? ` - ${product.category_name}` : ''}`,
@@ -212,18 +212,19 @@ async function refreshLookups() {
   try {
     const startDate = toGregorianDate(startDatePersian.value);
     const endDate = toGregorianDate(endDatePersian.value);
-    await inventoryStore.fetchLookups({
+    const params = {
       startDate: startDate <= endDate ? startDate : endDate,
       endDate: startDate <= endDate ? endDate : startDate
-    });
-    reservationCart.syncProductMeta(inventoryStore.lookups.products);
+    };
+    await Promise.all([inventoryStore.fetchLookups(params), inventoryStore.fetchDashboard(params)]);
+    reservationCart.syncProductMeta(inventoryStore.productsForInventory);
   } catch (_error) {
     toast.error(inventoryStore.error || 'خطا در دریافت موجودی محصولات');
   }
 }
 
 function getAvailableQuantity(productId) {
-  return inventoryStore.lookups.products.find((item) => Number(item.id) === Number(productId))?.available_quantity || 0;
+  return inventoryStore.productsForInventory.find((item) => Number(item.id) === Number(productId))?.available_quantity || 0;
 }
 
 function getProductRemaining(productId) {

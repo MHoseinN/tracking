@@ -60,8 +60,8 @@
             </div>
           </label>
 
-          <p v-if="errorMessage" class="rounded-lg bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-            {{ errorMessage }}
+          <p v-if="errors.form" class="rounded-lg bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            {{ errors.form }}
           </p>
 
           <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
@@ -87,8 +87,9 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import CustomSelect from './CustomSelect.vue';
+import { useFormState } from '../composables/useFormState';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -99,13 +100,19 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 
-const form = reactive({
+const selectedCategoryId = ref('');
+const { form, errors, setValues, submit } = useFormState({
   name: '',
   total_quantity: 0,
   notes: ''
+}, {
+  validate: (values) => {
+    if (!String(values.name || '').trim()) return { form: 'نام محصول را وارد کنید' };
+    if (Number(values.total_quantity) < 1) return { form: 'تعداد محصول باید حداقل 1 باشد' };
+    if (!selectedCategoryId.value) return { form: 'شاخه دقیق محصول را از دسته‌بندی‌های موجود انتخاب کن' };
+    return { form: '' };
+  }
 });
-const errorMessage = ref('');
-const selectedCategoryId = ref('');
 
 const isEdit = computed(() => Boolean(props.product?.id));
 const categoryOptions = computed(() => props.categories.map((category) => ({
@@ -114,11 +121,12 @@ const categoryOptions = computed(() => props.categories.map((category) => ({
 })));
 
 function resetForm() {
-  form.name = props.product?.name || '';
-  form.total_quantity = props.product?.total_quantity ?? 0;
-  form.notes = props.product?.notes || '';
+  setValues({
+    name: props.product?.name,
+    total_quantity: props.product?.total_quantity ?? 0,
+    notes: props.product?.notes
+  });
   selectedCategoryId.value = props.product?.category_id || '';
-  errorMessage.value = '';
 }
 
 function handleCategorySelect(value) {
@@ -129,29 +137,16 @@ const selectedCategoryLabel = computed(() =>
   categoryOptions.value.find((option) => String(option.value) === String(selectedCategoryId.value))?.label || ''
 );
 
-function handleSubmit() {
-  errorMessage.value = '';
+async function handleSubmit() {
+  await submit(async (values) => {
+    emit('save', {
+      name: values.name.trim(),
+      total_quantity: Number(values.total_quantity) || 0,
+      category_id: selectedCategoryId.value || null,
+      notes: values.notes.trim() || null
+    });
 
-  if (!form.name.trim()) {
-    errorMessage.value = 'نام محصول را وارد کنید';
-    return;
-  }
-
-  if (Number(form.total_quantity) < 1) {
-    errorMessage.value = 'تعداد محصول باید حداقل 1 باشد';
-    return;
-  }
-
-  if (!selectedCategoryId.value) {
-    errorMessage.value = 'شاخه دقیق محصول را از دسته‌بندی‌های موجود انتخاب کن';
-    return;
-  }
-
-  emit('save', {
-    name: form.name.trim(),
-    total_quantity: Number(form.total_quantity) || 0,
-    category_id: selectedCategoryId.value || null,
-    notes: form.notes.trim() || null
+    return { success: true };
   });
 }
 

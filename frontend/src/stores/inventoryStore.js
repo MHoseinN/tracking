@@ -1,8 +1,18 @@
 import { defineStore } from 'pinia';
-import api from '../utils/api';
+import { inventoryService } from '../modules/inventory/api/inventory.service';
+import { getApiErrorMessage } from '../utils/apiError';
+import { withActionResult } from '../utils/actionResult';
 
-function getErrorMessage(error, fallback) {
-  return error.response?.data?.message || fallback;
+function normalizeInventoryData(data = {}) {
+  return {
+    ...data,
+    categories: Array.isArray(data.categories) ? data.categories : [],
+    category_tree: Array.isArray(data.category_tree)
+      ? data.category_tree
+      : Array.isArray(data.categoryTree) ? data.categoryTree : [],
+    customers: Array.isArray(data.customers) ? data.customers : [],
+    products: Array.isArray(data.products) ? data.products : []
+  };
 }
 
 export const useInventoryStore = defineStore('inventory', {
@@ -34,16 +44,22 @@ export const useInventoryStore = defineStore('inventory', {
     error: null
   }),
 
+  getters: {
+    productsForInventory: (state) => state.lookups.products.length
+      ? state.lookups.products
+      : state.dashboard.products
+  },
+
   actions: {
     async fetchDashboard(params = {}) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await api.get('/inventory/dashboard', { params });
-        this.dashboard = response.data;
-        return response.data;
+        const response = await inventoryService.getDashboard(params);
+        this.dashboard = normalizeInventoryData(response.data);
+        return this.dashboard;
       } catch (error) {
-        this.error = getErrorMessage(error, 'خطا در دریافت اطلاعات انبار');
+        this.error = getApiErrorMessage(error, 'خطا در دریافت اطلاعات انبار');
         throw error;
       } finally {
         this.loading = false;
@@ -53,11 +69,11 @@ export const useInventoryStore = defineStore('inventory', {
     async fetchLookups(params = {}) {
       this.lookupLoading = true;
       try {
-        const response = await api.get('/inventory/lookups', { params });
-        this.lookups = response.data;
-        return response.data;
+        const response = await inventoryService.getLookups(params);
+        this.lookups = normalizeInventoryData(response.data);
+        return this.lookups;
       } catch (error) {
-        this.error = getErrorMessage(error, 'خطا در دریافت اطلاعات پایه');
+        this.error = getApiErrorMessage(error, 'خطا در دریافت اطلاعات پایه');
         throw error;
       } finally {
         this.lookupLoading = false;
@@ -67,11 +83,11 @@ export const useInventoryStore = defineStore('inventory', {
     async fetchActiveReservations() {
       this.loading = true;
       try {
-        const response = await api.get('/inventory/reservations/active');
+        const response = await inventoryService.getActiveReservations();
         this.activeReservations = response.data.orders || [];
         return response.data;
       } catch (error) {
-        this.error = getErrorMessage(error, 'خطا در دریافت رزروهای فعال');
+        this.error = getApiErrorMessage(error, 'خطا در دریافت رزروهای فعال');
         throw error;
       } finally {
         this.loading = false;
@@ -79,142 +95,63 @@ export const useInventoryStore = defineStore('inventory', {
     },
 
     async createProduct(payload) {
-      try {
-        const response = await api.post('/inventory/products', payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ثبت محصول') };
-      }
+      return withActionResult(() => inventoryService.createProduct(payload), 'خطا در ثبت محصول');
     },
 
     async createCategory(payload) {
-      try {
-        const response = await api.post('/inventory/categories', payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ثبت دسته‌بندی') };
-      }
+      return withActionResult(() => inventoryService.createCategory(payload), 'خطا در ثبت دسته‌بندی');
     },
 
     async updateCategory(id, payload) {
-      try {
-        const response = await api.put(`/inventory/categories/${id}`, payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ویرایش دسته‌بندی') };
-      }
+      return withActionResult(() => inventoryService.updateCategory(id, payload), 'خطا در ویرایش دسته‌بندی');
     },
 
     async deleteCategory(id) {
-      try {
-        await api.delete(`/inventory/categories/${id}`);
-        return { success: true };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در حذف دسته‌بندی') };
-      }
+      return withActionResult(() => inventoryService.deleteCategory(id), 'خطا در حذف دسته‌بندی');
     },
 
     async updateProduct(id, payload) {
-      try {
-        const response = await api.put(`/inventory/products/${id}`, payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ویرایش محصول') };
-      }
+      return withActionResult(() => inventoryService.updateProduct(id, payload), 'خطا در ویرایش محصول');
     },
 
     async deleteProduct(id) {
-      try {
-        await api.delete(`/inventory/products/${id}`);
-        return { success: true };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در حذف محصول') };
-      }
+      return withActionResult(() => inventoryService.deleteProduct(id), 'خطا در حذف محصول');
     },
 
     async createReservation(payload) {
-      try {
-        const response = await api.post('/inventory/reservations', payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ثبت رزرو') };
-      }
+      return withActionResult(() => inventoryService.createReservation(payload), 'خطا در ثبت رزرو');
     },
 
     async updateReservationOrder(reservationOrderId, payload) {
-      try {
-        const response = await api.put(`/inventory/reservations/${reservationOrderId}`, payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ویرایش رزرو') };
-      }
+      return withActionResult(() => inventoryService.updateReservationOrder(reservationOrderId, payload), 'خطا در ویرایش رزرو');
     },
 
     async updateUnitAssignment(unitId, payload) {
-      try {
-        const response = await api.put(`/inventory/units/${unitId}/assignment`, payload);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در ویرایش رزرو') };
-      }
+      return withActionResult(() => inventoryService.updateUnitAssignment(unitId, payload), 'خطا در ویرایش رزرو');
     },
 
     async deleteUnitAssignment(unitId, reservationItemId) {
-      try {
-        await api.delete(`/inventory/units/${unitId}/assignment`, {
-          params: { reservationItemId }
-        });
-        return { success: true };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در آزادسازی محصول') };
-      }
+      return withActionResult(() => inventoryService.deleteUnitAssignment(unitId, reservationItemId), 'خطا در آزادسازی محصول');
     },
 
     async restoreUnitAssignment(unitId, reservationItemId) {
-      try {
-        const response = await api.post(`/inventory/units/${unitId}/assignment/restore`, null, {
-          params: { reservationItemId }
-        });
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در بازگردانی محصول') };
-      }
+      return withActionResult(() => inventoryService.restoreUnitAssignment(unitId, reservationItemId), 'خطا در بازگردانی محصول');
     },
 
     async releaseReservationOrder(reservationOrderId) {
-      try {
-        await api.post(`/inventory/reservations/${reservationOrderId}/release`);
-        return { success: true };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در آزادسازی رزرو') };
-      }
+      return withActionResult(() => inventoryService.releaseReservationOrder(reservationOrderId), 'خطا در آزادسازی رزرو');
     },
 
     async restoreReservationOrder(reservationOrderId) {
-      try {
-        const response = await api.post(`/inventory/reservations/${reservationOrderId}/restore`);
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در بازگردانی رزرو') };
-      }
+      return withActionResult(() => inventoryService.restoreReservationOrder(reservationOrderId), 'خطا در بازگردانی رزرو');
     },
 
     async releaseAllReservations() {
-      try {
-        await api.post('/inventory/reservations/release-all');
-        return { success: true };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در آزادسازی همه رزروها') };
-      }
+      return withActionResult(() => inventoryService.releaseAllReservations(), 'خطا در آزادسازی همه رزروها');
     },
 
     async restoreAllReservations() {
-      try {
-        const response = await api.post('/inventory/reservations/restore-all');
-        return { success: true, data: response.data };
-      } catch (error) {
-        return { success: false, message: getErrorMessage(error, 'خطا در بازگردانی همه رزروها') };
-      }
+      return withActionResult(() => inventoryService.restoreAllReservations(), 'خطا در بازگردانی همه رزروها');
     }
   }
 });
