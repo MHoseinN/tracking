@@ -62,16 +62,6 @@ const routes = [
     }
   },
   {
-    path: '/inventory',
-    name: 'InventoryManagement',
-    component: () => import('./components/inventory/InventoryManagementRoute.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'مدیریت رزرو',
-      subtitle: 'وضعیت موجودی، رزروهای فعال و عملیات روزمره انبار را در یک صفحه مرکزی مدیریت کن'
-    }
-  },
-  {
     path: '/products',
     name: 'ProductsManagement',
     component: () => import('./components/products/ProductsManagementRoute.vue'),
@@ -93,30 +83,9 @@ const routes = [
     }
   },
   {
-    path: '/inventory/manage',
-    name: 'LegacyInventoryProductManagement',
+    path: '/inventory/:pathMatch(.*)*',
     redirect: '/products',
     meta: { requiresAuth: true }
-  },
-  {
-    path: '/inventory/reservations/new',
-    name: 'InventoryReservationBuilder',
-    component: () => import('./components/inventory/InventoryReservationBuilderRoute.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'سبد رزرو',
-      subtitle: 'رزرو تازه را مرحله‌به‌مرحله بساز و بدون خروج از شِل، اقلام را نهایی کن'
-    }
-  },
-  {
-    path: '/inventory/reservations/active',
-    name: 'InventoryReservedProducts',
-    component: () => import('./components/inventory/InventoryReservedProductsRoute.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'رزروهای فعال',
-      subtitle: 'رزروهای جاری، آزادسازی و ویرایش را در پنل اصلی دنبال کن'
-    }
   },
   {
     path: '/',

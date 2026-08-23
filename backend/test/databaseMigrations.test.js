@@ -52,6 +52,40 @@ function createLegacyDatabase() {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE inventory_reservations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      customer_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      FOREIGN KEY (product_id) REFERENCES inventory_products(id) ON DELETE CASCADE,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE inventory_units (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      unit_number INTEGER NOT NULL,
+      FOREIGN KEY (product_id) REFERENCES inventory_products(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE inventory_reservation_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE inventory_reservation_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reservation_order_id INTEGER NOT NULL,
+      unit_id INTEGER NOT NULL,
+      FOREIGN KEY (reservation_order_id) REFERENCES inventory_reservation_orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (unit_id) REFERENCES inventory_units(id) ON DELETE CASCADE
+    );
+
     INSERT INTO users (username, password) VALUES ('manager', 'hash');
     INSERT INTO customers (name) VALUES ('مشتری قدیمی');
     INSERT INTO inventory_categories (name, slug) VALUES ('دوربین', 'camera');
@@ -59,6 +93,16 @@ function createLegacyDatabase() {
     INSERT INTO inventory_categories (name, slug, parent_id) VALUES ('لنز دوم', 'lens', 1);
     INSERT INTO inventory_products (name, category_id, total_quantity)
       VALUES ('Sony Alpha 7 IV', 1, 3);
+    INSERT INTO inventory_units (product_id, unit_number) VALUES (1, 1);
+    INSERT INTO inventory_reservations (
+      product_id, customer_id, quantity, start_date, end_date
+    ) VALUES (1, 1, 1, '2026-08-20', '2026-08-22');
+    INSERT INTO inventory_reservation_orders (
+      customer_id, start_date, end_date
+    ) VALUES (1, '2026-08-20', '2026-08-22');
+    INSERT INTO inventory_reservation_items (
+      reservation_order_id, unit_id
+    ) VALUES (1, 1);
     INSERT INTO invoices (
       customer_id, date, price, description, is_shipped, is_settled
     ) VALUES (1, '2026-08-01', 1250000.4, 'فاکتور قدیمی', 1, 1);
@@ -74,7 +118,7 @@ test('migrates legacy data and is idempotent', () => {
 
     assert.equal(
       db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
-      1
+      2
     );
     assert.equal(db.prepare('SELECT role FROM users WHERE id = 1').get().role, 'MANAGER');
     assert.equal(
@@ -90,6 +134,23 @@ test('migrates legacy data and is idempotent', () => {
       db.prepare('SELECT parent_id FROM product_categories WHERE id = 2').get().parent_id,
       1
     );
+
+    const removedLegacyTables = [
+      'inventory_categories',
+      'inventory_products',
+      'inventory_reservations',
+      'inventory_units',
+      'inventory_reservation_orders',
+      'inventory_reservation_items'
+    ];
+    removedLegacyTables.forEach((tableName) => {
+      assert.equal(
+        db.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = ?")
+          .get(tableName).count,
+        0,
+        `${tableName} should be removed`
+      );
+    });
 
     const invoice = db.prepare('SELECT * FROM invoices WHERE id = 1').get();
     assert.equal(invoice.invoice_type, 'LEGACY');

@@ -1,6 +1,7 @@
 const deliveryWorkflowMigration = require('./001-delivery-workflow');
+const removeLegacyReservationsMigration = require('./002-remove-legacy-reservations');
 
-const migrations = [deliveryWorkflowMigration];
+const migrations = [deliveryWorkflowMigration, removeLegacyReservationsMigration];
 
 function ensureMigrationTable(db) {
   db.exec(`

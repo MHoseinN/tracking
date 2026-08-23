@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
           <div>
             <h2 class="text-2xl font-bold text-slate-900">{{ isEdit ? 'ویرایش محصول' : 'افزودن محصول جدید' }}</h2>
-            <p class="mt-1 text-xs text-slate-500">محصول موجودی محدودکننده ندارد و قیمت بر اساس یک روز ثبت می‌شود.</p>
+            <p class="mt-1 text-xs text-slate-500">قیمت اجاره محصول بر اساس یک روز ثبت می‌شود.</p>
           </div>
           <button type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
             @click="$emit('close')">
@@ -73,8 +73,8 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import CustomSelect from './CustomSelect.vue';
-import { useFormState } from '../composables/useFormState';
+import CustomSelect from '../CustomSelect.vue';
+import { useFormState } from '../../composables/useFormState';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },

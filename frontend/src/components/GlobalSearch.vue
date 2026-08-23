@@ -44,12 +44,12 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../stores/invoiceStore';
-import { useInventoryStore } from '../stores/inventoryStore';
+import { useProductCatalogStore } from '../stores/productCatalogStore';
 
 const router = useRouter();
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
-const inventoryStore = useInventoryStore();
+const productCatalogStore = useProductCatalogStore();
 const query = ref('');
 const showResults = ref(false);
 const loading = ref(false);
@@ -61,10 +61,7 @@ const routeItems = [
   { key: 'route-accounts', type: 'route', label: 'حساب‌ها', meta: 'مدیریت و جستجوی همه حساب‌ها', badge: 'صفحه', to: '/accounts' },
   { key: 'route-reports', type: 'route', label: 'آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
   { key: 'route-users', type: 'route', label: 'مدیریت کاربران', meta: 'لیست و وضعیت حساب مشتری‌ها', badge: 'صفحه', to: '/users' },
-  { key: 'route-inventory', type: 'route', label: 'داشبورد رزرو', meta: 'وضعیت موجودی و رزروها', badge: 'صفحه', to: '/inventory' },
-  { key: 'route-products', type: 'route', label: 'مدیریت محصولات', meta: 'دسته‌بندی و محصولات انبار', badge: 'صفحه', to: '/products' },
-  { key: 'route-cart', type: 'route', label: 'سبد رزرو', meta: 'ایجاد رزرو جدید', badge: 'صفحه', to: '/inventory/reservations/new' },
-  { key: 'route-active', type: 'route', label: 'رزروهای فعال', meta: 'آزادسازی و ویرایش رزروها', badge: 'صفحه', to: '/inventory/reservations/active' }
+  { key: 'route-products', type: 'route', label: 'مدیریت محصولات', meta: 'دسته‌بندی، قیمت و وضعیت محصولات', badge: 'صفحه', to: '/products' }
 ];
 
 const sections = computed(() => {
@@ -74,7 +71,7 @@ const sections = computed(() => {
   const customers = (invoiceStore.customers || []).filter((customer) => String(customer.name || '').toLowerCase().includes(normalizedQuery)).slice(0, 6).map((customer) => ({
     key: `customer-${customer.id}`, type: 'customer', label: customer.name, meta: 'باز کردن صفحه اختصاصی مشتری', badge: 'مشتری', id: customer.id
   }));
-  const products = (inventoryStore.productsForInventory || []).filter((product) => String(product.name || '').toLowerCase().includes(normalizedQuery) || String(product.category_name || '').toLowerCase().includes(normalizedQuery)).slice(0, 6).map((product) => ({
+  const products = (productCatalogStore.products || []).filter((product) => String(product.name || '').toLowerCase().includes(normalizedQuery) || String(product.category_name || '').toLowerCase().includes(normalizedQuery)).slice(0, 6).map((product) => ({
     key: `product-${product.id}`, type: 'product', label: product.name, meta: product.category_name || 'بدون دسته‌بندی', badge: 'محصول', to: '/products'
   }));
   return [{ title: 'صفحه‌ها', items: routes }, { title: 'مشتری‌ها', items: customers }, { title: 'محصولات', items: products }].filter((section) => section.items.length);
@@ -87,7 +84,7 @@ async function handleFocus() {
   try {
     await Promise.all([
       invoiceStore.customers?.length ? Promise.resolve() : invoiceStore.fetchCustomers(),
-      inventoryStore.productsForInventory?.length ? Promise.resolve() : inventoryStore.fetchLookups()
+      productCatalogStore.products?.length ? Promise.resolve() : productCatalogStore.fetchCatalog()
     ]);
     dataInitialized.value = true;
   } catch (_error) {

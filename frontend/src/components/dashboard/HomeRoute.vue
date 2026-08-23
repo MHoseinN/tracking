@@ -24,7 +24,7 @@
         <AppStatCard label="مبلغ کل" :value="formatCurrency(totalRevenue)" value-class="text-emerald-600" />
         <AppStatCard label="تسویه‌نشده" :value="formatCurrency(unsettledAmount)" value-class="text-rose-600" />
         <AppStatCard label="کل کاربران" :value="formatNumber(totalCustomers)" value-class="text-sky-600" />
-        <AppStatCard label="رزرو فعال" :value="formatNumber(activeReservations)" value-class="text-amber-600" />
+        <AppStatCard label="محصول فعال" :value="formatNumber(activeProducts)" value-class="text-amber-600" />
         <AppStatCard label="بهترین مشتری" :value="123456" value-class="text-amber-600" />
       </section>
 
@@ -66,17 +66,17 @@
         <div class="space-y-6">
           <div class="app-panel p-5">
             <div class="mb-4 text-center">
-              <h3 class="text-base font-bold text-slate-800">وضعیت رزرو</h3>
+              <h3 class="text-base font-bold text-slate-800">کاتالوگ محصولات</h3>
             </div>
             <div class="space-y-3 text-center">
               <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <p class="text-xs text-slate-500">واحدهای آزاد</p>
-                <p class="mt-2 text-lg font-black text-emerald-700">{{ formatNumber(inventorySummary.total_available) }}
+                <p class="text-xs text-slate-500">محصولات فعال</p>
+                <p class="mt-2 text-lg font-black text-emerald-700">{{ formatNumber(activeProducts) }}
                 </p>
               </div>
               <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <p class="text-xs text-slate-500">واحدهای رزروشده</p>
-                <p class="mt-2 text-lg font-black text-rose-600">{{ formatNumber(inventorySummary.total_reserved) }}</p>
+                <p class="text-xs text-slate-500">دسته‌بندی‌ها</p>
+                <p class="mt-2 text-lg font-black text-indigo-600">{{ formatNumber(productCategories) }}</p>
               </div>
             </div>
           </div>
@@ -93,8 +93,8 @@
                 <span>ورود به کاربران</span>
               </button>
               <button type="button" class="app-button-secondary justify-between"
-                @click="router.push('/inventory/reservations/active')">
-                <span>رزروهای فعال</span>
+                @click="router.push('/products')">
+                <span>مدیریت محصولات</span>
               </button>
             </div>
           </div>
@@ -118,7 +118,7 @@ import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import AppStatCard from '../AppStatCard.vue';
 import { useInvoiceStore } from '../../stores/invoiceStore';
-import { useInventoryStore } from '../../stores/inventoryStore';
+import { useProductCatalogStore } from '../../stores/productCatalogStore';
 import { toPersianDate } from '../../utils/dateConverter';
 import InvoiceForm from '../InvoiceForm.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
@@ -127,7 +127,7 @@ import CustomerFormModal from '../CustomerFormModal.vue';
 const router = useRouter();
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
-const inventoryStore = useInventoryStore();
+const productCatalogStore = useProductCatalogStore();
 const selectedInvoice = ref(null);
 const showInvoiceForm = ref(false);
 const showCustomerForm = ref(false);
@@ -144,8 +144,8 @@ const unsettledAmount = computed(() =>
     .reduce((sum, invoice) => sum + (Number(invoice.price) || 0), 0)
 );
 const totalCustomers = computed(() => invoiceStore.customersOverview.length);
-const activeReservations = computed(() => inventoryStore.activeReservations.length);
-const inventorySummary = computed(() => inventoryStore.dashboard.summary || {});
+const activeProducts = computed(() => productCatalogStore.products.filter((product) => product.is_active).length);
+const productCategories = computed(() => productCatalogStore.categories.length);
 
 const latestInvoices = computed(() =>
   [...invoiceStore.allInvoices]
@@ -216,8 +216,7 @@ onMounted(async () => {
       invoiceStore.fetchCustomers(),
       invoiceStore.fetchAllInvoices(),
       invoiceStore.fetchCustomersOverview(),
-      inventoryStore.fetchDashboard(),
-      inventoryStore.fetchActiveReservations()
+      productCatalogStore.fetchCatalog()
     ]);
   } finally {
     loading.value = false;

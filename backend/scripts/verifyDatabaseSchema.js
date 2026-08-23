@@ -20,6 +20,16 @@ const requiredTables = [
   'audit_logs'
 ];
 
+const removedLegacyTables = [
+  'inventory_categories',
+  'inventory_categories_legacy',
+  'inventory_products',
+  'inventory_reservations',
+  'inventory_units',
+  'inventory_reservation_orders',
+  'inventory_reservation_items'
+];
+
 try {
   initDatabase();
 
@@ -28,6 +38,7 @@ try {
       .map((row) => row.name)
   );
   const missingTables = requiredTables.filter((name) => !existingTables.has(name));
+  const remainingLegacyTables = removedLegacyTables.filter((name) => existingTables.has(name));
   const foreignKeyErrors = db.prepare('PRAGMA foreign_key_check').all();
   const settings = db.prepare(`
     SELECT timezone, billing_cutoff_minutes
@@ -38,6 +49,9 @@ try {
   if (missingTables.length > 0) {
     throw new Error(`Missing required tables: ${missingTables.join(', ')}`);
   }
+  if (remainingLegacyTables.length > 0) {
+    throw new Error(`Legacy inventory tables still exist: ${remainingLegacyTables.join(', ')}`);
+  }
   if (foreignKeyErrors.length > 0) {
     throw new Error(`Foreign-key errors: ${JSON.stringify(foreignKeyErrors)}`);
   }
@@ -45,11 +59,16 @@ try {
     throw new Error(`Unexpected default settings: ${JSON.stringify(settings)}`);
   }
 
+  const migrationCount = db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count;
+  if (migrationCount !== 2) {
+    throw new Error(`Unexpected migration count: ${migrationCount}`);
+  }
+
   console.log(JSON.stringify({
     ok: true,
     databasePath: db.dbPath,
     requiredTableCount: requiredTables.length,
-    migrationCount: db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
+    migrationCount,
     settings
   }, null, 2));
 } finally {

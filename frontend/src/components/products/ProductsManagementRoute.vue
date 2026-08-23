@@ -31,11 +31,11 @@
       </section>
     </div>
 
-    <InventoryCategoryModal :is-open="showCategoryModal" :category="selectedCategoryForModal"
+    <ProductCategoryModal :is-open="showCategoryModal" :category="selectedCategoryForModal"
       :categories="flatCategoryOptions" :saving="savingCategory" @close="closeCategoryModal"
       @save="handleSaveCategory" />
 
-    <InventoryProductModal :is-open="showProductModal" :product="selectedProduct" :categories="flatCategoryOptions"
+    <ProductFormModal :is-open="showProductModal" :product="selectedProduct" :categories="flatCategoryOptions"
       :saving="savingProduct" @close="closeProductModal" @save="handleSaveProduct" />
 
     <ConfirmModal :is-open="showDeleteCategoryModal" title="حذف دسته‌بندی"
@@ -62,8 +62,8 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomSelect from '../CustomSelect.vue';
-import InventoryCategoryModal from '../InventoryCategoryModal.vue';
-import InventoryProductModal from '../InventoryProductModal.vue';
+import ProductCategoryModal from './ProductCategoryModal.vue';
+import ProductFormModal from './ProductFormModal.vue';
 import UndoBar from '../UndoBar.vue';
 import ProductCatalogList from './ProductCatalogList.vue';
 import ProductCatalogSidebar from './ProductCatalogSidebar.vue';

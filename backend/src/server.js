@@ -9,7 +9,6 @@ const authRoutes = require('./routes/authRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const backupRoutes = require('./routes/backupRoutes');
-const inventoryRoutes = require('./routes/inventoryRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productCatalogRoutes = require('./routes/productCatalogRoutes');
 
@@ -53,7 +52,6 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/invoices', apiLimiter, invoiceRoutes);
 app.use('/api/customers', apiLimiter, customerRoutes);
 app.use('/api/backups', apiLimiter, backupRoutes);
-app.use('/api/inventory', apiLimiter, inventoryRoutes);
 app.use('/api/admins', apiLimiter, adminRoutes);
 app.use('/api/products', apiLimiter, productCatalogRoutes);
 

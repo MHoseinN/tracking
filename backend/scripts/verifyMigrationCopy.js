@@ -24,6 +24,16 @@ const before = {
   legacyProducts: countRows('inventory_products')
 };
 
+const removedLegacyTables = [
+  'inventory_categories',
+  'inventory_categories_legacy',
+  'inventory_products',
+  'inventory_reservations',
+  'inventory_units',
+  'inventory_reservation_orders',
+  'inventory_reservation_items'
+];
+
 try {
   runMigrations(db);
   const after = {
@@ -39,6 +49,16 @@ try {
     || before.customers !== after.customers
     || before.invoices !== after.invoices) {
     throw new Error(`Legacy row counts changed: ${JSON.stringify({ before, after })}`);
+  }
+  if (before.legacyProducts !== null && after.products < before.legacyProducts) {
+    throw new Error(`Products were not fully migrated: ${JSON.stringify({ before, after })}`);
+  }
+  const remainingLegacyTables = removedLegacyTables.filter((tableName) => tableExists(db, tableName));
+  if (remainingLegacyTables.length > 0) {
+    throw new Error(`Legacy inventory tables still exist: ${remainingLegacyTables.join(', ')}`);
+  }
+  if (after.migrations !== 2) {
+    throw new Error(`Unexpected migration count: ${after.migrations}`);
   }
   if (foreignKeyErrors.length > 0) {
     throw new Error(`Foreign-key errors: ${JSON.stringify(foreignKeyErrors)}`);
