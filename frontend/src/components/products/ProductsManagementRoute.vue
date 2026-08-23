@@ -46,6 +46,11 @@
     <ConfirmModal :is-open="showDeleteProductModal" title="حذف محصول" :message="deleteProductMessage"
       :loading="deleting" @confirm="handleDeleteProduct" @cancel="showDeleteProductModal = false" />
 
+    <ConfirmModal :is-open="showDeactivateProductConfirm" title="غیرفعال‌سازی محصول"
+      :message="`با غیرفعال‌کردن «${selectedProduct?.name || 'این محصول'}»، در لیست‌های جدید قابل انتخاب نخواهد بود. ادامه می‌دهید؟`"
+      :loading="savingProduct" confirm-text="بله، غیرفعال شود" loading-text="در حال ذخیره..."
+      @confirm="confirmDeactivateProduct" @cancel="cancelDeactivateProduct" />
+
     <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
       @close="clearUndo" />
   </div>
@@ -74,6 +79,8 @@ const catalogStore = useProductCatalogStore();
 const productSearch = ref('');
 const selectedCategoryId = ref(null);
 const statusFilter = ref('all');
+const showDeactivateProductConfirm = ref(false);
+const pendingProductPayload = ref(null);
 const tableSectionRef = ref(null);
 const statusFilterOptions = [
   { label: 'همه وضعیت‌ها', value: 'all' },
@@ -148,9 +155,33 @@ const {
   showCategoryModal, showProductModal, showDeleteCategoryModal, showDeleteProductModal,
   savingCategory, savingProduct, deleting, selectedCategoryForModal, selectedProduct,
   deleteProductMessage, openCategoryModal, closeCategoryModal, openProductModal,
-  closeProductModal, openDeleteProduct, handleSaveCategory, handleSaveProduct,
+  closeProductModal, openDeleteProduct, handleSaveCategory, handleSaveProduct: persistProduct,
   handleDeleteCategory, handleDeleteProduct
 } = useProductCatalogActions({ catalogStore, toast, reloadData: loadData, selectedCategoryId, showUndo });
+
+function handleSaveProduct(payload) {
+  if (selectedProduct.value?.is_active && payload.is_active === false) {
+    pendingProductPayload.value = payload;
+    showDeactivateProductConfirm.value = true;
+    return;
+  }
+
+  persistProduct(payload);
+}
+
+async function confirmDeactivateProduct() {
+  if (!pendingProductPayload.value || savingProduct.value) return;
+  const payload = pendingProductPayload.value;
+  await persistProduct(payload);
+  showDeactivateProductConfirm.value = false;
+  pendingProductPayload.value = null;
+}
+
+function cancelDeactivateProduct() {
+  if (savingProduct.value) return;
+  showDeactivateProductConfirm.value = false;
+  pendingProductPayload.value = null;
+}
 
 async function loadData() {
   try {

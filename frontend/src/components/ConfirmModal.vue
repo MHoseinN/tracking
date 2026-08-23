@@ -1,7 +1,7 @@
 <template>
   <!-- Confirm Delete Modal -->
   <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    <div v-if="isOpen" class="fixed inset-0 z-[170] flex items-center justify-center bg-black/50 p-4"
       @click.self="$emit('cancel')">
       <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
         <!-- Icon -->

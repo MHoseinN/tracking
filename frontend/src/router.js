@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/authStore';
 import { usePermissions } from './composables/usePermissions';
+import Login from './pages/Login.vue';
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('./pages/Login.vue'),
+    component: Login,
     meta: { requiresAuth: false }
   },
   {

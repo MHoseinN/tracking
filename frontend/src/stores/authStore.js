@@ -2,6 +2,7 @@
 import { defineStore } from "pinia";
 import { getCurrentUser, login as loginRequest } from '../modules/auth/api/auth.service';
 import { getApiErrorMessage } from '../utils/apiError';
+import { cancelPendingRequests } from '../utils/api';
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -42,6 +43,7 @@ export const useAuthStore = defineStore("auth", {
     },
 
     logout() {
+      cancelPendingRequests();
       this.token = null;
       this.user = null;
       this.isAuthenticated = false;

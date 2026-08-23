@@ -72,7 +72,7 @@
                     @click="openEditModal(user)">ویرایش</button>
                   <button type="button" class="rounded-lg px-3 py-2 text-xs font-semibold"
                     :class="user.is_active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'"
-                    :disabled="statusSavingId === user.id" @click="toggleStatus(user)">
+                    :disabled="statusSavingId === user.id" @click="requestStatusChange(user)">
                     {{ user.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن' }}
                   </button>
                   <button type="button" class="rounded-lg bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-200"
@@ -91,6 +91,14 @@
   </div>
 
   <AdminFormModal :is-open="formOpen" :admin="editingAdmin" :saving="saving" @close="closeForm" @save="saveAdmin" />
+  <ConfirmModal :is-open="statusConfirmOpen"
+    :title="pendingStatusAdmin?.is_active ? 'غیرفعال‌سازی ادمین' : 'فعال‌سازی ادمین'"
+    :message="pendingStatusAdmin?.is_active
+      ? `با غیرفعال‌کردن ${pendingStatusAdmin?.display_name || 'این ادمین'}، دسترسی او بلافاصله قطع می‌شود. ادامه می‌دهید؟`
+      : `آیا دسترسی ${pendingStatusAdmin?.display_name || 'این ادمین'} دوباره فعال شود؟`"
+    :loading="statusSavingId === pendingStatusAdmin?.id"
+    :confirm-text="pendingStatusAdmin?.is_active ? 'بله، غیرفعال شود' : 'بله، فعال شود'"
+    loading-text="در حال تغییر وضعیت..." @confirm="confirmStatusChange" @cancel="closeStatusConfirm" />
   <ConfirmModal :is-open="deleteConfirmOpen" title="حذف ادمین"
     :message="`آیا از حذف حساب ${deletingAdmin?.display_name || ''} مطمئن هستید؟`"
     :loading="deleting" confirm-text="بله، حذف شود" loading-text="در حال حذف..."
@@ -119,6 +127,8 @@ const users = ref([]);
 const loading = ref(false);
 const saving = ref(false);
 const statusSavingId = ref(null);
+const statusConfirmOpen = ref(false);
+const pendingStatusAdmin = ref(null);
 const searchQuery = ref('');
 const statusFilter = ref('all');
 const formOpen = ref(false);
@@ -191,12 +201,27 @@ async function saveAdmin(payload) {
   }
 }
 
-async function toggleStatus(admin) {
+function requestStatusChange(admin) {
+  pendingStatusAdmin.value = admin;
+  statusConfirmOpen.value = true;
+}
+
+function closeStatusConfirm() {
+  if (statusSavingId.value) return;
+  statusConfirmOpen.value = false;
+  pendingStatusAdmin.value = null;
+}
+
+async function confirmStatusChange() {
+  const admin = pendingStatusAdmin.value;
+  if (!admin || statusSavingId.value) return;
   statusSavingId.value = admin.id;
   try {
     await updateAdminStatus(admin.id, !admin.is_active);
     toast.success(admin.is_active ? 'دسترسی ادمین غیرفعال شد' : 'دسترسی ادمین فعال شد');
     await loadAdmins();
+    statusSavingId.value = null;
+    closeStatusConfirm();
   } catch (error) {
     toast.error(getApiErrorMessage(error, 'تغییر وضعیت ادمین با خطا مواجه شد'));
   } finally {

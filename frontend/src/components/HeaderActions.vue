@@ -47,8 +47,8 @@ async function handleManualBackup() {
   }
 }
 
-function handleLogout() {
+async function handleLogout() {
   authStore.logout();
-  router.push('/login');
+  await router.replace({ name: 'Login' });
 }
 </script>
