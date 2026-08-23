@@ -4,15 +4,17 @@
       <button type="button" @click="openProductModal()" class="app-button-primary w-full">افزودن محصول</button>
       <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
       <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)"
-        class="app-button-secondary w-ful disabled:opacity-50">ویرایش ‌دسته‌بندی</button>
+        class="app-button-secondary w-full disabled:opacity-50">ویرایش ‌دسته‌بندی</button>
       <button type="button" :disabled="!selectedCategoryObject"
         @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })"
         class="app-button-secondary w-full disabled:opacity-50">افزودن زیرشاخه</button>
       <button type="button" :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true"
         class="app-button-secondary w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف
         دسته</button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/inventory')">بازگشت به
-        رزرو</button>
+      <CustomSelect :model-value="statusFilter" :options="statusFilterOptions"
+        trigger-class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm shadow-sm"
+        @update:model-value="statusFilter = $event" />
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت به خانه</button>
     </Teleport>
 
     <div class="grid items-start gap-2 grid-cols-[250px_minmax(0,1fr)]">
@@ -21,7 +23,7 @@
 
       <section ref="tableSectionRef" class="space-y-6">
         <ProductCatalogList :category-name="selectedCategoryObject?.name" :search-query="productSearch"
-          :products="paginatedItems" :loading="inventoryStore.loading" :total-rows="totalRows"
+          :products="paginatedItems" :loading="catalogStore.loading" :total-rows="totalRows"
           :row-start-index="rowStartIndex" :page-size="pageSize" :page-size-options="pageSizeOptions"
           :current-page="currentPage" :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers"
           @update:search-query="productSearch = $event" @update:page-size="pageSize = $event"
@@ -54,30 +56,37 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '../ConfirmModal.vue';
+import CustomSelect from '../CustomSelect.vue';
 import InventoryCategoryModal from '../InventoryCategoryModal.vue';
 import InventoryProductModal from '../InventoryProductModal.vue';
 import UndoBar from '../UndoBar.vue';
 import ProductCatalogList from './ProductCatalogList.vue';
 import ProductCatalogSidebar from './ProductCatalogSidebar.vue';
-import { useInventoryStore } from '../../stores/inventoryStore';
+import { useProductCatalogStore } from '../../stores/productCatalogStore';
 import { usePaginatedList } from '../../composables/usePaginatedList';
 import { useUndoAction } from '../../composables/useUndoAction';
 import { useProductCatalogActions } from '../../composables/useProductCatalogActions';
 
 const router = useRouter();
 const toast = useToast();
-const inventoryStore = useInventoryStore();
+const catalogStore = useProductCatalogStore();
 
 const productSearch = ref('');
 const selectedCategoryId = ref(null);
+const statusFilter = ref('all');
 const tableSectionRef = ref(null);
+const statusFilterOptions = [
+  { label: 'همه وضعیت‌ها', value: 'all' },
+  { label: 'محصولات فعال', value: 'active' },
+  { label: 'محصولات غیرفعال', value: 'inactive' }
+];
 
 onMounted(async () => {
   await loadData();
 });
 
-const categoryTree = computed(() => inventoryStore.lookups.category_tree || []);
-const selectedCategoryObject = computed(() => inventoryStore.lookups.categories.find((item) => String(item.id) === String(selectedCategoryId.value)) || null);
+const categoryTree = computed(() => catalogStore.categoryTree || []);
+const selectedCategoryObject = computed(() => catalogStore.categories.find((item) => String(item.id) === String(selectedCategoryId.value)) || null);
 const flatCategoryOptions = computed(() => {
   const result = [];
   const walk = (nodes, depth = 0) => {
@@ -97,15 +106,20 @@ const flatCategoryOptions = computed(() => {
 
 const visibleProducts = computed(() => {
   const query = productSearch.value.trim().toLowerCase();
-  return inventoryStore.productsForInventory.filter((product) => {
+  return catalogStore.products.filter((product) => {
     const matchesSearch = !query
       || String(product.name || '').toLowerCase().includes(query)
-      || String(product.category_name || '').toLowerCase().includes(query);
+      || String(product.category_name || '').toLowerCase().includes(query)
+      || String(product.notes || '').toLowerCase().includes(query);
 
     const matchesCategory = !selectedCategoryId.value || String(product.category_id) === String(selectedCategoryId.value)
       || isCategoryDescendant(product.category_id, selectedCategoryId.value);
 
-    return matchesSearch && matchesCategory;
+    const matchesStatus = statusFilter.value === 'all'
+      || (statusFilter.value === 'active' && product.is_active)
+      || (statusFilter.value === 'inactive' && !product.is_active);
+
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 });
 
@@ -122,7 +136,7 @@ const {
 } = usePaginatedList(visibleProducts, {
   initialPageSize: 15,
   pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [productSearch, selectedCategoryId],
+  resetSources: [productSearch, selectedCategoryId, statusFilter],
   scrollTarget: tableSectionRef
 });
 
@@ -136,18 +150,18 @@ const {
   deleteProductMessage, openCategoryModal, closeCategoryModal, openProductModal,
   closeProductModal, openDeleteProduct, handleSaveCategory, handleSaveProduct,
   handleDeleteCategory, handleDeleteProduct
-} = useProductCatalogActions({ inventoryStore, toast, reloadData: loadData, selectedCategoryId, showUndo });
+} = useProductCatalogActions({ catalogStore, toast, reloadData: loadData, selectedCategoryId, showUndo });
 
 async function loadData() {
   try {
-    await Promise.all([inventoryStore.fetchLookups(), inventoryStore.fetchDashboard()]);
+    await catalogStore.fetchCatalog();
   } catch (_error) {
-    toast.error(inventoryStore.error || 'خطا در دریافت اطلاعات مدیریت محصول');
+    toast.error(catalogStore.error || 'خطا در دریافت اطلاعات مدیریت محصول');
   }
 }
 
 function isCategoryDescendant(categoryId, selectedId) {
-  const categories = inventoryStore.lookups.categories;
+  const categories = catalogStore.categories;
   let current = categories.find((item) => String(item.id) === String(categoryId));
   while (current?.parent_id) {
     if (String(current.parent_id) === String(selectedId)) return true;

@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 
-export function useProductCatalogActions({ inventoryStore, toast, reloadData, selectedCategoryId, showUndo }) {
+export function useProductCatalogActions({ catalogStore, toast, reloadData, selectedCategoryId, showUndo }) {
   const showCategoryModal = ref(false);
   const showProductModal = ref(false);
   const showDeleteCategoryModal = ref(false);
@@ -33,8 +33,8 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
     const isEdit = Boolean(selectedCategoryForModal.value?.id);
     const previousCategory = isEdit ? { ...selectedCategoryForModal.value } : null;
     const result = isEdit
-      ? await inventoryStore.updateCategory(selectedCategoryForModal.value.id, payload)
-      : await inventoryStore.createCategory(payload);
+      ? await catalogStore.updateCategory(selectedCategoryForModal.value.id, payload)
+      : await catalogStore.createCategory(payload);
     savingCategory.value = false;
     if (!result.success) { toast.error(result.message); return; }
     closeCategoryModal(); await reloadData();
@@ -43,8 +43,8 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
       title: isEdit ? 'ویرایش دسته‌بندی ثبت شد' : 'دسته‌بندی ثبت شد', message: 'اگر اشتباه بوده، بازگردانی کن.',
       handler: async () => {
         const undoResult = isEdit
-          ? await inventoryStore.updateCategory(previousCategory.id, { name: previousCategory.name, parent_id: previousCategory.parent_id || null })
-          : await inventoryStore.deleteCategory(result.data.id);
+          ? await catalogStore.updateCategory(previousCategory.id, { name: previousCategory.name, parent_id: previousCategory.parent_id || null })
+          : await catalogStore.deleteCategory(result.data.id);
         if (!undoResult.success) throw new Error(undoResult.message);
         await reloadData();
       }
@@ -57,8 +57,8 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
     const previousProduct = isEdit ? { ...selectedProduct.value } : null;
     const normalizedPayload = { ...payload, category_id: payload.category_id || selectedCategoryId.value || null };
     const result = isEdit
-      ? await inventoryStore.updateProduct(selectedProduct.value.id, normalizedPayload)
-      : await inventoryStore.createProduct(normalizedPayload);
+      ? await catalogStore.updateProduct(selectedProduct.value.id, normalizedPayload)
+      : await catalogStore.createProduct(normalizedPayload);
     savingProduct.value = false;
     if (!result.success) { toast.error(result.message); return; }
     closeProductModal(); await reloadData();
@@ -67,11 +67,14 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
       title: isEdit ? 'ویرایش محصول ثبت شد' : 'محصول ثبت شد', message: 'اگر اشتباه بوده، بازگردانی کن.',
       handler: async () => {
         const undoResult = isEdit
-          ? await inventoryStore.updateProduct(previousProduct.id, {
-            name: previousProduct.name, total_quantity: previousProduct.total_quantity,
-            category_id: previousProduct.category_id || null, notes: previousProduct.notes || null
+          ? await catalogStore.updateProduct(previousProduct.id, {
+            name: previousProduct.name,
+            daily_price_toman: previousProduct.daily_price_toman,
+            category_id: previousProduct.category_id || null,
+            notes: previousProduct.notes || null,
+            is_active: previousProduct.is_active
           })
-          : await inventoryStore.deleteProduct(result.data.id);
+          : await catalogStore.deleteProduct(result.data.id);
         if (!undoResult.success) throw new Error(undoResult.message);
         await reloadData();
       }
@@ -82,7 +85,7 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
     if (!category?.id || deleting.value) return;
     const snapshot = { ...category };
     deleting.value = true;
-    const result = await inventoryStore.deleteCategory(category.id);
+    const result = await catalogStore.deleteCategory(category.id);
     deleting.value = false;
     if (!result.success) { toast.error(result.message); return; }
     showDeleteCategoryModal.value = false;
@@ -92,7 +95,7 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
     showUndo({
       title: 'دسته‌بندی حذف شد', message: 'در صورت نیاز، همین حالا بازگردانی کن.',
       handler: async () => {
-        const undoResult = await inventoryStore.createCategory({ name: snapshot.name, parent_id: snapshot.parent_id || null });
+        const undoResult = await catalogStore.createCategory({ name: snapshot.name, parent_id: snapshot.parent_id || null });
         if (!undoResult.success) throw new Error(undoResult.message);
         await reloadData();
       }
@@ -103,7 +106,7 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
     if (!deleteProductTarget.value?.id || deleting.value) return;
     const snapshot = { ...deleteProductTarget.value };
     deleting.value = true;
-    const result = await inventoryStore.deleteProduct(snapshot.id);
+    const result = await catalogStore.deleteProduct(snapshot.id);
     deleting.value = false;
     if (!result.success) { toast.error(result.message); return; }
     showDeleteProductModal.value = false; deleteProductTarget.value = null; await reloadData();
@@ -111,9 +114,12 @@ export function useProductCatalogActions({ inventoryStore, toast, reloadData, se
     showUndo({
       title: 'محصول حذف شد', message: 'در صورت نیاز، همین حالا بازگردانی کن.',
       handler: async () => {
-        const undoResult = await inventoryStore.createProduct({
-          name: snapshot.name, total_quantity: snapshot.total_quantity,
-          category_id: snapshot.category_id || null, notes: snapshot.notes || null
+        const undoResult = await catalogStore.createProduct({
+          name: snapshot.name,
+          daily_price_toman: snapshot.daily_price_toman,
+          category_id: snapshot.category_id || null,
+          notes: snapshot.notes || null,
+          is_active: snapshot.is_active
         });
         if (!undoResult.success) throw new Error(undoResult.message);
         await reloadData();
