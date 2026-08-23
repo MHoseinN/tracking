@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "test": "node --test test/databaseMigrations.test.js",
+    "verify:schema": "node scripts/verifyDatabaseSchema.js",
     "backup": "node scripts/backupDatabase.js",
     "restore": "node scripts/restoreBackup.js",
     "schedule-backup": "..\\install-weekly-backup.bat",

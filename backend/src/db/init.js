@@ -1,5 +1,6 @@
 const db = require('./database');
 const bcrypt = require('bcryptjs');
+const { runMigrations } = require('./migrations');
 
 function hasColumn(tableName, columnName) {
   return db.prepare(`PRAGMA table_info(${tableName})`).all().some((column) => column.name === columnName);
@@ -303,6 +304,8 @@ function initDatabase() {
     db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('1010', hashedPassword);
     console.log('Default admin user created: username=1010, password=123456');
   }
+
+  runMigrations(db);
 
   console.log('Database initialized successfully');
 }
