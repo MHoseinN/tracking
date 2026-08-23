@@ -78,6 +78,15 @@ const baseNavGroups = [
     items: []
   },
   {
+    key: 'lists',
+    label: 'لیست‌های تحویل',
+    to: '/lists',
+    icon: ['M9 12.75 11.25 15 15 9.75', 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
+    items: [
+      { key: 'lists-drafts', label: 'پیش‌نویس‌ها', to: '/lists' }
+    ]
+  },
+  {
     key: 'accounts',
     label: 'حساب',
     to: '/accounts',
@@ -122,6 +131,7 @@ const navGroups = computed(() => baseNavGroups.filter((group) => (
 )));
 
 const createClosedGroups = () => ({
+  lists: false,
   accounts: false,
   customers: false,
   products: false,
@@ -150,7 +160,9 @@ function toggleGroup(key) {
 function syncOpenGroupWithRoute() {
   const nextState = createClosedGroups();
 
-  if (route.path === '/reports' || route.path === '/accounts') {
+  if (route.path.startsWith('/lists')) {
+    nextState.lists = true;
+  } else if (route.path === '/reports' || route.path === '/accounts') {
     nextState.accounts = true;
   } else if (route.path === '/users' || route.path.startsWith('/customer/')) {
     nextState.customers = true;

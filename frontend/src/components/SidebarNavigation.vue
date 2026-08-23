@@ -50,6 +50,7 @@ const route = useRoute();
 
 function isActiveRoute(item) {
   if (item.to === '/users' && route.path.startsWith('/customer/')) return true;
+  if (item.to === '/lists' && route.path.startsWith('/lists')) return true;
   return route.path === item.to;
 }
 

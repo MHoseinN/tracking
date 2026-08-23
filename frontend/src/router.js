@@ -72,6 +72,26 @@ const routes = [
     }
   },
   {
+    path: '/lists',
+    name: 'DeliveryListDrafts',
+    component: () => import('./components/delivery-lists/DeliveryListDraftsRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'لیست‌های تحویل',
+      subtitle: 'پیش‌نویس‌های مستقل را ایجاد کنید و بعداً بدون از دست رفتن تغییرات ادامه دهید'
+    }
+  },
+  {
+    path: '/lists/:id/edit',
+    name: 'DeliveryListDraftEditor',
+    component: () => import('./components/delivery-lists/DeliveryListDraftEditorRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'ویرایش پیش‌نویس لیست',
+      subtitle: 'مشخصات مشتری، زمان تحویل و اقلام به‌صورت خودکار ذخیره می‌شوند'
+    }
+  },
+  {
     path: '/admins',
     name: 'AdminsManagement',
     component: () => import('./components/admins/AdminsManagementRoute.vue'),

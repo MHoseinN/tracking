@@ -58,6 +58,7 @@ const dataInitialized = ref(false);
 
 const routeItems = [
   { key: 'route-home', type: 'route', label: 'خانه', meta: 'نمای کلی سیستم', badge: 'صفحه', to: '/home' },
+  { key: 'route-lists', type: 'route', label: 'لیست‌های تحویل', meta: 'پیش‌نویس‌ها و ثبت اقلام تحویلی', badge: 'صفحه', to: '/lists' },
   { key: 'route-accounts', type: 'route', label: 'حساب‌ها', meta: 'مدیریت و جستجوی همه حساب‌ها', badge: 'صفحه', to: '/accounts' },
   { key: 'route-reports', type: 'route', label: 'آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
   { key: 'route-users', type: 'route', label: 'مدیریت کاربران', meta: 'لیست و وضعیت حساب مشتری‌ها', badge: 'صفحه', to: '/users' },

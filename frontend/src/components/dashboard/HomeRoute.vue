@@ -92,6 +92,9 @@
               <button type="button" class="app-button-secondary justify-between" @click="router.push('/users')">
                 <span>ورود به کاربران</span>
               </button>
+              <button type="button" class="app-button-secondary justify-between" @click="router.push('/lists')">
+                <span>لیست‌های تحویل</span>
+              </button>
               <button type="button" class="app-button-secondary justify-between"
                 @click="router.push('/products')">
                 <span>مدیریت محصولات</span>

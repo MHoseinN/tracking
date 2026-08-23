@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "node --test test/databaseMigrations.test.js test/adminRoles.test.js test/productCatalog.test.js",
+    "test": "node --test test/databaseMigrations.test.js test/adminRoles.test.js test/productCatalog.test.js test/deliveryListDrafts.test.js",
     "verify:schema": "node scripts/verifyDatabaseSchema.js",
     "backup": "node scripts/backupDatabase.js",
     "restore": "node scripts/restoreBackup.js",
