@@ -1,6 +1,6 @@
 
 import { defineStore } from "pinia";
-import { login as loginRequest } from '../modules/auth/api/auth.service';
+import { getCurrentUser, login as loginRequest } from '../modules/auth/api/auth.service';
 import { getApiErrorMessage } from '../utils/apiError';
 
 export const useAuthStore = defineStore("auth", {
@@ -10,6 +10,7 @@ export const useAuthStore = defineStore("auth", {
     isAuthenticated: !!localStorage.getItem("token"),
     loading: false,
     error: null,
+    sessionValidated: false,
   }),
 
   actions: {
@@ -24,6 +25,7 @@ export const useAuthStore = defineStore("auth", {
         this.token = token;
         this.user = user;
         this.isAuthenticated = true;
+        this.sessionValidated = true;
 
         // Persist to localStorage
         localStorage.setItem("token", token);
@@ -43,6 +45,7 @@ export const useAuthStore = defineStore("auth", {
       this.token = null;
       this.user = null;
       this.isAuthenticated = false;
+      this.sessionValidated = false;
 
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -52,10 +55,30 @@ export const useAuthStore = defineStore("auth", {
       const token = localStorage.getItem("token");
       if (token) {
         this.token = token;
-        this.user = JSON.parse(localStorage.getItem("user"));
+        try {
+          this.user = JSON.parse(localStorage.getItem("user")) || null;
+        } catch (_error) {
+          this.user = null;
+        }
         this.isAuthenticated = true;
       } else {
         this.isAuthenticated = false;
+      }
+    },
+
+    async refreshCurrentUser() {
+      if (!this.token) return false;
+
+      try {
+        const response = await getCurrentUser();
+        this.user = response.data.user;
+        this.isAuthenticated = true;
+        this.sessionValidated = true;
+        localStorage.setItem("user", JSON.stringify(this.user));
+        return true;
+      } catch (_error) {
+        this.logout();
+        return false;
       }
     },
   },

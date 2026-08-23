@@ -1,5 +1,9 @@
 <template>
   <div class="hidden items-center gap-2 px-3 lg:flex justify-between">
+    <div class="ml-2 text-right">
+      <p class="text-xs font-semibold text-slate-700">{{ authStore.user?.display_name || authStore.user?.username }}</p>
+      <p class="text-[11px] text-slate-400">{{ authStore.user?.role === 'MANAGER' ? 'مدیر' : 'ادمین' }}</p>
+    </div>
     <button type="button" title="بکاپ" :disabled="backupLoading"
       class="app-button border border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 focus:ring-amber-100"
       @click="handleManualBackup">

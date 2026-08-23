@@ -91,7 +91,7 @@ async function handleLogin() {
     const loginResult = await authStore.login(values.username, values.password);
 
     if (loginResult.success) {
-      toast.success('خوش اومدی رئیس');
+      toast.success('با موفقیت وارد شدید');
       await router.push('/home');
     } else {
       toast.error('نام کاربری یا رمز عبور اشتباه است');

@@ -10,6 +10,7 @@ const invoiceRoutes = require('./routes/invoiceRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const backupRoutes = require('./routes/backupRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ app.use('/api/invoices', apiLimiter, invoiceRoutes);
 app.use('/api/customers', apiLimiter, customerRoutes);
 app.use('/api/backups', apiLimiter, backupRoutes);
 app.use('/api/inventory', apiLimiter, inventoryRoutes);
+app.use('/api/admins', apiLimiter, adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

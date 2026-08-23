@@ -81,6 +81,17 @@ const routes = [
     }
   },
   {
+    path: '/admins',
+    name: 'AdminsManagement',
+    component: () => import('./components/admins/AdminsManagementRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['MANAGER'],
+      title: 'مدیریت ادمین‌ها',
+      subtitle: 'حساب‌های ادمین مجموعه و وضعیت دسترسی آن‌ها را مدیریت کنید'
+    }
+  },
+  {
     path: '/inventory/manage',
     name: 'LegacyInventoryProductManagement',
     redirect: '/products',
@@ -122,8 +133,14 @@ const router = createRouter({
 });
 
 // Navigation guard: protect authenticated routes
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
+  authStore.checkAuth();
+
+  if (authStore.isAuthenticated && !authStore.sessionValidated) {
+    await authStore.refreshCurrentUser();
+  }
+
   const { canAccess } = usePermissions();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const db = require('../db/database');
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -10,7 +11,17 @@ function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const user = db.prepare(`
+      SELECT id, username, display_name, role, is_active, deleted_at
+      FROM users
+      WHERE id = ?
+    `).get(decoded.id);
+
+    if (!user || !user.is_active || user.deleted_at) {
+      return res.status(401).json({ message: 'User account is inactive' });
+    }
+
+    req.user = user;
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid or expired token' });
