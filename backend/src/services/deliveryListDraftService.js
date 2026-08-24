@@ -1,3 +1,5 @@
+const { nextDeliveryListNumber } = require('./workflowNumberingService');
+
 class DeliveryListDraftError extends Error {
   constructor(message, statusCode = 400) {
     super(message);
@@ -136,7 +138,13 @@ function createDeliveryListDraftService(db) {
              return_event_items.final_charged_days,
              return_event_items.day_override_reason,
              return_event_items.damage_notes,
-             return_event_items.issue_resolved_at
+             return_event_items.issue_resolved_at,
+             (SELECT invoice_lines.invoice_id
+                FROM invoice_lines
+               WHERE invoice_lines.return_event_item_id = return_event_items.id
+                 AND invoice_lines.line_type = 'RENTAL'
+                 AND invoice_lines.deleted_at IS NULL
+               LIMIT 1) AS rental_invoice_id
       FROM return_events
       JOIN users ON users.id = return_events.received_by_user_id
       JOIN return_event_items
@@ -169,7 +177,8 @@ function createDeliveryListDraftService(db) {
         final_charged_days: row.final_charged_days,
         day_override_reason: row.day_override_reason,
         damage_notes: row.damage_notes,
-        issue_resolved_at: row.issue_resolved_at
+        issue_resolved_at: row.issue_resolved_at,
+        rental_invoice_id: row.rental_invoice_id
       });
     });
     const proforma = db.prepare(`
@@ -179,7 +188,29 @@ function createDeliveryListDraftService(db) {
       WHERE delivery_list_id = ? AND status = 'PROFORMA' AND deleted_at IS NULL
       ORDER BY id DESC LIMIT 1
     `).get(id) || null;
-    return { ...list, items, proforma, return_events: [...returnEventsById.values()] };
+    const invoices = db.prepare(`
+      SELECT invoices.id, invoices.parent_invoice_id, invoices.invoice_number,
+             invoices.invoice_type, invoices.status, invoices.settlement_status,
+             invoices.send_status, invoices.subtotal_toman, invoices.extra_charges_toman,
+             invoices.discount_percent_basis_points, invoices.discount_amount_toman,
+             invoices.rounding_adjustment_toman, invoices.final_amount_toman,
+             invoices.issued_at, invoices.created_at,
+             COALESCE(users.display_name, users.username) AS issued_by_name
+      FROM invoices
+      LEFT JOIN users ON users.id = invoices.issued_by_user_id
+      WHERE invoices.delivery_list_id = ? AND invoices.status = 'ISSUED'
+        AND invoices.deleted_at IS NULL
+      ORDER BY invoices.issued_at, invoices.id
+    `).all(id);
+    const lineStatement = db.prepare(`
+      SELECT id, line_type, description, quantity, billing_from_at, billing_to_at,
+             charged_days, unit_price_toman, line_total_toman
+      FROM invoice_lines
+      WHERE invoice_id = ? AND deleted_at IS NULL
+      ORDER BY sort_order, id
+    `);
+    invoices.forEach((invoice) => { invoice.lines = lineStatement.all(invoice.id); });
+    return { ...list, items, proforma, invoices, return_events: [...returnEventsById.values()] };
   }
 
   function getDraft(id) {
@@ -229,6 +260,10 @@ function createDeliveryListDraftService(db) {
                  AND invoices.status = 'PROFORMA'
                  AND invoices.deleted_at IS NULL
                ORDER BY invoices.id DESC LIMIT 1) AS proforma_invoice_id
+             ,(SELECT MAX(return_events.returned_at)
+                FROM return_events
+               WHERE return_events.delivery_list_id = delivery_lists.id
+                 AND return_events.deleted_at IS NULL) AS last_returned_at
       FROM delivery_lists
       LEFT JOIN customers ON customers.id = delivery_lists.customer_id
       JOIN users ON users.id = delivery_lists.created_by_user_id
@@ -416,11 +451,7 @@ function createDeliveryListDraftService(db) {
     `).get(draft.customer_id);
     if (!customer) throw new DeliveryListDraftError('مشتری انتخاب‌شده فعال نیست', 409);
 
-    const settings = db.prepare(`
-      SELECT list_number_prefix FROM app_settings WHERE id = 1
-    `).get();
-    const prefix = String(settings?.list_number_prefix || 'LST').trim() || 'LST';
-    const listNumber = `${prefix}-${String(id).padStart(6, '0')}`;
+    const listNumber = nextDeliveryListNumber(db, draft.delivered_at);
     const deliveryDate = String(draft.delivered_at).slice(0, 10);
     const dailyRateTotal = items.reduce((sum, item) => (
       sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)

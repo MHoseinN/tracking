@@ -29,29 +29,22 @@
             </section>
 
             <div class="overflow-x-auto rounded-lg border border-slate-200">
-              <table class="w-full min-w-[1250px]">
-                <thead class="border-b border-slate-200 bg-slate-50">
+              <table class="w-full min-w-[1250px] border-collapse border border-slate-300">
+                <thead class="bg-slate-100">
                   <tr>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">محصول</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">مانده</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">سالم</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">خسارت</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">مفقودی</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">روز نهایی</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">دلیل تغییر روز</th>
-                    <th class="px-3 py-3 text-right text-xs font-bold text-slate-500">شرح خسارت/مفقودی</th>
+                    <th v-for="heading in ['محصول','مانده','سالم','خسارت','مفقودی','روز نهایی','دلیل تغییر روز','شرح خسارت/مفقودی']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs font-bold text-slate-600">{{ heading }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in rows" :key="row.delivery_list_item_id" class="border-b border-slate-100 last:border-0">
-                    <td class="px-3 py-4 text-sm font-bold text-slate-800">{{ row.product_name_snapshot }}</td>
-                    <td class="px-3 py-4 text-sm font-bold text-orange-700">{{ formatNumber(row.remaining_quantity) }}</td>
-                    <td class="px-3 py-4"><input v-model.number="row.healthy_quantity" type="number" min="0" :max="row.remaining_quantity" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
-                    <td class="px-3 py-4"><input v-model.number="row.damaged_quantity" type="number" min="0" :max="row.remaining_quantity" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
-                    <td class="px-3 py-4"><input v-model.number="row.lost_quantity" type="number" min="0" :max="row.remaining_quantity" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
-                    <td class="px-3 py-4"><input v-model.number="row.final_charged_days" type="number" min="1" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
-                    <td class="px-3 py-4"><input v-model.trim="row.day_override_reason" type="text" maxlength="1000" :disabled="Number(row.final_charged_days) === systemDays" placeholder="در صورت تغییر روز" class="h-10 w-48 rounded-lg border border-slate-200 px-3 text-xs disabled:bg-slate-100" /></td>
-                    <td class="px-3 py-4"><input v-model.trim="row.damage_notes" type="text" maxlength="2000" :disabled="!hasIssue(row)" placeholder="برای خسارت یا مفقودی" class="h-10 w-56 rounded-lg border border-slate-200 px-3 text-xs disabled:bg-slate-100" /></td>
+                  <tr v-for="row in rows" :key="row.delivery_list_item_id">
+                    <td class="border border-slate-300 px-3 py-4 text-sm font-bold text-slate-800">{{ row.product_name_snapshot }}</td>
+                    <td class="border border-slate-300 px-3 py-4 text-sm font-bold text-orange-700">{{ formatNumber(row.remaining_quantity) }}</td>
+                    <td class="border border-slate-300 px-3 py-4"><input v-model.number="row.healthy_quantity" type="number" min="0" :max="row.remaining_quantity" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
+                    <td class="border border-slate-300 px-3 py-4"><input v-model.number="row.damaged_quantity" type="number" min="0" :max="row.remaining_quantity" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
+                    <td class="border border-slate-300 px-3 py-4"><input v-model.number="row.lost_quantity" type="number" min="0" :max="row.remaining_quantity" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
+                    <td class="border border-slate-300 px-3 py-4"><input v-model.number="row.final_charged_days" type="number" min="1" class="h-10 w-20 rounded-lg border border-slate-200 px-2 text-sm" /></td>
+                    <td class="border border-slate-300 px-3 py-4"><input v-model.trim="row.day_override_reason" type="text" maxlength="1000" :disabled="Number(row.final_charged_days) === systemDays" placeholder="در صورت تغییر روز" class="h-10 w-48 rounded-lg border border-slate-200 px-3 text-xs disabled:bg-slate-100" /></td>
+                    <td class="border border-slate-300 px-3 py-4"><input v-model.trim="row.damage_notes" type="text" maxlength="2000" :disabled="!hasIssue(row)" placeholder="برای خسارت یا مفقودی" class="h-10 w-56 rounded-lg border border-slate-200 px-3 text-xs disabled:bg-slate-100" /></td>
                   </tr>
                 </tbody>
               </table>

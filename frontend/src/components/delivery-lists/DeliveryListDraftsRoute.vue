@@ -23,38 +23,31 @@
       <AppContentState v-else-if="!filteredDrafts.length" message="لیستی برای نمایش وجود ندارد." />
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full min-w-[1500px]">
-          <thead class="border-b border-slate-100 bg-slate-50">
+        <table class="w-full min-w-[1150px] border-collapse border border-slate-300">
+          <thead class="bg-slate-100">
             <tr>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">ردیف</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">شماره لیست</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">مشتری</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">زمان تحویل</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">برگشت تقریبی</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">اقلام</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت لیست</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت فاکتور</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت تسویه</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">ایجادکننده</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">آخرین ذخیره</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">عملیات</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">شماره لیست</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">مشتری</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">زمان تحویل</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">تاریخ برگشت</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">وضعیت لیست</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">وضعیت فاکتور</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">وضعیت تسویه</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">ایجادکننده</th>
+              <th class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">عملیات</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(draft, index) in filteredDrafts" :key="draft.id"
-              class="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-              <td class="px-4 py-4 text-sm text-slate-500">{{ formatNumber(index + 1) }}</td>
-              <td class="px-4 py-4 text-sm font-bold text-indigo-700">{{ draft.list_number || `پیش‌نویس #${draft.id}` }}</td>
-              <td class="px-4 py-4 text-sm font-bold text-slate-800">{{ draft.customer_name || 'نامشخص' }}</td>
-              <td class="px-4 py-4 text-sm text-slate-600">{{ formatDateTime(draft.delivered_at) }}</td>
-              <td class="px-4 py-4 text-sm text-slate-600">{{ formatDateTime(draft.expected_return_at) }}</td>
-              <td class="px-4 py-4 text-sm text-slate-600">{{ formatNumber(draft.item_count) }} قلم</td>
-              <td class="px-4 py-4"><span class="app-badge" :class="listStatusMeta(draft.status).className">{{ listStatusMeta(draft.status).label }}</span></td>
-              <td class="px-4 py-4"><span class="app-badge" :class="invoiceStatusMeta(draft.invoice_status).className">{{ invoiceStatusMeta(draft.invoice_status).label }}</span></td>
-              <td class="px-4 py-4"><span class="app-badge" :class="settlementStatusMeta(draft.settlement_status).className">{{ settlementStatusMeta(draft.settlement_status).label }}</span></td>
-              <td class="px-4 py-4 text-sm text-slate-600">{{ draft.created_by_name || '—' }}</td>
-              <td class="px-4 py-4 text-sm text-slate-500">{{ formatDateTime(draft.last_autosaved_at) }}</td>
-              <td class="px-4 py-4">
+            <tr v-for="draft in filteredDrafts" :key="draft.id" class="hover:bg-slate-50/60">
+              <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-indigo-700">{{ draft.list_number || `پیش‌نویس #${draft.id}` }}</td>
+              <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-slate-800">{{ draft.customer_name || 'نامشخص' }}</td>
+              <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ formatDateTime(draft.delivered_at) }}</td>
+              <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ draft.last_returned_at ? formatDateTime(draft.last_returned_at) : '' }}</td>
+              <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="listStatusMeta(draft.status).className">{{ listStatusMeta(draft.status).label }}</span></td>
+              <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="invoiceStatusMeta(draft.invoice_status).className">{{ invoiceStatusMeta(draft.invoice_status).label }}</span></td>
+              <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="settlementStatusMeta(draft.settlement_status).className">{{ settlementStatusMeta(draft.settlement_status).label }}</span></td>
+              <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ draft.created_by_name || '—' }}</td>
+              <td class="border border-slate-300 px-4 py-4">
                 <div class="flex gap-2">
                   <button v-if="draft.status === 'DRAFT'" type="button" class="app-button-secondary px-3 py-2 text-xs"
                     @click="router.push(`/lists/${draft.id}/edit`)">ادامه ویرایش</button>

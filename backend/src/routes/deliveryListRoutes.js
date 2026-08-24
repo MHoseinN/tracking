@@ -9,7 +9,9 @@ const {
   saveDraft,
   deleteDraft,
   finalizeDraft,
-  recordReturn
+  recordReturn,
+  getInvoicePreview,
+  issueInvoice
 } = require('../controllers/deliveryListController');
 
 const router = express.Router();
@@ -54,5 +56,22 @@ router.post('/:id/returns', [
   body('items.*.day_override_reason').optional({ nullable: true }).isString().isLength({ max: 1000 }),
   body('items.*.damage_notes').optional({ nullable: true }).isString().isLength({ max: 2000 })
 ], recordReturn);
+router.get('/:id/invoice-preview', [idValidation], getInvoicePreview);
+router.post('/:id/invoices', [
+  idValidation,
+  body('issued_at').optional().isISO8601(),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+  body('lines').optional().isArray({ min: 1, max: 500 }),
+  body('lines.*.return_event_item_id').optional().isInt({ min: 1 }),
+  body('lines.*.charged_days').optional().isInt({ min: 1 }),
+  body('lines.*.unit_price_toman').optional().isInt({ min: 0 }),
+  body('extras').optional().isArray({ max: 100 }),
+  body('extras.*.type').optional().isIn(['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER']),
+  body('extras.*.description').optional().isString().isLength({ min: 1, max: 1000 }),
+  body('extras.*.amount_toman').optional().isInt({ min: 1 }),
+  body('discount_percent_basis_points').optional().isInt({ min: 0, max: 10000 }),
+  body('discount_amount_toman').optional().isInt({ min: 0 }),
+  body('rounding_adjustment_toman').optional().isInt({ max: 0 })
+], issueInvoice);
 
 module.exports = router;

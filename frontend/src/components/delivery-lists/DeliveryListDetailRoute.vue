@@ -3,6 +3,8 @@
     <Teleport to="#app-shell-actions">
       <button v-if="canRecordReturn" type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
         @click="showReturnModal = true">ثبت مرجوعی</button>
+      <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full bg-violet-600 hover:bg-violet-700"
+        :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
       <button type="button" class="app-button-primary w-full" @click="createNewDraft">ایجاد لیست جدید</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به لیست‌ها</button>
     </Teleport>
@@ -39,35 +41,28 @@
           <h3 class="text-base font-black text-slate-800">اقلام تحویل‌شده</h3>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[760px]">
-            <thead class="border-b border-slate-100 bg-slate-50">
+          <table class="w-full min-w-[760px] border-collapse border border-slate-300">
+            <thead class="bg-slate-100">
               <tr>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">نام محصول</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">قیمت روزانه</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">تعداد</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">برگشت سالم</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">خسارت/مفقودی</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">مانده</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">جمع روزانه</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت</th>
+                <th v-for="heading in ['نام محصول','قیمت روزانه','تعداد','برگشت سالم','خسارت/مفقودی','مانده','جمع روزانه','وضعیت']" :key="heading" class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">{{ heading }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in list.items" :key="item.id" class="border-b border-slate-100 last:border-0">
-                <td class="px-4 py-4 text-sm font-bold text-slate-800">{{ item.product_name_snapshot }}</td>
-                <td class="px-4 py-4 text-sm text-slate-600">{{ formatCurrency(item.daily_price_toman) }}</td>
-                <td class="px-4 py-4 text-sm text-slate-600">{{ formatNumber(item.delivered_quantity) }}</td>
-                <td class="px-4 py-4 text-sm font-bold text-emerald-700">{{ formatNumber(item.healthy_returned_quantity) }}</td>
-                <td class="px-4 py-4 text-sm font-bold text-rose-700">{{ formatNumber(item.damaged_quantity + item.lost_quantity) }}</td>
-                <td class="px-4 py-4 text-sm font-bold text-orange-700">{{ formatNumber(item.remaining_quantity) }}</td>
-                <td class="px-4 py-4 text-sm font-bold text-indigo-700">{{ formatCurrency(item.daily_price_toman * item.delivered_quantity) }}</td>
-                <td class="px-4 py-4"><span class="app-badge" :class="itemStatusMeta(item.item_status).className">{{ itemStatusMeta(item.item_status).label }}</span></td>
+              <tr v-for="item in list.items" :key="item.id">
+                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-slate-800">{{ item.product_name_snapshot }}</td>
+                <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ formatCurrency(item.daily_price_toman) }}</td>
+                <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ formatNumber(item.delivered_quantity) }}</td>
+                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-emerald-700">{{ formatNumber(item.healthy_returned_quantity) }}</td>
+                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-rose-700">{{ formatNumber(item.damaged_quantity + item.lost_quantity) }}</td>
+                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-orange-700">{{ formatNumber(item.remaining_quantity) }}</td>
+                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-indigo-700">{{ formatCurrency(item.daily_price_toman * item.delivered_quantity) }}</td>
+                <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="itemStatusMeta(item.item_status).className">{{ itemStatusMeta(item.item_status).label }}</span></td>
               </tr>
             </tbody>
             <tfoot class="border-t border-slate-200 bg-slate-50">
               <tr>
-                <td colspan="6" class="px-4 py-4 text-sm font-bold text-slate-700">جمع نرخ روزانه</td>
-                <td colspan="2" class="px-4 py-4 text-base font-black text-indigo-700">{{ formatCurrency(dailyTotal) }}</td>
+                <td colspan="6" class="border border-slate-300 px-4 py-4 text-sm font-bold text-slate-700">جمع نرخ روزانه</td>
+                <td colspan="2" class="border border-slate-300 px-4 py-4 text-base font-black text-indigo-700">{{ formatCurrency(dailyTotal) }}</td>
               </tr>
             </tfoot>
           </table>
@@ -76,35 +71,30 @@
 
       <section v-if="list.return_events?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-100 p-5"><h3 class="text-base font-black text-slate-800">تاریخچه مرجوعی‌ها</h3></div>
-        <div class="divide-y divide-slate-100">
-          <article v-for="event in list.return_events" :key="event.id" class="p-5">
-            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p class="text-sm font-bold text-slate-800">{{ formatDateTime(event.returned_at) }}</p>
-                <p class="mt-1 text-xs text-slate-500">تحویل‌گیرنده: {{ event.received_by_name || '—' }}</p>
-              </div>
-              <span class="app-badge bg-slate-100 text-slate-600">{{ formatNumber(event.items.length) }} ردیف</span>
-            </div>
-            <div class="mt-4 grid gap-2 lg:grid-cols-2">
-              <div v-for="item in event.items" :key="item.id" class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                <p class="font-bold text-slate-800">{{ item.product_name_snapshot }}</p>
-                <p class="mt-2">سالم: {{ formatNumber(item.healthy_quantity) }} | خسارت: {{ formatNumber(item.damaged_quantity) }} | مفقودی: {{ formatNumber(item.lost_quantity) }}</p>
-                <p class="mt-1">روز سیستم: {{ formatNumber(item.system_calculated_days) }} | روز نهایی: {{ formatNumber(item.final_charged_days) }}</p>
-                <p v-if="item.day_override_reason" class="mt-1 text-amber-700">دلیل تغییر: {{ item.day_override_reason }}</p>
-                <p v-if="item.damage_notes" class="mt-1 text-rose-700">شرح: {{ item.damage_notes }}</p>
-              </div>
-            </div>
-          </article>
+        <div class="overflow-x-auto p-5">
+          <table class="w-full min-w-[1200px] border-collapse border border-slate-300">
+            <thead class="bg-slate-100"><tr><th v-for="heading in ['تاریخ برگشت','تحویل‌گیرنده','محصول','سالم','خسارت','مفقودی','روز سیستم','روز نهایی','وضعیت فاکتور','توضیحات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs text-slate-600">{{ heading }}</th></tr></thead>
+            <tbody><tr v-for="row in returnRows" :key="row.id">
+              <td class="border border-slate-300 px-3 py-3 text-sm">{{ formatDateTime(row.returned_at) }}</td><td class="border border-slate-300 px-3 py-3 text-sm">{{ row.received_by_name || '—' }}</td><td class="border border-slate-300 px-3 py-3 text-sm font-bold">{{ row.product_name_snapshot }}</td><td class="border border-slate-300 px-3 py-3">{{ formatNumber(row.healthy_quantity) }}</td><td class="border border-slate-300 px-3 py-3 text-rose-700">{{ formatNumber(row.damaged_quantity) }}</td><td class="border border-slate-300 px-3 py-3 text-rose-700">{{ formatNumber(row.lost_quantity) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatNumber(row.system_calculated_days) }}</td><td class="border border-slate-300 px-3 py-3 font-bold">{{ formatNumber(row.final_charged_days) }}</td><td class="border border-slate-300 px-3 py-3"><span class="app-badge" :class="row.rental_invoice_id ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">{{ row.rental_invoice_id ? 'فاکتور شده' : 'آماده صدور' }}</span></td><td class="border border-slate-300 px-3 py-3 text-xs">{{ row.damage_notes || row.day_override_reason || '—' }}</td>
+            </tr></tbody>
+          </table>
         </div>
       </section>
 
-      <section class="rounded-lg border border-violet-200 bg-violet-50 p-5 text-sm text-violet-800">
-        پیش‌فاکتور خودکار ایجاد شده است. تعداد روز و مبلغ قطعی اقلام در مرحله ثبت مرجوعی محاسبه و به فاکتور اضافه می‌شود.
+      <section v-if="list.invoices?.length" class="app-panel overflow-hidden">
+        <div class="border-b border-slate-300 p-5"><h3 class="text-base font-black text-slate-800">فاکتورهای صادرشده این لیست</h3></div>
+        <div class="overflow-x-auto p-5"><table class="w-full min-w-[900px] border-collapse border border-slate-300"><thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','زمان صدور','تعداد ردیف','جمع اقلام','هزینه اضافی','تخفیف','مبلغ نهایی','صادرکننده']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead><tbody><tr v-for="invoice in list.invoices" :key="invoice.id"><td class="border border-slate-300 px-3 py-3 font-bold text-indigo-700">{{ invoice.invoice_number }}</td><td class="border border-slate-300 px-3 py-3">{{ invoice.invoice_type === 'PRIMARY' ? 'اصلی' : 'تکمیلی' }}</td><td class="border border-slate-300 px-3 py-3">{{ formatDateTime(invoice.issued_at) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatNumber(invoice.lines?.length) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.subtotal_toman) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.extra_charges_toman) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.discount_amount_toman) }}</td><td class="border border-slate-300 px-3 py-3 font-black">{{ formatCurrency(invoice.final_amount_toman) }}</td><td class="border border-slate-300 px-3 py-3">{{ invoice.issued_by_name || '—' }}</td></tr></tbody></table></div>
+      </section>
+
+      <section v-else class="rounded-lg border border-violet-300 bg-violet-50 p-5 text-sm text-violet-800">
+        پیش‌فاکتور خودکار آماده است. پس از ثبت اولین مرجوعی، فاکتور از ردیف‌های برگشتی ساخته می‌شود.
       </section>
     </div>
 
     <DeliveryReturnModal :is-open="showReturnModal" :list="list" :saving="returning"
       @close="showReturnModal = false" @save="handleReturn" />
+    <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
+      @close="showInvoiceModal = false" @issue="handleIssueInvoice" />
   </div>
 </template>
 
@@ -114,6 +104,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import DeliveryReturnModal from './DeliveryReturnModal.vue';
+import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
 
@@ -125,6 +116,10 @@ const list = ref(null);
 const loading = ref(true);
 const showReturnModal = ref(false);
 const returning = ref(false);
+const loadingInvoicePreview = ref(false);
+const issuingInvoice = ref(false);
+const showInvoiceModal = ref(false);
+const invoicePreview = ref(null);
 
 const dailyTotal = computed(() => (list.value?.items || []).reduce((sum, item) => (
   sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
@@ -133,6 +128,10 @@ const canRecordReturn = computed(() => (
   ['DELIVERED', 'REMAINING', 'NEEDS_FOLLOW_UP'].includes(list.value?.status)
   && (list.value?.items || []).some((item) => Number(item.remaining_quantity) > 0)
 ));
+const returnRows = computed(() => (list.value?.return_events || []).flatMap((event) => (
+  event.items.map((item) => ({ ...item, returned_at: event.returned_at, received_by_name: event.received_by_name }))
+)));
+const canIssueInvoice = computed(() => returnRows.value.some((item) => !item.rental_invoice_id));
 const listStatus = computed(() => ({
   DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },
   REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
@@ -166,6 +165,27 @@ async function handleReturn(payload) {
   list.value = result.data;
   showReturnModal.value = false;
   toast.success(result.data.status === 'COMPLETED' ? 'برگشت کامل ثبت و لیست تکمیل شد' : 'مرجوعی اقلام ثبت شد');
+}
+
+async function openInvoiceModal() {
+  if (loadingInvoicePreview.value) return;
+  loadingInvoicePreview.value = true;
+  const result = await listStore.getInvoicePreview(list.value.id);
+  loadingInvoicePreview.value = false;
+  if (!result.success) return toast.error(result.message);
+  invoicePreview.value = result.data;
+  showInvoiceModal.value = true;
+}
+
+async function handleIssueInvoice(payload) {
+  if (issuingInvoice.value) return;
+  issuingInvoice.value = true;
+  const result = await listStore.issueInvoice(list.value.id, payload);
+  issuingInvoice.value = false;
+  if (!result.success) return toast.error(result.message);
+  list.value = result.data.list;
+  showInvoiceModal.value = false;
+  toast.success(`فاکتور ${result.data.invoice.invoice_number} صادر شد`);
 }
 
 function itemStatusMeta(status) {

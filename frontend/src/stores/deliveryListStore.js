@@ -132,6 +132,28 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       } finally {
         this.saving = false;
       }
+    },
+
+    async getInvoicePreview(id) {
+      try {
+        return { success: true, data: (await deliveryListService.getInvoicePreview(id)).data };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'دریافت پیش‌نمایش فاکتور انجام نشد') };
+      }
+    },
+
+    async issueInvoice(id, payload) {
+      this.saving = true;
+      try {
+        const response = (await deliveryListService.issueInvoice(id, payload)).data;
+        this.currentDraft = response.list;
+        replaceDraft(this.lists, response.list);
+        return { success: true, data: response };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'صدور فاکتور انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
     }
   }
 });

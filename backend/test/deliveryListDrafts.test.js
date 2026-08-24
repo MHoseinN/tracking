@@ -7,6 +7,8 @@ const {
   calculateChargedDays
 } = require('../src/services/deliveryListDraftService');
 const { createSettingsService } = require('../src/services/settingsService');
+const { createDeliveryInvoiceService } = require('../src/services/deliveryInvoiceService');
+const { getPersianYear } = require('../src/services/workflowNumberingService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -87,6 +89,7 @@ function createDatabase() {
       description TEXT,
       notes TEXT,
       delivery_list_id INTEGER,
+      parent_invoice_id INTEGER,
       invoice_number TEXT,
       invoice_type TEXT NOT NULL DEFAULT 'LEGACY',
       status TEXT NOT NULL DEFAULT 'ISSUED',
@@ -142,6 +145,46 @@ function createDatabase() {
     CREATE UNIQUE INDEX ux_invoices_active_proforma
       ON invoices(delivery_list_id)
       WHERE delivery_list_id IS NOT NULL AND status = 'PROFORMA' AND deleted_at IS NULL;
+    CREATE UNIQUE INDEX ux_delivery_lists_number ON delivery_lists(list_number) WHERE list_number IS NOT NULL;
+    CREATE UNIQUE INDEX ux_invoices_number ON invoices(invoice_number) WHERE invoice_number IS NOT NULL;
+
+    CREATE TABLE invoice_lines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER NOT NULL,
+      delivery_list_item_id INTEGER,
+      return_event_item_id INTEGER,
+      line_type TEXT NOT NULL DEFAULT 'RENTAL',
+      description TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      billing_from_at TEXT,
+      billing_to_at TEXT,
+      charged_days INTEGER,
+      unit_price_toman INTEGER NOT NULL,
+      line_total_toman INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      deleted_at TEXT,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+      FOREIGN KEY (delivery_list_item_id) REFERENCES delivery_list_items(id),
+      FOREIGN KEY (return_event_item_id) REFERENCES return_event_items(id)
+    );
+    CREATE UNIQUE INDEX ux_invoice_lines_return_rental
+      ON invoice_lines(return_event_item_id)
+      WHERE line_type = 'RENTAL' AND return_event_item_id IS NOT NULL AND deleted_at IS NULL;
+    CREATE TABLE invoice_adjustments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER NOT NULL,
+      adjustment_type TEXT NOT NULL,
+      description TEXT NOT NULL,
+      percent_basis_points INTEGER,
+      amount_toman INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      deleted_at TEXT,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+    );
 
     CREATE TABLE audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -251,7 +294,7 @@ test('finalizes a complete draft and creates exactly one linked proforma', () =>
     const finalized = service.finalizeDraft(draft.id, saved.version, 1);
     assert.equal(finalized.status, 'DELIVERED');
     assert.equal(finalized.invoice_status, 'PROFORMA');
-    assert.equal(finalized.list_number, 'LST-000001');
+    assert.equal(finalized.list_number, '051000');
     assert.equal(finalized.delivered_by_user_id, 1);
     assert.equal(finalized.proforma.status, 'PROFORMA');
     assert.equal(finalized.proforma.invoice_type, 'PRIMARY');
@@ -384,6 +427,89 @@ test('manager can update the cutoff used by new delivery-list snapshots', () => 
     assert.equal(updated.billing_cutoff_time, '10:30');
     const draft = createDeliveryListDraftService(db).createDraft(1);
     assert.equal(draft.billing_cutoff_minutes_snapshot, 630);
+  } finally {
+    db.close();
+  }
+});
+
+test('uses unique Jalali year prefixes for list and invoice numbers', () => {
+  const db = createDatabase();
+  try {
+    assert.equal(getPersianYear('2026-08-24T18:00:00+03:30'), 1405);
+    const service = createDeliveryListDraftService(db);
+    for (let index = 0; index < 2; index += 1) {
+      const draft = service.createDraft(1);
+      const saved = service.saveDraft(draft.id, {
+        version: draft.version,
+        customer_id: 1,
+        delivered_at: '2026-08-24T18:00:00+03:30',
+        expected_return_at: '2026-08-26T11:00:00+03:30',
+        items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+      });
+      service.finalizeDraft(draft.id, saved.version, 1);
+    }
+    assert.deepEqual(
+      db.prepare('SELECT list_number FROM delivery_lists ORDER BY id').all().map((row) => row.list_number),
+      ['051000', '051001']
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test('issues a primary invoice for returned items and a supplement after the remaining return', () => {
+  const db = createDatabase();
+  try {
+    const listService = createDeliveryListDraftService(db);
+    const invoiceService = createDeliveryInvoiceService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-27T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 3 }]
+    });
+    const delivered = listService.finalizeDraft(draft.id, saved.version, 1);
+    const itemId = delivered.items[0].id;
+
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
+    }, 1);
+    const firstPreview = invoiceService.getPreview(draft.id);
+    assert.equal(firstPreview.lines.length, 1);
+    assert.equal(firstPreview.lines[0].line_total_toman, 1500000);
+    const primary = invoiceService.issueInvoice(draft.id, {
+      issued_at: '2026-08-25T12:00:00+03:30',
+      lines: firstPreview.lines,
+      discount_percent_basis_points: 1000,
+      extras: [{ type: 'TRANSPORT', description: 'حمل', amount_toman: 100000 }]
+    }, 1);
+    assert.equal(primary.invoice_number, '4051000');
+    assert.equal(primary.invoice_type, 'PRIMARY');
+    assert.equal(primary.final_amount_toman, 1440000);
+    assert.equal(listService.getList(draft.id).invoice_status, 'PARTIALLY_ISSUED');
+    assert.equal(invoiceService.getPreview(draft.id).lines.length, 0);
+
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 2 }]
+    }, 1);
+    const secondPreview = invoiceService.getPreview(draft.id);
+    assert.equal(secondPreview.lines[0].quantity, 2);
+    assert.equal(secondPreview.lines[0].charged_days, 2);
+    const supplement = invoiceService.issueInvoice(draft.id, {
+      issued_at: '2026-08-27T14:00:00+03:30',
+      lines: secondPreview.lines
+    }, 1);
+    assert.equal(supplement.invoice_number, '4051001');
+    assert.equal(supplement.invoice_type, 'SUPPLEMENT');
+    assert.equal(supplement.parent_invoice_id, primary.id);
+    const finalList = listService.getList(draft.id);
+    assert.equal(finalList.invoice_status, 'ISSUED');
+    assert.equal(finalList.invoices.length, 2);
+    assert.equal(finalList.invoices[1].lines[0].billing_to_at, '2026-08-26T11:00:00+03:30');
   } finally {
     db.close();
   }

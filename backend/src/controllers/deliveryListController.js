@@ -4,8 +4,10 @@ const {
   DeliveryListDraftError,
   createDeliveryListDraftService
 } = require('../services/deliveryListDraftService');
+const { createDeliveryInvoiceService } = require('../services/deliveryInvoiceService');
 
 const draftService = createDeliveryListDraftService(db);
+const invoiceService = createDeliveryInvoiceService(db);
 
 function hasValidationErrors(req, res) {
   const errors = validationResult(req);
@@ -50,6 +52,20 @@ function recordReturn(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+function getInvoicePreview(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.json(invoiceService.getPreview(req.params.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
+function issueInvoice(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const invoice = invoiceService.issueInvoice(req.params.id, req.body, req.user.id);
+    return res.status(201).json({ invoice, list: draftService.getList(req.params.id) });
+  } catch (error) { return handleError(error, res); }
+}
+
 function createDraft(req, res) {
   try { return res.status(201).json(draftService.createDraft(req.user.id)); }
   catch (error) { return handleError(error, res); }
@@ -75,5 +91,7 @@ module.exports = {
   saveDraft,
   deleteDraft,
   finalizeDraft,
-  recordReturn
+  recordReturn,
+  getInvoicePreview,
+  issueInvoice
 };
