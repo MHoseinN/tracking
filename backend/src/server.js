@@ -12,6 +12,7 @@ const backupRoutes = require('./routes/backupRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productCatalogRoutes = require('./routes/productCatalogRoutes');
 const deliveryListRoutes = require('./routes/deliveryListRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,7 @@ app.use('/api/backups', apiLimiter, backupRoutes);
 app.use('/api/admins', apiLimiter, adminRoutes);
 app.use('/api/products', apiLimiter, productCatalogRoutes);
 app.use('/api/delivery-lists', apiLimiter, deliveryListRoutes);
+app.use('/api/settings', apiLimiter, settingsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -3,8 +3,10 @@ const assert = require('node:assert/strict');
 const Database = require('better-sqlite3');
 const {
   DeliveryListDraftError,
-  createDeliveryListDraftService
+  createDeliveryListDraftService,
+  calculateChargedDays
 } = require('../src/services/deliveryListDraftService');
+const { createSettingsService } = require('../src/services/settingsService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -23,8 +25,13 @@ function createDatabase() {
     );
     CREATE TABLE app_settings (
       id INTEGER PRIMARY KEY,
+      collection_name TEXT NOT NULL DEFAULT 'مجموعه من',
+      timezone TEXT NOT NULL DEFAULT 'Asia/Tehran',
       billing_cutoff_minutes INTEGER NOT NULL,
-      list_number_prefix TEXT NOT NULL DEFAULT 'LST'
+      list_number_prefix TEXT NOT NULL DEFAULT 'LST',
+      invoice_number_prefix TEXT NOT NULL DEFAULT 'INV',
+      updated_by_user_id INTEGER,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE products (
       id INTEGER PRIMARY KEY,
@@ -99,6 +106,38 @@ function createDatabase() {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (customer_id) REFERENCES customers(id),
       FOREIGN KEY (delivery_list_id) REFERENCES delivery_lists(id)
+    );
+
+    CREATE TABLE return_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      delivery_list_id INTEGER NOT NULL,
+      returned_at TEXT NOT NULL,
+      received_by_user_id INTEGER NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      deleted_at TEXT,
+      FOREIGN KEY (delivery_list_id) REFERENCES delivery_lists(id),
+      FOREIGN KEY (received_by_user_id) REFERENCES users(id)
+    );
+    CREATE TABLE return_event_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      return_event_id INTEGER NOT NULL,
+      delivery_list_item_id INTEGER NOT NULL,
+      healthy_quantity INTEGER NOT NULL DEFAULT 0,
+      damaged_quantity INTEGER NOT NULL DEFAULT 0,
+      lost_quantity INTEGER NOT NULL DEFAULT 0,
+      system_calculated_days INTEGER NOT NULL,
+      final_charged_days INTEGER NOT NULL,
+      day_override_reason TEXT,
+      damage_notes TEXT,
+      issue_resolved_at TEXT,
+      issue_resolved_by_user_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      deleted_at TEXT,
+      FOREIGN KEY (return_event_id) REFERENCES return_events(id),
+      FOREIGN KEY (delivery_list_item_id) REFERENCES delivery_list_items(id)
     );
     CREATE UNIQUE INDEX ux_invoices_active_proforma
       ON invoices(delivery_list_id)
@@ -238,6 +277,113 @@ test('does not finalize incomplete drafts or create orphan proformas', () => {
     assert.throws(() => service.finalizeDraft(draft.id, draft.version, 1), /مشتری/);
     assert.equal(service.getDraft(draft.id).status, 'DRAFT');
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test('calculates cutoff boundaries and night-before exactly', () => {
+  const normal = {
+    deliveredAt: '2026-11-21T20:00:00+03:30',
+    cutoffMinutes: 660,
+    nightBefore: false
+  };
+  assert.equal(calculateChargedDays({ ...normal, returnedAt: '2026-11-22T11:00:00+03:30' }), 1);
+  assert.equal(calculateChargedDays({ ...normal, returnedAt: '2026-11-22T11:01:00+03:30' }), 2);
+  assert.equal(calculateChargedDays({ ...normal, returnedAt: '2026-11-23T11:00:00+03:30' }), 2);
+  assert.equal(calculateChargedDays({ ...normal, nightBefore: true, returnedAt: '2026-11-23T11:00:00+03:30' }), 1);
+  assert.equal(calculateChargedDays({ ...normal, nightBefore: true, returnedAt: '2026-11-23T11:01:00+03:30' }), 2);
+});
+
+test('records partial and complete healthy returns with independent charged days', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-27T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 3 }]
+    });
+    const finalized = service.finalizeDraft(draft.id, saved.version, 1);
+    const itemId = finalized.items[0].id;
+
+    const partial = service.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
+    }, 1);
+    assert.equal(partial.status, 'REMAINING');
+    assert.equal(partial.items[0].remaining_quantity, 2);
+    assert.equal(partial.return_events[0].items[0].system_calculated_days, 1);
+
+    const completed = service.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 2 }]
+    }, 1);
+    assert.equal(completed.status, 'COMPLETED');
+    assert.equal(completed.items[0].remaining_quantity, 0);
+    assert.equal(completed.items[0].item_status, 'RETURNED');
+    assert.equal(completed.return_events.length, 2);
+    assert.equal(completed.return_events[0].items[0].final_charged_days, 2);
+  } finally {
+    db.close();
+  }
+});
+
+test('marks damage for follow-up and requires reasons for issues and day overrides', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
+    });
+    const finalized = service.finalizeDraft(draft.id, saved.version, 1);
+    const itemId = finalized.items[0].id;
+
+    assert.throws(() => service.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, damaged_quantity: 1 }]
+    }, 1), /توضیحات/);
+    assert.throws(() => service.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1, final_charged_days: 5 }]
+    }, 1), /دلیل/);
+
+    const result = service.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{
+        delivery_list_item_id: itemId,
+        damaged_quantity: 1,
+        final_charged_days: 3,
+        day_override_reason: 'توافق با مشتری',
+        damage_notes: 'خط روی بدنه'
+      }]
+    }, 1);
+    assert.equal(result.status, 'NEEDS_FOLLOW_UP');
+    assert.equal(result.items[0].item_status, 'DAMAGE');
+    assert.equal(result.items[0].remaining_quantity, 1);
+    assert.equal(result.return_events[0].items[0].final_charged_days, 3);
+  } finally {
+    db.close();
+  }
+});
+
+test('manager can update the cutoff used by new delivery-list snapshots', () => {
+  const db = createDatabase();
+  try {
+    const settingsService = createSettingsService(db);
+    const updated = settingsService.updateBillingCutoff('10:30', 1);
+    assert.equal(updated.billing_cutoff_minutes, 630);
+    assert.equal(updated.billing_cutoff_time, '10:30');
+    const draft = createDeliveryListDraftService(db).createDraft(1);
+    assert.equal(draft.billing_cutoff_minutes_snapshot, 630);
   } finally {
     db.close();
   }

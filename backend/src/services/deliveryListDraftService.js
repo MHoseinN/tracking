@@ -24,6 +24,40 @@ function serializeDraft(row) {
   return row ? { ...row, night_before: Boolean(row.night_before) } : row;
 }
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+function addCalendarDays(dateText, days) {
+  const match = String(dateText || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) throw new DeliveryListDraftError('تاریخ نامعتبر است');
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+function calculateChargedDays({ deliveredAt, returnedAt, cutoffMinutes = 660, nightBefore = false }) {
+  const deliveredTime = Date.parse(deliveredAt);
+  const returnedTime = Date.parse(returnedAt);
+  if (!Number.isFinite(deliveredTime) || !Number.isFinite(returnedTime)) {
+    throw new DeliveryListDraftError('زمان تحویل یا برگشت نامعتبر است');
+  }
+  if (returnedTime < deliveredTime) {
+    throw new DeliveryListDraftError('زمان برگشت نمی‌تواند قبل از زمان تحویل باشد');
+  }
+  const cutoff = Number(cutoffMinutes);
+  if (!Number.isInteger(cutoff) || cutoff < 0 || cutoff > 1439) {
+    throw new DeliveryListDraftError('ساعت مرزی محاسبه نامعتبر است');
+  }
+
+  const deliveryDate = String(deliveredAt).slice(0, 10);
+  const billingStartDate = addCalendarDays(deliveryDate, nightBefore ? 1 : 0);
+  const firstBoundaryDate = addCalendarDays(billingStartDate, 1);
+  const hours = String(Math.floor(cutoff / 60)).padStart(2, '0');
+  const minutes = String(cutoff % 60).padStart(2, '0');
+  const firstBoundary = Date.parse(`${firstBoundaryDate}T${hours}:${minutes}:00+03:30`);
+
+  if (returnedTime <= firstBoundary) return 1;
+  return 1 + Math.ceil((returnedTime - firstBoundary) / DAY_IN_MS);
+}
+
 function createDeliveryListDraftService(db) {
   const draftColumns = `
     SELECT delivery_lists.*,
@@ -56,12 +90,88 @@ function createDeliveryListDraftService(db) {
   function getList(id) {
     const list = serializeDraft(getListRow(id));
     const items = db.prepare(`
-      SELECT id, delivery_list_id, product_id, product_name_snapshot,
-             daily_price_toman, delivered_quantity, notes, created_at, updated_at
+      SELECT delivery_list_items.id, delivery_list_items.delivery_list_id,
+             delivery_list_items.product_id, delivery_list_items.product_name_snapshot,
+             delivery_list_items.daily_price_toman, delivery_list_items.delivered_quantity,
+             delivery_list_items.notes, delivery_list_items.created_at, delivery_list_items.updated_at,
+             COALESCE(SUM(return_event_items.healthy_quantity), 0) AS healthy_returned_quantity,
+             COALESCE(SUM(return_event_items.damaged_quantity), 0) AS damaged_quantity,
+             COALESCE(SUM(return_event_items.lost_quantity), 0) AS lost_quantity,
+             delivery_list_items.delivered_quantity - COALESCE(SUM(
+               return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+             ), 0) AS remaining_quantity,
+             COALESCE(SUM(CASE
+               WHEN return_event_items.issue_resolved_at IS NULL
+                AND (return_event_items.damaged_quantity + return_event_items.lost_quantity) > 0
+               THEN return_event_items.damaged_quantity + return_event_items.lost_quantity
+               ELSE 0 END), 0) AS unresolved_issue_quantity
       FROM delivery_list_items
-      WHERE delivery_list_id = ? AND deleted_at IS NULL
-      ORDER BY id
+      LEFT JOIN return_event_items
+        ON return_event_items.delivery_list_item_id = delivery_list_items.id
+       AND return_event_items.deleted_at IS NULL
+      WHERE delivery_list_items.delivery_list_id = ? AND delivery_list_items.deleted_at IS NULL
+      GROUP BY delivery_list_items.id
+      ORDER BY delivery_list_items.id
+    `).all(id).map((item) => ({
+      ...item,
+      item_status: item.unresolved_issue_quantity > 0
+        ? 'DAMAGE'
+        : item.remaining_quantity === item.delivered_quantity
+          ? 'DELIVERED'
+          : item.remaining_quantity > 0
+            ? 'REMAINING'
+            : 'RETURNED'
+    }));
+    const returnRows = db.prepare(`
+      SELECT return_events.id AS return_event_id, return_events.returned_at,
+             return_events.notes AS event_notes, return_events.created_at,
+             COALESCE(users.display_name, users.username) AS received_by_name,
+             return_event_items.id AS return_item_id,
+             return_event_items.delivery_list_item_id,
+             delivery_list_items.product_name_snapshot,
+             return_event_items.healthy_quantity,
+             return_event_items.damaged_quantity,
+             return_event_items.lost_quantity,
+             return_event_items.system_calculated_days,
+             return_event_items.final_charged_days,
+             return_event_items.day_override_reason,
+             return_event_items.damage_notes,
+             return_event_items.issue_resolved_at
+      FROM return_events
+      JOIN users ON users.id = return_events.received_by_user_id
+      JOIN return_event_items
+        ON return_event_items.return_event_id = return_events.id
+       AND return_event_items.deleted_at IS NULL
+      JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+      WHERE return_events.delivery_list_id = ? AND return_events.deleted_at IS NULL
+      ORDER BY return_events.returned_at DESC, return_events.id DESC, return_event_items.id
     `).all(id);
+    const returnEventsById = new Map();
+    returnRows.forEach((row) => {
+      if (!returnEventsById.has(row.return_event_id)) {
+        returnEventsById.set(row.return_event_id, {
+          id: row.return_event_id,
+          returned_at: row.returned_at,
+          notes: row.event_notes,
+          created_at: row.created_at,
+          received_by_name: row.received_by_name,
+          items: []
+        });
+      }
+      returnEventsById.get(row.return_event_id).items.push({
+        id: row.return_item_id,
+        delivery_list_item_id: row.delivery_list_item_id,
+        product_name_snapshot: row.product_name_snapshot,
+        healthy_quantity: row.healthy_quantity,
+        damaged_quantity: row.damaged_quantity,
+        lost_quantity: row.lost_quantity,
+        system_calculated_days: row.system_calculated_days,
+        final_charged_days: row.final_charged_days,
+        day_override_reason: row.day_override_reason,
+        damage_notes: row.damage_notes,
+        issue_resolved_at: row.issue_resolved_at
+      });
+    });
     const proforma = db.prepare(`
       SELECT id, invoice_number, invoice_type, status, settlement_status,
              send_status, subtotal_toman, final_amount_toman, created_at, updated_at
@@ -69,7 +179,7 @@ function createDeliveryListDraftService(db) {
       WHERE delivery_list_id = ? AND status = 'PROFORMA' AND deleted_at IS NULL
       ORDER BY id DESC LIMIT 1
     `).get(id) || null;
-    return { ...list, items, proforma };
+    return { ...list, items, proforma, return_events: [...returnEventsById.values()] };
   }
 
   function getDraft(id) {
@@ -365,6 +475,153 @@ function createDeliveryListDraftService(db) {
     return getList(id);
   }
 
+  function recordReturn(id, payload = {}, actorUserId) {
+    const list = getListRow(id);
+    if (!['DELIVERED', 'REMAINING', 'NEEDS_FOLLOW_UP'].includes(list.status)) {
+      throw new DeliveryListDraftError('برای این لیست امکان ثبت مرجوعی وجود ندارد', 409);
+    }
+    const returnedAt = nullableText(payload.returned_at);
+    if (!returnedAt) throw new DeliveryListDraftError('تاریخ و ساعت برگشت الزامی است');
+    const systemDays = calculateChargedDays({
+      deliveredAt: list.delivered_at,
+      returnedAt,
+      cutoffMinutes: list.billing_cutoff_minutes_snapshot,
+      nightBefore: Boolean(list.night_before)
+    });
+    if (!Array.isArray(payload.items) || !payload.items.length) {
+      throw new DeliveryListDraftError('حداقل یک قلم برگشتی را مشخص کنید');
+    }
+
+    const seenItemIds = new Set();
+    const normalizedItems = payload.items.map((item) => {
+      const itemId = nullableId(item.delivery_list_item_id);
+      if (!itemId || seenItemIds.has(itemId)) {
+        throw new DeliveryListDraftError('اقلام برگشتی تکراری یا نامعتبر هستند');
+      }
+      seenItemIds.add(itemId);
+      const listItem = db.prepare(`
+        SELECT delivery_list_items.id, delivery_list_items.delivered_quantity,
+               delivery_list_items.product_name_snapshot,
+               delivery_list_items.delivered_quantity - COALESCE(SUM(
+                 return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+               ), 0) AS remaining_quantity
+        FROM delivery_list_items
+        LEFT JOIN return_event_items
+          ON return_event_items.delivery_list_item_id = delivery_list_items.id
+         AND return_event_items.deleted_at IS NULL
+        WHERE delivery_list_items.id = ? AND delivery_list_items.delivery_list_id = ?
+          AND delivery_list_items.deleted_at IS NULL
+        GROUP BY delivery_list_items.id
+      `).get(itemId, id);
+      if (!listItem) throw new DeliveryListDraftError('یکی از اقلام متعلق به این لیست نیست', 404);
+
+      const healthy = Number(item.healthy_quantity) || 0;
+      const damaged = Number(item.damaged_quantity) || 0;
+      const lost = Number(item.lost_quantity) || 0;
+      if (![healthy, damaged, lost].every((value) => Number.isInteger(value) && value >= 0)) {
+        throw new DeliveryListDraftError('تعداد مرجوعی نامعتبر است');
+      }
+      const total = healthy + damaged + lost;
+      if (total < 1) throw new DeliveryListDraftError('تعداد برگشتی هر ردیف باید بیشتر از صفر باشد');
+      if (total > Number(listItem.remaining_quantity)) {
+        throw new DeliveryListDraftError(`تعداد برگشتی «${listItem.product_name_snapshot}» از مانده بیشتر است`);
+      }
+      const damageNotes = nullableText(item.damage_notes);
+      if ((damaged > 0 || lost > 0) && !damageNotes) {
+        throw new DeliveryListDraftError('برای خسارت یا مفقودی توضیحات الزامی است');
+      }
+      const finalDays = item.final_charged_days === null || item.final_charged_days === undefined
+        ? systemDays
+        : Number(item.final_charged_days);
+      if (!Number.isInteger(finalDays) || finalDays < 1) {
+        throw new DeliveryListDraftError('تعداد روز نهایی باید حداقل یک باشد');
+      }
+      const overrideReason = nullableText(item.day_override_reason);
+      if (finalDays !== systemDays && !overrideReason) {
+        throw new DeliveryListDraftError('برای تغییر دستی تعداد روز، دلیل را وارد کنید');
+      }
+      return { itemId, healthy, damaged, lost, finalDays, overrideReason, damageNotes };
+    });
+
+    const saveReturn = db.transaction(() => {
+      const eventResult = db.prepare(`
+        INSERT INTO return_events (
+          delivery_list_id, returned_at, received_by_user_id, notes,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(id, returnedAt, actorUserId, nullableText(payload.notes));
+      const insertItem = db.prepare(`
+        INSERT INTO return_event_items (
+          return_event_id, delivery_list_item_id,
+          healthy_quantity, damaged_quantity, lost_quantity,
+          system_calculated_days, final_charged_days,
+          day_override_reason, damage_notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+      normalizedItems.forEach((item) => {
+        insertItem.run(
+          eventResult.lastInsertRowid,
+          item.itemId,
+          item.healthy,
+          item.damaged,
+          item.lost,
+          systemDays,
+          item.finalDays,
+          item.overrideReason,
+          item.damageNotes
+        );
+      });
+
+      const state = db.prepare(`
+        SELECT
+          (SELECT COALESCE(SUM(delivered_quantity), 0)
+             FROM delivery_list_items
+            WHERE delivery_list_id = ? AND deleted_at IS NULL) AS total_delivered,
+          (SELECT COALESCE(SUM(
+             return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+           ), 0)
+             FROM return_event_items
+             JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+            WHERE delivery_list_items.delivery_list_id = ?
+              AND delivery_list_items.deleted_at IS NULL
+              AND return_event_items.deleted_at IS NULL) AS total_returned,
+          (SELECT COALESCE(SUM(
+             return_event_items.damaged_quantity + return_event_items.lost_quantity
+           ), 0)
+             FROM return_event_items
+             JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+            WHERE delivery_list_items.delivery_list_id = ?
+              AND delivery_list_items.deleted_at IS NULL
+              AND return_event_items.deleted_at IS NULL
+              AND return_event_items.issue_resolved_at IS NULL) AS unresolved_issues
+      `).get(id, id, id);
+      const nextStatus = Number(state.unresolved_issues) > 0
+        ? 'NEEDS_FOLLOW_UP'
+        : Number(state.total_returned) < Number(state.total_delivered)
+          ? 'REMAINING'
+          : 'COMPLETED';
+      db.prepare(`
+        UPDATE delivery_lists
+        SET status = ?, completed_at = CASE WHEN ? = 'COMPLETED' THEN ? ELSE NULL END,
+            updated_at = CURRENT_TIMESTAMP, version = version + 1
+        WHERE id = ?
+      `).run(nextStatus, nextStatus, nextStatus === 'COMPLETED' ? returnedAt : null, id);
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action, after_json, metadata_json
+        ) VALUES (?, 'DELIVERY_LIST', ?, 'RECORD_RETURN', ?, ?)
+      `).run(
+        actorUserId,
+        String(id),
+        JSON.stringify({ status: nextStatus, returned_at: returnedAt }),
+        JSON.stringify({ return_event_id: Number(eventResult.lastInsertRowid), system_calculated_days: systemDays })
+      );
+    });
+
+    saveReturn();
+    return getList(id);
+  }
+
   return {
     listDrafts,
     listDeliveryLists,
@@ -373,11 +630,13 @@ function createDeliveryListDraftService(db) {
     createDraft,
     saveDraft,
     deleteDraft,
-    finalizeDraft
+    finalizeDraft,
+    recordReturn
   };
 }
 
 module.exports = {
   DeliveryListDraftError,
-  createDeliveryListDraftService
+  createDeliveryListDraftService,
+  calculateChargedDays
 };

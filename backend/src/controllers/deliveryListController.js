@@ -44,6 +44,12 @@ function finalizeDraft(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+function recordReturn(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.status(201).json(draftService.recordReturn(req.params.id, req.body, req.user.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
 function createDraft(req, res) {
   try { return res.status(201).json(draftService.createDraft(req.user.id)); }
   catch (error) { return handleError(error, res); }
@@ -68,5 +74,6 @@ module.exports = {
   createDraft,
   saveDraft,
   deleteDraft,
-  finalizeDraft
+  finalizeDraft,
+  recordReturn
 };

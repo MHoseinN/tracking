@@ -118,6 +118,20 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       } finally {
         this.saving = false;
       }
+    },
+
+    async recordReturn(id, payload) {
+      this.saving = true;
+      try {
+        const list = (await deliveryListService.recordReturn(id, payload)).data;
+        this.currentDraft = list;
+        replaceDraft(this.lists, list);
+        return { success: true, data: list };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ثبت مرجوعی انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
     }
   }
 });

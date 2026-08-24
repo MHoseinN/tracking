@@ -113,6 +113,17 @@ const routes = [
     }
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('./components/settings/SettingsRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['MANAGER'],
+      title: 'تنظیمات سیستم',
+      subtitle: 'ساعت مرزی محاسبه روز و تنظیمات عمومی مجموعه را مدیریت کنید'
+    }
+  },
+  {
     path: '/inventory/:pathMatch(.*)*',
     redirect: '/products',
     meta: { requiresAuth: true }
