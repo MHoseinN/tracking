@@ -5,9 +5,11 @@ const {
   createDeliveryListDraftService
 } = require('../services/deliveryListDraftService');
 const { createDeliveryInvoiceService } = require('../services/deliveryInvoiceService');
+const { createDeliverySettlementService } = require('../services/deliverySettlementService');
 
 const draftService = createDeliveryListDraftService(db);
 const invoiceService = createDeliveryInvoiceService(db);
+const settlementService = createDeliverySettlementService(db);
 
 function hasValidationErrors(req, res) {
   const errors = validationResult(req);
@@ -66,6 +68,24 @@ function issueInvoice(req, res) {
   } catch (error) { return handleError(error, res); }
 }
 
+function getSettlement(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.json(settlementService.getSummary(req.params.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
+function recordPayment(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.status(201).json(settlementService.recordPayment(req.params.id, req.body, req.user.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
+function voidPayment(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.json(settlementService.voidPayment(req.params.id, req.params.paymentId, req.user.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
 function createDraft(req, res) {
   try { return res.status(201).json(draftService.createDraft(req.user.id)); }
   catch (error) { return handleError(error, res); }
@@ -93,5 +113,8 @@ module.exports = {
   finalizeDraft,
   recordReturn,
   getInvoicePreview,
-  issueInvoice
+  issueInvoice,
+  getSettlement,
+  recordPayment,
+  voidPayment
 };

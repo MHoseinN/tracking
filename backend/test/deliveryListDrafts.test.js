@@ -8,6 +8,7 @@ const {
 } = require('../src/services/deliveryListDraftService');
 const { createSettingsService } = require('../src/services/settingsService');
 const { createDeliveryInvoiceService } = require('../src/services/deliveryInvoiceService');
+const { createDeliverySettlementService } = require('../src/services/deliverySettlementService');
 const { getPersianYear } = require('../src/services/workflowNumberingService');
 
 function createDatabase() {
@@ -184,6 +185,24 @@ function createDatabase() {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       deleted_at TEXT,
       FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+    );
+    CREATE TABLE payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      delivery_list_id INTEGER NOT NULL,
+      invoice_id INTEGER,
+      amount_toman INTEGER NOT NULL,
+      payment_method TEXT NOT NULL DEFAULT 'OTHER',
+      reference_number TEXT,
+      paid_at TEXT NOT NULL,
+      received_by_user_id INTEGER NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      voided_at TEXT,
+      voided_by_user_id INTEGER,
+      FOREIGN KEY (delivery_list_id) REFERENCES delivery_lists(id),
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+      FOREIGN KEY (received_by_user_id) REFERENCES users(id),
+      FOREIGN KEY (voided_by_user_id) REFERENCES users(id)
     );
 
     CREATE TABLE audit_logs (
@@ -510,6 +529,64 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(finalList.invoice_status, 'ISSUED');
     assert.equal(finalList.invoices.length, 2);
     assert.equal(finalList.invoices[1].lines[0].billing_to_at, '2026-08-26T11:00:00+03:30');
+  } finally {
+    db.close();
+  }
+});
+
+test('records deposits, completes settlement after final invoice and recalculates after voiding', () => {
+  const db = createDatabase();
+  try {
+    const listService = createDeliveryListDraftService(db);
+    const invoiceService = createDeliveryInvoiceService(db);
+    const settlementService = createDeliverySettlementService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-25T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+    });
+    const delivered = listService.finalizeDraft(draft.id, saved.version, 1);
+
+    let summary = settlementService.recordPayment(draft.id, {
+      amount_toman: 500000,
+      payment_method: 'CARD_TRANSFER',
+      reference_number: 'DEP-1',
+      paid_at: '2026-08-24T18:30:00+03:30'
+    }, 1);
+    assert.equal(summary.list.settlement_status, 'PARTIAL');
+    assert.equal(summary.total_invoiced_toman, 0);
+    assert.equal(summary.credit_toman, 500000);
+
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }]
+    }, 1);
+    const invoice = invoiceService.issueInvoice(draft.id, {
+      issued_at: '2026-08-25T12:00:00+03:30',
+      lines: invoiceService.getPreview(draft.id).lines
+    }, 1);
+    summary = settlementService.getSummary(draft.id);
+    assert.equal(summary.list.settlement_status, 'PARTIAL');
+    assert.equal(summary.balance_toman, 1000000);
+
+    summary = settlementService.recordPayment(draft.id, {
+      invoice_id: invoice.id,
+      amount_toman: 1000000,
+      payment_method: 'POS',
+      paid_at: '2026-08-25T12:30:00+03:30'
+    }, 1);
+    assert.equal(summary.list.settlement_status, 'PAID');
+    assert.equal(summary.balance_toman, 0);
+    assert.equal(summary.payments.length, 2);
+
+    summary = settlementService.voidPayment(draft.id, summary.payments[0].id, 1);
+    assert.equal(summary.list.settlement_status, 'PARTIAL');
+    assert.equal(summary.total_paid_toman, 500000);
+    assert.equal(summary.payments[0].voided_by_name, 'مدیر');
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action IN ('RECORD_PAYMENT', 'VOID_PAYMENT')").get().count, 3);
   } finally {
     db.close();
   }

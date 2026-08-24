@@ -11,7 +11,10 @@ const {
   finalizeDraft,
   recordReturn,
   getInvoicePreview,
-  issueInvoice
+  issueInvoice,
+  getSettlement,
+  recordPayment,
+  voidPayment
 } = require('../controllers/deliveryListController');
 
 const router = express.Router();
@@ -73,5 +76,19 @@ router.post('/:id/invoices', [
   body('discount_amount_toman').optional().isInt({ min: 0 }),
   body('rounding_adjustment_toman').optional().isInt({ max: 0 })
 ], issueInvoice);
+router.get('/:id/settlement', [idValidation], getSettlement);
+router.post('/:id/payments', [
+  idValidation,
+  body('invoice_id').optional({ nullable: true }).isInt({ min: 1 }),
+  body('amount_toman').isInt({ min: 1 }),
+  body('payment_method').isIn(['CASH', 'POS', 'CARD_TRANSFER', 'OTHER']),
+  body('reference_number').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('paid_at').isISO8601(),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 2000 })
+], recordPayment);
+router.post('/:id/payments/:paymentId/void', [
+  idValidation,
+  param('paymentId').isInt({ min: 1 })
+], voidPayment);
 
 module.exports = router;

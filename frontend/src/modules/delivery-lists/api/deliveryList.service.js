@@ -10,5 +10,8 @@ export const deliveryListService = {
   finalizeDraft(id, version) { return api.post(`/delivery-lists/${id}/finalize`, { version }); },
   recordReturn(id, payload) { return api.post(`/delivery-lists/${id}/returns`, payload); },
   getInvoicePreview(id) { return api.get(`/delivery-lists/${id}/invoice-preview`); },
-  issueInvoice(id, payload) { return api.post(`/delivery-lists/${id}/invoices`, payload); }
+  issueInvoice(id, payload) { return api.post(`/delivery-lists/${id}/invoices`, payload); },
+  getSettlement(id) { return api.get(`/delivery-lists/${id}/settlement`); },
+  recordPayment(id, payload) { return api.post(`/delivery-lists/${id}/payments`, payload); },
+  voidPayment(id, paymentId) { return api.post(`/delivery-lists/${id}/payments/${paymentId}/void`); }
 };

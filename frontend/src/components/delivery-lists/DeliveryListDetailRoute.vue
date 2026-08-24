@@ -5,6 +5,8 @@
         @click="showReturnModal = true">ثبت مرجوعی</button>
       <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full bg-violet-600 hover:bg-violet-700"
         :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
+      <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
+        :disabled="loadingSettlement" @click="openSettlement">{{ loadingSettlement ? 'در حال دریافت...' : 'مدیریت پرداخت و تسویه' }}</button>
       <button type="button" class="app-button-primary w-full" @click="createNewDraft">ایجاد لیست جدید</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به لیست‌ها</button>
     </Teleport>
@@ -18,6 +20,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <span class="app-badge" :class="listStatus.className">{{ listStatus.label }}</span>
               <span class="app-badge" :class="invoiceStatus.className">{{ invoiceStatus.label }}</span>
+              <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
             </div>
             <h2 class="mt-3 text-2xl font-black text-slate-900">{{ list.list_number || `لیست #${list.id}` }}</h2>
             <p class="mt-1 text-sm text-slate-500">{{ list.customer_name || 'مشتری نامشخص' }}</p>
@@ -95,6 +98,8 @@
       @close="showReturnModal = false" @save="handleReturn" />
     <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
       @close="showInvoiceModal = false" @issue="handleIssueInvoice" />
+    <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
+      @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
   </div>
 </template>
 
@@ -105,6 +110,7 @@ import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import DeliveryReturnModal from './DeliveryReturnModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
+import DeliverySettlementModal from './DeliverySettlementModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
 
@@ -120,6 +126,10 @@ const loadingInvoicePreview = ref(false);
 const issuingInvoice = ref(false);
 const showInvoiceModal = ref(false);
 const invoicePreview = ref(null);
+const loadingSettlement = ref(false);
+const settlementSaving = ref(false);
+const showSettlementModal = ref(false);
+const settlementSummary = ref(null);
 
 const dailyTotal = computed(() => (list.value?.items || []).reduce((sum, item) => (
   sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
@@ -143,6 +153,11 @@ const invoiceStatus = computed(() => ({
   PARTIALLY_ISSUED: { label: 'صدور جزئی', className: 'bg-amber-100 text-amber-700' },
   ISSUED: { label: 'فاکتور صادرشده', className: 'bg-emerald-100 text-emerald-700' }
 }[list.value?.invoice_status] || { label: 'بدون فاکتور', className: 'bg-slate-100 text-slate-600' }));
+const settlementStatus = computed(() => ({
+  UNPAID: { label: 'تسویه‌نشده', className: 'bg-rose-100 text-rose-700' },
+  PARTIAL: { label: 'تسویه جزئی / بیعانه', className: 'bg-amber-100 text-amber-700' },
+  PAID: { label: 'تسویه کامل', className: 'bg-emerald-100 text-emerald-700' }
+}[list.value?.settlement_status] || { label: 'نامشخص', className: 'bg-slate-100 text-slate-600' }));
 
 onMounted(async () => {
   try { list.value = await listStore.fetchDraft(route.params.id); }
@@ -186,6 +201,38 @@ async function handleIssueInvoice(payload) {
   list.value = result.data.list;
   showInvoiceModal.value = false;
   toast.success(`فاکتور ${result.data.invoice.invoice_number} صادر شد`);
+}
+
+async function openSettlement() {
+  if (loadingSettlement.value) return;
+  loadingSettlement.value = true;
+  const result = await listStore.getSettlement(list.value.id);
+  loadingSettlement.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  showSettlementModal.value = true;
+}
+
+async function handleRecordPayment(payload) {
+  if (settlementSaving.value) return;
+  settlementSaving.value = true;
+  const result = await listStore.recordPayment(list.value.id, payload);
+  settlementSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  list.value.settlement_status = result.data.list.settlement_status;
+  toast.success('پرداخت ثبت شد');
+}
+
+async function handleVoidPayment(paymentId) {
+  if (settlementSaving.value) return;
+  settlementSaving.value = true;
+  const result = await listStore.voidPayment(list.value.id, paymentId);
+  settlementSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  list.value.settlement_status = result.data.list.settlement_status;
+  toast.success('پرداخت باطل شد و وضعیت تسویه دوباره محاسبه شد');
 }
 
 function itemStatusMeta(status) {

@@ -45,7 +45,7 @@
               <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ draft.last_returned_at ? formatDateTime(draft.last_returned_at) : '' }}</td>
               <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="listStatusMeta(draft.status).className">{{ listStatusMeta(draft.status).label }}</span></td>
               <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="invoiceStatusMeta(draft.invoice_status).className">{{ invoiceStatusMeta(draft.invoice_status).label }}</span></td>
-              <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="settlementStatusMeta(draft.settlement_status).className">{{ settlementStatusMeta(draft.settlement_status).label }}</span></td>
+              <td class="border border-slate-300 px-4 py-4"><button v-if="draft.status !== 'DRAFT'" type="button" class="app-badge cursor-pointer" :class="settlementStatusMeta(draft.settlement_status).className" @click="openSettlement(draft)">{{ settlementStatusMeta(draft.settlement_status).label }}</button><span v-else class="app-badge" :class="settlementStatusMeta(draft.settlement_status).className">{{ settlementStatusMeta(draft.settlement_status).label }}</span></td>
               <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ draft.created_by_name || '—' }}</td>
               <td class="border border-slate-300 px-4 py-4">
                 <div class="flex gap-2">
@@ -67,6 +67,8 @@
       :message="`پیش‌نویس ${draftToDelete?.customer_name ? `مشتری «${draftToDelete.customer_name}»` : 'بدون نام'} و تمام اقلام آن حذف شود؟`"
       :loading="deleting" confirm-text="بله، حذف شود" loading-text="در حال حذف..."
       @confirm="confirmDelete" @cancel="draftToDelete = null" />
+    <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
+      @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
   </div>
 </template>
 
@@ -77,6 +79,7 @@ import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomSelect from '../CustomSelect.vue';
+import DeliverySettlementModal from './DeliverySettlementModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
 
@@ -88,6 +91,9 @@ const statusFilter = ref('all');
 const creating = ref(false);
 const deleting = ref(false);
 const draftToDelete = ref(null);
+const showSettlementModal = ref(false);
+const settlementSummary = ref(null);
+const settlementSaving = ref(false);
 
 const statusOptions = [
   { label: 'همه وضعیت‌ها', value: 'all' },
@@ -161,6 +167,33 @@ async function confirmDelete() {
   if (!result.success) return toast.error(result.message);
   toast.success('پیش‌نویس حذف شد');
   draftToDelete.value = null;
+}
+
+async function openSettlement(list) {
+  const result = await draftStore.getSettlement(list.id);
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  showSettlementModal.value = true;
+}
+
+async function handleRecordPayment(payload) {
+  if (settlementSaving.value) return;
+  settlementSaving.value = true;
+  const result = await draftStore.recordPayment(settlementSummary.value.list.id, payload);
+  settlementSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  toast.success('پرداخت ثبت شد');
+}
+
+async function handleVoidPayment(paymentId) {
+  if (settlementSaving.value) return;
+  settlementSaving.value = true;
+  const result = await draftStore.voidPayment(settlementSummary.value.list.id, paymentId);
+  settlementSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  toast.success('پرداخت باطل شد و وضعیت تسویه دوباره محاسبه شد');
 }
 
 function formatNumber(value) {

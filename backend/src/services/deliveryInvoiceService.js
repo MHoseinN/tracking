@@ -1,5 +1,6 @@
 const { DeliveryListDraftError } = require('./deliveryListDraftService');
 const { nextInvoiceNumber } = require('./workflowNumberingService');
+const { recalculateSettlementStatus } = require('./deliverySettlementService');
 
 function textOrNull(value) {
   const text = String(value || '').trim();
@@ -251,6 +252,7 @@ function createDeliveryInvoiceService(db) {
         SET invoice_status = ?, updated_at = CURRENT_TIMESTAMP, version = version + 1
         WHERE id = ?
       `).run(nextStatus, list.id);
+      recalculateSettlementStatus(db, list.id);
       db.prepare(`
         INSERT INTO audit_logs (
           actor_user_id, entity_type, entity_id, action, after_json, metadata_json

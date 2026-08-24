@@ -154,6 +154,48 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       } finally {
         this.saving = false;
       }
+    },
+
+    async getSettlement(id) {
+      try {
+        return { success: true, data: (await deliveryListService.getSettlement(id)).data };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'دریافت اطلاعات تسویه انجام نشد') };
+      }
+    },
+
+    async recordPayment(id, payload) {
+      this.saving = true;
+      try {
+        const summary = (await deliveryListService.recordPayment(id, payload)).data;
+        const list = this.lists.find((item) => Number(item.id) === Number(id));
+        if (list) list.settlement_status = summary.list.settlement_status;
+        if (this.currentDraft && Number(this.currentDraft.id) === Number(id)) {
+          this.currentDraft.settlement_status = summary.list.settlement_status;
+        }
+        return { success: true, data: summary };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ثبت پرداخت انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    async voidPayment(id, paymentId) {
+      this.saving = true;
+      try {
+        const summary = (await deliveryListService.voidPayment(id, paymentId)).data;
+        const list = this.lists.find((item) => Number(item.id) === Number(id));
+        if (list) list.settlement_status = summary.list.settlement_status;
+        if (this.currentDraft && Number(this.currentDraft.id) === Number(id)) {
+          this.currentDraft.settlement_status = summary.list.settlement_status;
+        }
+        return { success: true, data: summary };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ابطال پرداخت انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
     }
   }
 });
