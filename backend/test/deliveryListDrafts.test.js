@@ -23,7 +23,8 @@ function createDatabase() {
     );
     CREATE TABLE app_settings (
       id INTEGER PRIMARY KEY,
-      billing_cutoff_minutes INTEGER NOT NULL
+      billing_cutoff_minutes INTEGER NOT NULL,
+      list_number_prefix TEXT NOT NULL DEFAULT 'LST'
     );
     CREATE TABLE products (
       id INTEGER PRIMARY KEY,
@@ -69,6 +70,51 @@ function createDatabase() {
       deleted_at TEXT,
       FOREIGN KEY (delivery_list_id) REFERENCES delivery_lists(id) ON DELETE CASCADE,
       FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+
+    CREATE TABLE invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      price REAL NOT NULL,
+      description TEXT,
+      notes TEXT,
+      delivery_list_id INTEGER,
+      invoice_number TEXT,
+      invoice_type TEXT NOT NULL DEFAULT 'LEGACY',
+      status TEXT NOT NULL DEFAULT 'ISSUED',
+      settlement_status TEXT NOT NULL DEFAULT 'UNPAID',
+      send_status TEXT NOT NULL DEFAULT 'NOT_SENT',
+      subtotal_toman INTEGER NOT NULL DEFAULT 0,
+      extra_charges_toman INTEGER NOT NULL DEFAULT 0,
+      discount_percent_basis_points INTEGER NOT NULL DEFAULT 0,
+      discount_amount_toman INTEGER NOT NULL DEFAULT 0,
+      rounding_adjustment_toman INTEGER NOT NULL DEFAULT 0,
+      final_amount_toman INTEGER NOT NULL DEFAULT 0,
+      issued_at TEXT,
+      issued_by_user_id INTEGER,
+      updated_at TEXT,
+      version INTEGER NOT NULL DEFAULT 1,
+      deleted_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id),
+      FOREIGN KEY (delivery_list_id) REFERENCES delivery_lists(id)
+    );
+    CREATE UNIQUE INDEX ux_invoices_active_proforma
+      ON invoices(delivery_list_id)
+      WHERE delivery_list_id IS NOT NULL AND status = 'PROFORMA' AND deleted_at IS NULL;
+
+    CREATE TABLE audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_user_id INTEGER,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      before_json TEXT,
+      after_json TEXT,
+      metadata_json TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (actor_user_id) REFERENCES users(id)
     );
 
     INSERT INTO users (id, username, display_name) VALUES (1, 'manager', 'مدیر');
@@ -142,6 +188,56 @@ test('rejects stale autosaves and duplicate products', () => {
       }),
       /هر محصول فقط یک بار/
     );
+  } finally {
+    db.close();
+  }
+});
+
+test('finalizes a complete draft and creates exactly one linked proforma', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      night_before: true,
+      items: [
+        { product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }
+      ]
+    });
+
+    const finalized = service.finalizeDraft(draft.id, saved.version, 1);
+    assert.equal(finalized.status, 'DELIVERED');
+    assert.equal(finalized.invoice_status, 'PROFORMA');
+    assert.equal(finalized.list_number, 'LST-000001');
+    assert.equal(finalized.delivered_by_user_id, 1);
+    assert.equal(finalized.proforma.status, 'PROFORMA');
+    assert.equal(finalized.proforma.invoice_type, 'PRIMARY');
+    assert.equal(finalized.proforma.final_amount_toman, 0);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
+    assert.equal(db.prepare('SELECT action FROM audit_logs').get().action, 'FINALIZE_DELIVERY');
+
+    assert.throws(
+      () => service.finalizeDraft(draft.id, finalized.version, 1),
+      (error) => error instanceof DeliveryListDraftError && error.statusCode === 409
+    );
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
+  } finally {
+    db.close();
+  }
+});
+
+test('does not finalize incomplete drafts or create orphan proformas', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    assert.throws(() => service.finalizeDraft(draft.id, draft.version, 1), /مشتری/);
+    assert.equal(service.getDraft(draft.id).status, 'DRAFT');
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 0);
   } finally {
     db.close();
   }

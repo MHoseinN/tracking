@@ -28,25 +28,33 @@ function createDeliveryListDraftService(db) {
   const draftColumns = `
     SELECT delivery_lists.*,
            COALESCE(customers.name, delivery_lists.customer_name_snapshot) AS customer_name,
-           COALESCE(users.display_name, users.username) AS created_by_name
+           COALESCE(users.display_name, users.username) AS created_by_name,
+           COALESCE(delivery_user.display_name, delivery_user.username) AS delivered_by_name
     FROM delivery_lists
     LEFT JOIN customers ON customers.id = delivery_lists.customer_id
     JOIN users ON users.id = delivery_lists.created_by_user_id
+    LEFT JOIN users delivery_user ON delivery_user.id = delivery_lists.delivered_by_user_id
   `;
 
-  function getDraftRow(id) {
-    const draft = db.prepare(`
+  function getListRow(id) {
+    const list = db.prepare(`
       ${draftColumns}
-      WHERE delivery_lists.id = ?
-        AND delivery_lists.status = 'DRAFT'
-        AND delivery_lists.archived_at IS NULL
+      WHERE delivery_lists.id = ? AND delivery_lists.archived_at IS NULL
     `).get(id);
-    if (!draft) throw new DeliveryListDraftError('پیش‌نویس پیدا نشد', 404);
+    if (!list) throw new DeliveryListDraftError('لیست پیدا نشد', 404);
+    return list;
+  }
+
+  function getDraftRow(id) {
+    const draft = getListRow(id);
+    if (draft.status !== 'DRAFT') {
+      throw new DeliveryListDraftError('این لیست دیگر پیش‌نویس نیست', 409);
+    }
     return draft;
   }
 
-  function getDraft(id) {
-    const draft = serializeDraft(getDraftRow(id));
+  function getList(id) {
+    const list = serializeDraft(getListRow(id));
     const items = db.prepare(`
       SELECT id, delivery_list_id, product_id, product_name_snapshot,
              daily_price_toman, delivered_quantity, notes, created_at, updated_at
@@ -54,7 +62,19 @@ function createDeliveryListDraftService(db) {
       WHERE delivery_list_id = ? AND deleted_at IS NULL
       ORDER BY id
     `).all(id);
-    return { ...draft, items };
+    const proforma = db.prepare(`
+      SELECT id, invoice_number, invoice_type, status, settlement_status,
+             send_status, subtotal_toman, final_amount_toman, created_at, updated_at
+      FROM invoices
+      WHERE delivery_list_id = ? AND status = 'PROFORMA' AND deleted_at IS NULL
+      ORDER BY id DESC LIMIT 1
+    `).get(id) || null;
+    return { ...list, items, proforma };
+  }
+
+  function getDraft(id) {
+    getDraftRow(id);
+    return getList(id);
   }
 
   function listDrafts() {
@@ -75,6 +95,37 @@ function createDeliveryListDraftService(db) {
       WHERE delivery_lists.status = 'DRAFT' AND delivery_lists.archived_at IS NULL
       GROUP BY delivery_lists.id
       ORDER BY delivery_lists.updated_at DESC, delivery_lists.id DESC
+    `).all().map(serializeDraft);
+  }
+
+  function listDeliveryLists() {
+    return db.prepare(`
+      SELECT delivery_lists.*,
+             COALESCE(customers.name, delivery_lists.customer_name_snapshot) AS customer_name,
+             COALESCE(users.display_name, users.username) AS created_by_name,
+             COALESCE(delivery_user.display_name, delivery_user.username) AS delivered_by_name,
+             (SELECT COUNT(*)
+                FROM delivery_list_items
+               WHERE delivery_list_items.delivery_list_id = delivery_lists.id
+                 AND delivery_list_items.deleted_at IS NULL) AS item_count,
+             COALESCE((SELECT SUM(
+                delivery_list_items.daily_price_toman * delivery_list_items.delivered_quantity
+               ) FROM delivery_list_items
+               WHERE delivery_list_items.delivery_list_id = delivery_lists.id
+                 AND delivery_list_items.deleted_at IS NULL), 0) AS daily_total_toman,
+             (SELECT invoices.id
+                FROM invoices
+               WHERE invoices.delivery_list_id = delivery_lists.id
+                 AND invoices.status = 'PROFORMA'
+                 AND invoices.deleted_at IS NULL
+               ORDER BY invoices.id DESC LIMIT 1) AS proforma_invoice_id
+      FROM delivery_lists
+      LEFT JOIN customers ON customers.id = delivery_lists.customer_id
+      JOIN users ON users.id = delivery_lists.created_by_user_id
+      LEFT JOIN users delivery_user ON delivery_user.id = delivery_lists.delivered_by_user_id
+      WHERE delivery_lists.archived_at IS NULL
+      ORDER BY COALESCE(delivery_lists.delivered_at, delivery_lists.updated_at) DESC,
+               delivery_lists.id DESC
     `).all().map(serializeDraft);
   }
 
@@ -215,7 +266,115 @@ function createDeliveryListDraftService(db) {
     return { id: Number(id), deleted: true };
   }
 
-  return { listDrafts, getDraft, createDraft, saveDraft, deleteDraft };
+  function finalizeDraft(id, expectedVersion, actorUserId) {
+    const draft = getDraftRow(id);
+    const version = Number(expectedVersion);
+    if (!Number.isInteger(version) || version !== Number(draft.version)) {
+      throw new DeliveryListDraftError('نسخه پیش‌نویس تغییر کرده است؛ ابتدا صفحه را دوباره بارگذاری کنید', 409);
+    }
+    if (!draft.customer_id) {
+      throw new DeliveryListDraftError('برای ثبت تحویل، مشتری را از فهرست انتخاب کنید');
+    }
+    if (!draft.delivered_at) {
+      throw new DeliveryListDraftError('تاریخ و ساعت تحویل الزامی است');
+    }
+    if (!draft.expected_return_at) {
+      throw new DeliveryListDraftError('تاریخ و ساعت تقریبی برگشت الزامی است');
+    }
+    const deliveredTime = Date.parse(draft.delivered_at);
+    const expectedReturnTime = Date.parse(draft.expected_return_at);
+    if (!Number.isFinite(deliveredTime) || !Number.isFinite(expectedReturnTime)) {
+      throw new DeliveryListDraftError('تاریخ تحویل یا برگشت نامعتبر است');
+    }
+    if (expectedReturnTime < deliveredTime) {
+      throw new DeliveryListDraftError('زمان تقریبی برگشت نمی‌تواند قبل از زمان تحویل باشد');
+    }
+
+    const items = db.prepare(`
+      SELECT id, daily_price_toman, delivered_quantity
+      FROM delivery_list_items
+      WHERE delivery_list_id = ? AND deleted_at IS NULL
+      ORDER BY id
+    `).all(id);
+    if (!items.length) {
+      throw new DeliveryListDraftError('حداقل یک محصول باید در لیست وجود داشته باشد');
+    }
+
+    const customer = db.prepare(`
+      SELECT id, name FROM customers
+      WHERE id = ? AND is_active = 1 AND deleted_at IS NULL
+    `).get(draft.customer_id);
+    if (!customer) throw new DeliveryListDraftError('مشتری انتخاب‌شده فعال نیست', 409);
+
+    const settings = db.prepare(`
+      SELECT list_number_prefix FROM app_settings WHERE id = 1
+    `).get();
+    const prefix = String(settings?.list_number_prefix || 'LST').trim() || 'LST';
+    const listNumber = `${prefix}-${String(id).padStart(6, '0')}`;
+    const deliveryDate = String(draft.delivered_at).slice(0, 10);
+    const dailyRateTotal = items.reduce((sum, item) => (
+      sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
+    ), 0);
+
+    const finalize = db.transaction(() => {
+      const update = db.prepare(`
+        UPDATE delivery_lists
+        SET list_number = ?, customer_name_snapshot = ?, status = 'DELIVERED',
+            invoice_status = 'PROFORMA', delivered_by_user_id = ?,
+            updated_at = CURRENT_TIMESTAMP, version = version + 1
+        WHERE id = ? AND status = 'DRAFT' AND archived_at IS NULL AND version = ?
+      `).run(listNumber, customer.name, actorUserId, id, version);
+      if (update.changes !== 1) {
+        throw new DeliveryListDraftError('ثبت تحویل هم‌زمان انجام نشد؛ صفحه را دوباره بارگذاری کنید', 409);
+      }
+
+      const invoiceResult = db.prepare(`
+        INSERT INTO invoices (
+          customer_id, date, price, description, notes,
+          delivery_list_id, invoice_type, status, settlement_status, send_status,
+          subtotal_toman, extra_charges_toman, discount_percent_basis_points,
+          discount_amount_toman, rounding_adjustment_toman, final_amount_toman,
+          issued_at, issued_by_user_id, updated_at, version
+        ) VALUES (
+          ?, ?, 0, ?, ?,
+          ?, 'PRIMARY', 'PROFORMA', 'UNPAID', 'NOT_SENT',
+          0, 0, 0, 0, 0, 0,
+          NULL, NULL, CURRENT_TIMESTAMP, 1
+        )
+      `).run(
+        customer.id,
+        deliveryDate,
+        `پیش‌فاکتور خودکار لیست ${listNumber}`,
+        draft.notes || null,
+        id
+      );
+
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action, after_json, metadata_json
+        ) VALUES (?, 'DELIVERY_LIST', ?, 'FINALIZE_DELIVERY', ?, ?)
+      `).run(
+        actorUserId,
+        String(id),
+        JSON.stringify({ status: 'DELIVERED', list_number: listNumber }),
+        JSON.stringify({ invoice_id: Number(invoiceResult.lastInsertRowid), daily_rate_total_toman: dailyRateTotal })
+      );
+    });
+
+    finalize();
+    return getList(id);
+  }
+
+  return {
+    listDrafts,
+    listDeliveryLists,
+    getList,
+    getDraft,
+    createDraft,
+    saveDraft,
+    deleteDraft,
+    finalizeDraft
+  };
 }
 
 module.exports = {

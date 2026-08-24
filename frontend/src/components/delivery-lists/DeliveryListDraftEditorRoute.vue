@@ -1,6 +1,10 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
+      <button type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
+        :disabled="finalizing" @click="openFinalizeConfirm">
+        {{ finalizing ? 'در حال ثبت تحویل...' : 'ثبت نهایی تحویل' }}
+      </button>
       <button type="button" class="app-button-primary w-full" :disabled="creating" @click="createAnotherDraft">
         {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست دیگر' }}
       </button>
@@ -36,6 +40,8 @@
             <datalist id="delivery-customers">
               <option v-for="customer in invoiceStore.customers" :key="customer.id" :value="customer.name" />
             </datalist>
+            <button type="button" class="mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+              @click="showCustomerModal = true">+ ایجاد مشتری جدید</button>
           </label>
 
           <label class="space-y-2">
@@ -138,6 +144,14 @@
         {{ saveError }}
       </p>
     </div>
+
+    <ConfirmModal :is-open="showFinalizeConfirm" title="ثبت نهایی تحویل"
+      :message="finalizeConfirmMessage" :loading="finalizing"
+      confirm-text="بله، تحویل ثبت شود" loading-text="در حال ثبت تحویل..."
+      @confirm="confirmFinalize" @cancel="showFinalizeConfirm = false" />
+
+    <CustomerFormModal :is-open="showCustomerModal" :existing-customers="invoiceStore.customers"
+      @close="showCustomerModal = false" @saved="handleCustomerSaved" />
   </div>
 </template>
 
@@ -146,7 +160,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
+import ConfirmModal from '../ConfirmModal.vue';
 import CustomSelect from '../CustomSelect.vue';
+import CustomerFormModal from '../CustomerFormModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
@@ -162,6 +178,9 @@ const productStore = useProductCatalogStore();
 const draftId = computed(() => Number(route.params.id));
 const loading = ref(true);
 const creating = ref(false);
+const finalizing = ref(false);
+const showFinalizeConfirm = ref(false);
+const showCustomerModal = ref(false);
 const selectedProductId = ref('');
 const saveStatus = ref('saved');
 const saveError = ref('');
@@ -200,6 +219,11 @@ const availableProductOptions = computed(() => {
 const dailyTotal = computed(() => form.items.reduce((sum, item) => (
   sum + (Number(item.daily_price_toman) || 0) * (Number(item.delivered_quantity) || 0)
 ), 0));
+
+const finalizeConfirmMessage = computed(() => (
+  `تحویل ${formatNumber(form.items.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
+  + 'پس از ثبت، پیش‌نویس به لیست تحویل‌شده تبدیل و پیش‌فاکتور خودکار ایجاد می‌شود.'
+));
 
 const saveStatusClass = computed(() => ({
   saving: 'bg-blue-50 text-blue-700',
@@ -359,6 +383,44 @@ async function createAnotherDraft() {
   creating.value = false;
   if (!result.success) return toast.error(result.message);
   router.push(`/lists/${result.data.id}/edit`);
+}
+
+async function openFinalizeConfirm() {
+  syncCustomerId();
+  const validationMessage = validateForFinalization();
+  if (validationMessage) return toast.error(validationMessage);
+  if (!(await persistDraft())) return toast.error('ذخیره تغییرات پیش از ثبت تحویل انجام نشد');
+  showFinalizeConfirm.value = true;
+}
+
+async function confirmFinalize() {
+  if (finalizing.value) return;
+  finalizing.value = true;
+  const result = await draftStore.finalizeDraft(draftId.value, currentVersion.value);
+  finalizing.value = false;
+  if (!result.success) return toast.error(result.message);
+  showFinalizeConfirm.value = false;
+  initialized.value = false;
+  toast.success(`تحویل با شماره ${result.data.list_number} ثبت و پیش‌فاکتور ایجاد شد`);
+  router.replace(`/lists/${result.data.id}`);
+}
+
+function validateForFinalization() {
+  if (!form.customerId) return 'مشتری را از فهرست انتخاب کنید یا ابتدا مشتری جدید بسازید';
+  if (!form.deliveryDate || !form.deliveryTime) return 'تاریخ و ساعت تحویل الزامی است';
+  if (!form.expectedReturnDate || !form.expectedReturnTime) return 'تاریخ و ساعت تقریبی برگشت الزامی است';
+  if (!form.items.length) return 'حداقل یک محصول به لیست اضافه کنید';
+  const deliveredAt = Date.parse(combineDateTime(form.deliveryDate, form.deliveryTime));
+  const expectedReturnAt = Date.parse(combineDateTime(form.expectedReturnDate, form.expectedReturnTime));
+  if (expectedReturnAt < deliveredAt) return 'زمان تقریبی برگشت نمی‌تواند قبل از زمان تحویل باشد';
+  return '';
+}
+
+function handleCustomerSaved(customer) {
+  showCustomerModal.value = false;
+  if (!customer) return;
+  form.customerId = customer.id;
+  form.customerName = customer.name;
 }
 
 function combineDateTime(persianDate, time) {

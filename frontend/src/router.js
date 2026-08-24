@@ -92,6 +92,16 @@ const routes = [
     }
   },
   {
+    path: '/lists/:id',
+    name: 'DeliveryListDetail',
+    component: () => import('./components/delivery-lists/DeliveryListDetailRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'جزئیات لیست تحویل',
+      subtitle: 'وضعیت لیست، اقلام تحویل‌شده و پیش‌فاکتور متصل را مشاهده کنید'
+    }
+  },
+  {
     path: '/admins',
     name: 'AdminsManagement',
     component: () => import('./components/admins/AdminsManagementRoute.vue'),

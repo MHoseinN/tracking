@@ -27,9 +27,20 @@ function listDrafts(_req, res) {
   catch (error) { return handleError(error, res); }
 }
 
-function getDraft(req, res) {
+function listDeliveryLists(_req, res) {
+  try { return res.json({ lists: draftService.listDeliveryLists() }); }
+  catch (error) { return handleError(error, res); }
+}
+
+function getList(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.json(draftService.getDraft(req.params.id)); }
+  try { return res.json(draftService.getList(req.params.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
+function finalizeDraft(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.json(draftService.finalizeDraft(req.params.id, req.body.version, req.user.id)); }
   catch (error) { return handleError(error, res); }
 }
 
@@ -50,4 +61,12 @@ function deleteDraft(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
-module.exports = { listDrafts, getDraft, createDraft, saveDraft, deleteDraft };
+module.exports = {
+  listDeliveryLists,
+  listDrafts,
+  getList,
+  createDraft,
+  saveDraft,
+  deleteDraft,
+  finalizeDraft
+};

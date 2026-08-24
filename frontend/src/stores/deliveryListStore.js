@@ -10,6 +10,7 @@ function replaceDraft(drafts, draft) {
 
 export const useDeliveryListStore = defineStore('deliveryLists', {
   state: () => ({
+    lists: [],
     drafts: [],
     currentDraft: null,
     loading: false,
@@ -18,6 +19,21 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
   }),
 
   actions: {
+    async fetchLists() {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.lists = (await deliveryListService.getLists()).data.lists || [];
+        this.drafts = this.lists.filter((list) => list.status === 'DRAFT');
+        return this.lists;
+      } catch (error) {
+        this.error = getApiErrorMessage(error, 'خطا در دریافت لیست‌ها');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchDrafts() {
       this.loading = true;
       this.error = null;
@@ -51,6 +67,7 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
         const draft = (await deliveryListService.createDraft()).data;
         this.currentDraft = draft;
         replaceDraft(this.drafts, draft);
+        replaceDraft(this.lists, draft);
         return { success: true, data: draft };
       } catch (error) {
         return { success: false, message: getApiErrorMessage(error, 'خطا در ایجاد پیش‌نویس') };
@@ -63,6 +80,7 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
         const draft = (await deliveryListService.saveDraft(id, payload)).data;
         this.currentDraft = draft;
         replaceDraft(this.drafts, draft);
+        replaceDraft(this.lists, draft);
         return { success: true, data: draft };
       } catch (error) {
         return {
@@ -79,10 +97,26 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       try {
         await deliveryListService.deleteDraft(id);
         this.drafts = this.drafts.filter((draft) => Number(draft.id) !== Number(id));
+        this.lists = this.lists.filter((list) => Number(list.id) !== Number(id));
         if (Number(this.currentDraft?.id) === Number(id)) this.currentDraft = null;
         return { success: true };
       } catch (error) {
         return { success: false, message: getApiErrorMessage(error, 'حذف پیش‌نویس انجام نشد') };
+      }
+    },
+
+    async finalizeDraft(id, version) {
+      this.saving = true;
+      try {
+        const list = (await deliveryListService.finalizeDraft(id, version)).data;
+        this.currentDraft = list;
+        this.drafts = this.drafts.filter((draft) => Number(draft.id) !== Number(id));
+        replaceDraft(this.lists, list);
+        return { success: true, data: list };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ثبت نهایی تحویل انجام نشد') };
+      } finally {
+        this.saving = false;
       }
     }
   }

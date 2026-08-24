@@ -2,11 +2,13 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const authMiddleware = require('../middleware/authMiddleware');
 const {
+  listDeliveryLists,
   listDrafts,
-  getDraft,
+  getList,
   createDraft,
   saveDraft,
-  deleteDraft
+  deleteDraft,
+  finalizeDraft
 } = require('../controllers/deliveryListController');
 
 const router = express.Router();
@@ -16,7 +18,8 @@ const idValidation = param('id').isInt({ min: 1 });
 
 router.get('/drafts', listDrafts);
 router.post('/drafts', createDraft);
-router.get('/:id', [idValidation], getDraft);
+router.get('/', listDeliveryLists);
+router.get('/:id', [idValidation], getList);
 router.put('/:id/draft', [
   idValidation,
   body('version').isInt({ min: 1 }),
@@ -33,5 +36,9 @@ router.put('/:id/draft', [
   body('items.*.notes').optional({ nullable: true }).isString().isLength({ max: 1000 })
 ], saveDraft);
 router.delete('/:id/draft', [idValidation], deleteDraft);
+router.post('/:id/finalize', [
+  idValidation,
+  body('version').isInt({ min: 1 })
+], finalizeDraft);
 
 module.exports = router;

@@ -4,31 +4,37 @@
       <button type="button" class="app-button-primary w-full" :disabled="creating" @click="createNewDraft">
         {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست جدید' }}
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="loadDrafts">به‌روزرسانی</button>
+      <CustomSelect v-model="statusFilter" :options="statusOptions"
+        trigger-class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm" />
+      <button type="button" class="app-button-secondary w-full" @click="loadLists">به‌روزرسانی</button>
     </Teleport>
 
     <section class="app-panel overflow-hidden">
       <div class="flex flex-col gap-4 border-b border-slate-100 p-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 class="text-lg font-black text-slate-900">پیش‌نویس لیست‌ها</h2>
-          <p class="mt-1 text-xs text-slate-500">هر پیش‌نویس مستقل است و می‌توانید بعداً تکمیلش کنید.</p>
+          <h2 class="text-lg font-black text-slate-900">لیست‌های تحویل</h2>
+          <p class="mt-1 text-xs text-slate-500">پیش‌نویس‌ها و لیست‌های ثبت‌شده در یک جدول قابل پیگیری هستند.</p>
         </div>
         <input v-model.trim="searchQuery" type="search" placeholder="جست‌وجوی نام مشتری یا سازنده..."
           class="h-11 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 md:w-80" />
       </div>
 
       <AppContentState v-if="draftStore.loading" loading message="در حال دریافت پیش‌نویس‌ها..." />
-      <AppContentState v-else-if="!filteredDrafts.length" message="پیش‌نویسی برای نمایش وجود ندارد." />
+      <AppContentState v-else-if="!filteredDrafts.length" message="لیستی برای نمایش وجود ندارد." />
 
       <div v-else class="overflow-x-auto">
-        <table class="w-full min-w-[980px]">
+        <table class="w-full min-w-[1500px]">
           <thead class="border-b border-slate-100 bg-slate-50">
             <tr>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">ردیف</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">شماره لیست</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">مشتری</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">زمان تحویل</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">برگشت تقریبی</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">اقلام</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت لیست</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت فاکتور</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت تسویه</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">ایجادکننده</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">آخرین ذخیره</th>
               <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">عملیات</th>
@@ -38,17 +44,23 @@
             <tr v-for="(draft, index) in filteredDrafts" :key="draft.id"
               class="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
               <td class="px-4 py-4 text-sm text-slate-500">{{ formatNumber(index + 1) }}</td>
+              <td class="px-4 py-4 text-sm font-bold text-indigo-700">{{ draft.list_number || `پیش‌نویس #${draft.id}` }}</td>
               <td class="px-4 py-4 text-sm font-bold text-slate-800">{{ draft.customer_name || 'نامشخص' }}</td>
               <td class="px-4 py-4 text-sm text-slate-600">{{ formatDateTime(draft.delivered_at) }}</td>
               <td class="px-4 py-4 text-sm text-slate-600">{{ formatDateTime(draft.expected_return_at) }}</td>
               <td class="px-4 py-4 text-sm text-slate-600">{{ formatNumber(draft.item_count) }} قلم</td>
+              <td class="px-4 py-4"><span class="app-badge" :class="listStatusMeta(draft.status).className">{{ listStatusMeta(draft.status).label }}</span></td>
+              <td class="px-4 py-4"><span class="app-badge" :class="invoiceStatusMeta(draft.invoice_status).className">{{ invoiceStatusMeta(draft.invoice_status).label }}</span></td>
+              <td class="px-4 py-4"><span class="app-badge" :class="settlementStatusMeta(draft.settlement_status).className">{{ settlementStatusMeta(draft.settlement_status).label }}</span></td>
               <td class="px-4 py-4 text-sm text-slate-600">{{ draft.created_by_name || '—' }}</td>
               <td class="px-4 py-4 text-sm text-slate-500">{{ formatDateTime(draft.last_autosaved_at) }}</td>
               <td class="px-4 py-4">
                 <div class="flex gap-2">
-                  <button type="button" class="app-button-secondary px-3 py-2 text-xs"
+                  <button v-if="draft.status === 'DRAFT'" type="button" class="app-button-secondary px-3 py-2 text-xs"
                     @click="router.push(`/lists/${draft.id}/edit`)">ادامه ویرایش</button>
-                  <button type="button" class="app-button-secondary border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+                  <button v-else type="button" class="app-button-secondary px-3 py-2 text-xs"
+                    @click="router.push(`/lists/${draft.id}`)">مشاهده جزئیات</button>
+                  <button v-if="draft.status === 'DRAFT'" type="button" class="app-button-secondary border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
                     @click="draftToDelete = draft">حذف</button>
                 </div>
               </td>
@@ -71,6 +83,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
+import CustomSelect from '../CustomSelect.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
 
@@ -78,24 +91,64 @@ const router = useRouter();
 const toast = useToast();
 const draftStore = useDeliveryListStore();
 const searchQuery = ref('');
+const statusFilter = ref('all');
 const creating = ref(false);
 const deleting = ref(false);
 const draftToDelete = ref(null);
 
+const statusOptions = [
+  { label: 'همه وضعیت‌ها', value: 'all' },
+  { label: 'پیش‌نویس', value: 'DRAFT' },
+  { label: 'تحویل‌شده', value: 'DELIVERED' },
+  { label: 'مانده', value: 'REMAINING' },
+  { label: 'نیاز به پیگیری', value: 'NEEDS_FOLLOW_UP' },
+  { label: 'تکمیل', value: 'COMPLETED' }
+];
+
 const filteredDrafts = computed(() => {
   const query = searchQuery.value.toLowerCase();
-  if (!query) return draftStore.drafts;
-  return draftStore.drafts.filter((draft) =>
-    String(draft.customer_name || '').toLowerCase().includes(query)
-    || String(draft.created_by_name || '').toLowerCase().includes(query)
-  );
+  return draftStore.lists.filter((draft) => {
+    const matchesStatus = statusFilter.value === 'all' || draft.status === statusFilter.value;
+    const matchesQuery = !query
+      || String(draft.customer_name || '').toLowerCase().includes(query)
+      || String(draft.created_by_name || '').toLowerCase().includes(query)
+      || String(draft.list_number || '').toLowerCase().includes(query);
+    return matchesStatus && matchesQuery;
+  });
 });
 
-onMounted(loadDrafts);
+onMounted(loadLists);
 
-async function loadDrafts() {
-  try { await draftStore.fetchDrafts(); }
+async function loadLists() {
+  try { await draftStore.fetchLists(); }
   catch (_error) { toast.error(draftStore.error); }
+}
+
+function listStatusMeta(status) {
+  return {
+    DRAFT: { label: 'پیش‌نویس', className: 'bg-amber-100 text-amber-700' },
+    DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },
+    REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
+    NEEDS_FOLLOW_UP: { label: 'نیاز به پیگیری', className: 'bg-rose-100 text-rose-700' },
+    COMPLETED: { label: 'تکمیل', className: 'bg-emerald-100 text-emerald-700' }
+  }[status] || { label: status || 'نامشخص', className: 'bg-slate-100 text-slate-600' };
+}
+
+function invoiceStatusMeta(status) {
+  return {
+    NONE: { label: 'بدون پیش‌فاکتور', className: 'bg-slate-100 text-slate-600' },
+    PROFORMA: { label: 'پیش‌فاکتور', className: 'bg-violet-100 text-violet-700' },
+    PARTIALLY_ISSUED: { label: 'صدور جزئی', className: 'bg-amber-100 text-amber-700' },
+    ISSUED: { label: 'صادرشده', className: 'bg-emerald-100 text-emerald-700' }
+  }[status] || { label: status || 'نامشخص', className: 'bg-slate-100 text-slate-600' };
+}
+
+function settlementStatusMeta(status) {
+  return {
+    UNPAID: { label: 'تسویه‌نشده', className: 'bg-rose-100 text-rose-700' },
+    PARTIAL: { label: 'تسویه جزئی', className: 'bg-amber-100 text-amber-700' },
+    PAID: { label: 'تسویه کامل', className: 'bg-emerald-100 text-emerald-700' }
+  }[status] || { label: status || 'نامشخص', className: 'bg-slate-100 text-slate-600' };
 }
 
 async function createNewDraft() {
