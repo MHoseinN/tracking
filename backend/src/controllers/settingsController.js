@@ -22,4 +22,11 @@ function updateBillingCutoff(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
-module.exports = { getSettings, updateBillingCutoff };
+function updateGeneralSettings(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  try { return res.json(settingsService.updateGeneralSettings(req.body, req.user.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
+module.exports = { getSettings, updateBillingCutoff, updateGeneralSettings };

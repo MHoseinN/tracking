@@ -99,7 +99,7 @@
               <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.discount_amount_toman) }}</td>
               <td class="border border-slate-300 px-3 py-3 font-black">{{ formatCurrency(invoice.final_amount_toman) }}</td>
               <td class="border border-slate-300 px-3 py-3">{{ invoice.issued_by_name || '—' }}</td>
-              <td class="border border-slate-300 px-3 py-3"><button type="button" class="app-button-secondary whitespace-nowrap px-3 py-2 text-xs" :disabled="downloadingInvoiceId === invoice.id" @click="downloadInvoicePdf(invoice)">{{ downloadingInvoiceId === invoice.id ? 'در حال دانلود...' : 'دانلود PDF' }}</button></td>
+              <td class="border border-slate-300 px-3 py-3"><button type="button" class="app-button-secondary whitespace-nowrap px-3 py-2 text-xs" :disabled="openingInvoiceId === invoice.id" @click="openIssuedInvoice(invoice)">{{ openingInvoiceId === invoice.id ? 'در حال آماده‌سازی...' : 'مشاهده و ویرایش' }}</button></td>
             </tr></tbody>
           </table>
         </div>
@@ -114,18 +114,24 @@
       @close="showReturnModal = false" @save="handleReturn" />
     <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
       @close="showInvoiceModal = false" @issue="handleIssueInvoice" />
+    <DeliveryInvoicePreviewModal :is-open="showIssuedInvoiceModal" :invoice="selectedInvoice"
+      :pdf-url="invoicePdfUrl" :saving="editingInvoice" :loading-pdf="loadingInvoicePdf"
+      :downloading="Boolean(downloadingInvoiceId)" @close="closeIssuedInvoiceModal"
+      @save="handleUpdateIssuedInvoice($event, false)" @save-download="handleUpdateIssuedInvoice($event, true)"
+      @download="downloadPreparedInvoice" />
     <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
       @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import DeliveryReturnModal from './DeliveryReturnModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
+import DeliveryInvoicePreviewModal from './DeliveryInvoicePreviewModal.vue';
 import DeliverySettlementModal from './DeliverySettlementModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
@@ -147,6 +153,13 @@ const settlementSaving = ref(false);
 const showSettlementModal = ref(false);
 const settlementSummary = ref(null);
 const downloadingInvoiceId = ref(null);
+const openingInvoiceId = ref(null);
+const loadingInvoicePdf = ref(false);
+const editingInvoice = ref(false);
+const showIssuedInvoiceModal = ref(false);
+const selectedInvoice = ref(null);
+const invoicePdfBlob = ref(null);
+const invoicePdfUrl = ref('');
 
 const dailyTotal = computed(() => (list.value?.items || []).reduce((sum, item) => (
   sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
@@ -181,6 +194,8 @@ onMounted(async () => {
   catch (_error) { toast.error(listStore.error); router.replace('/lists'); }
   finally { loading.value = false; }
 });
+
+onBeforeUnmount(() => releaseInvoicePdfUrl());
 
 async function createNewDraft() {
   const result = await listStore.createDraft();
@@ -252,21 +267,84 @@ async function handleVoidPayment(paymentId) {
   toast.success('پرداخت باطل شد و وضعیت تسویه دوباره محاسبه شد');
 }
 
-async function downloadInvoicePdf(invoice) {
-  if (downloadingInvoiceId.value) return;
-  downloadingInvoiceId.value = invoice.id;
-  const result = await listStore.downloadInvoicePdf(list.value.id, invoice.id);
-  downloadingInvoiceId.value = null;
+async function openIssuedInvoice(invoice) {
+  if (openingInvoiceId.value) return;
+  openingInvoiceId.value = invoice.id;
+  loadingInvoicePdf.value = true;
+  const [detailResult, pdfResult] = await Promise.all([
+    listStore.getInvoice(list.value.id, invoice.id),
+    listStore.downloadInvoicePdf(list.value.id, invoice.id)
+  ]);
+  openingInvoiceId.value = null;
+  loadingInvoicePdf.value = false;
+  if (!detailResult.success) return toast.error(detailResult.message);
+  selectedInvoice.value = detailResult.data;
+  if (pdfResult.success) setInvoicePdfBlob(pdfResult.data);
+  else {
+    releaseInvoicePdfUrl();
+    toast.error(pdfResult.message);
+  }
+  showIssuedInvoiceModal.value = true;
+}
+
+async function handleUpdateIssuedInvoice(payload, downloadAfter) {
+  if (editingInvoice.value || !selectedInvoice.value) return;
+  editingInvoice.value = true;
+  const result = await listStore.updateInvoice(list.value.id, selectedInvoice.value.id, payload);
+  editingInvoice.value = false;
   if (!result.success) return toast.error(result.message);
-  const url = URL.createObjectURL(result.data);
+  list.value = result.data.list;
+  selectedInvoice.value = result.data.invoice;
+  toast.success('تغییرات فاکتور ذخیره شد');
+  const refreshed = await refreshInvoicePdf();
+  if (downloadAfter && refreshed) await downloadPreparedInvoice();
+}
+
+async function refreshInvoicePdf() {
+  if (!selectedInvoice.value || loadingInvoicePdf.value) return false;
+  loadingInvoicePdf.value = true;
+  const result = await listStore.downloadInvoicePdf(list.value.id, selectedInvoice.value.id);
+  loadingInvoicePdf.value = false;
+  if (!result.success) {
+    toast.error(result.message);
+    return false;
+  }
+  setInvoicePdfBlob(result.data);
+  return true;
+}
+
+async function downloadPreparedInvoice() {
+  if (downloadingInvoiceId.value || !selectedInvoice.value) return;
+  if (!invoicePdfBlob.value && !(await refreshInvoicePdf())) return;
+  downloadingInvoiceId.value = selectedInvoice.value.id;
+  const url = URL.createObjectURL(invoicePdfBlob.value);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `invoice-${invoice.invoice_number}.pdf`;
+  anchor.download = `invoice-${selectedInvoice.value.invoice_number}.pdf`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+  downloadingInvoiceId.value = null;
   toast.success('فایل PDF فاکتور دانلود شد');
+}
+
+function setInvoicePdfBlob(blob) {
+  releaseInvoicePdfUrl();
+  invoicePdfBlob.value = blob;
+  invoicePdfUrl.value = URL.createObjectURL(blob);
+}
+
+function releaseInvoicePdfUrl() {
+  if (invoicePdfUrl.value) URL.revokeObjectURL(invoicePdfUrl.value);
+  invoicePdfUrl.value = '';
+  invoicePdfBlob.value = null;
+}
+
+function closeIssuedInvoiceModal() {
+  showIssuedInvoiceModal.value = false;
+  selectedInvoice.value = null;
+  releaseInvoicePdfUrl();
 }
 
 function itemStatusMeta(status) {

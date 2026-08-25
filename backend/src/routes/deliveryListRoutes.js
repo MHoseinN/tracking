@@ -12,6 +12,8 @@ const {
   recordReturn,
   getInvoicePreview,
   issueInvoice,
+  getIssuedInvoice,
+  updateIssuedInvoice,
   getSettlement,
   recordPayment,
   voidPayment,
@@ -77,6 +79,26 @@ router.post('/:id/invoices', [
   body('discount_amount_toman').optional().isInt({ min: 0 }),
   body('rounding_adjustment_toman').optional().isInt({ max: 0 })
 ], issueInvoice);
+router.get('/:id/invoices/:invoiceId', [
+  idValidation,
+  param('invoiceId').isInt({ min: 1 })
+], getIssuedInvoice);
+router.put('/:id/invoices/:invoiceId', [
+  idValidation,
+  param('invoiceId').isInt({ min: 1 }),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+  body('lines').isArray({ min: 1, max: 500 }),
+  body('lines.*.id').isInt({ min: 1 }),
+  body('lines.*.charged_days').isInt({ min: 1 }),
+  body('lines.*.unit_price_toman').isInt({ min: 0 }),
+  body('extras').optional().isArray({ max: 100 }),
+  body('extras.*.type').optional().isIn(['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER']),
+  body('extras.*.description').optional().isString().isLength({ min: 1, max: 1000 }),
+  body('extras.*.amount_toman').optional().isInt({ min: 1 }),
+  body('discount_percent_basis_points').optional().isInt({ min: 0, max: 10000 }),
+  body('discount_amount_toman').optional().isInt({ min: 0 }),
+  body('rounding_adjustment_toman').optional().isInt({ max: 0 })
+], updateIssuedInvoice);
 router.get('/:id/settlement', [idValidation], getSettlement);
 router.post('/:id/payments', [
   idValidation,

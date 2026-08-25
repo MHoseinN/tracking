@@ -127,6 +127,171 @@ function createDeliveryInvoiceService(db) {
     });
   }
 
+  function getInvoice(listId, invoiceId) {
+    getList(listId);
+    const invoice = db.prepare(`
+      SELECT id, delivery_list_id, parent_invoice_id, invoice_number, invoice_type,
+             status, settlement_status, send_status, notes, subtotal_toman,
+             extra_charges_toman, discount_percent_basis_points,
+             discount_amount_toman, rounding_adjustment_toman, final_amount_toman,
+             issued_at, issued_by_user_id, version
+      FROM invoices
+      WHERE id = ? AND delivery_list_id = ? AND status = 'ISSUED'
+        AND deleted_at IS NULL
+    `).get(invoiceId, listId);
+    if (!invoice) throw new DeliveryListDraftError('فاکتور صادرشده پیدا نشد', 404);
+    invoice.lines = db.prepare(`
+      SELECT id, return_event_item_id, delivery_list_item_id, description, quantity,
+             billing_from_at, billing_to_at, charged_days, unit_price_toman,
+             line_total_toman, sort_order
+      FROM invoice_lines
+      WHERE invoice_id = ? AND line_type = 'RENTAL' AND deleted_at IS NULL
+      ORDER BY sort_order, id
+    `).all(invoice.id);
+    const adjustments = db.prepare(`
+      SELECT id, adjustment_type, description, percent_basis_points,
+             amount_toman, sort_order
+      FROM invoice_adjustments
+      WHERE invoice_id = ? AND deleted_at IS NULL
+      ORDER BY sort_order, id
+    `).all(invoice.id);
+    invoice.extras = adjustments
+      .filter((item) => ['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type))
+      .map((item) => ({
+        id: item.id,
+        type: item.adjustment_type,
+        description: item.description,
+        amount_toman: Number(item.amount_toman)
+      }));
+    invoice.fixed_discount_toman = Math.abs(adjustments
+      .filter((item) => item.adjustment_type === 'DISCOUNT_AMOUNT')
+      .reduce((sum, item) => sum + Number(item.amount_toman), 0));
+    return invoice;
+  }
+
+  function updateInvoice(listId, invoiceId, payload = {}, actorUserId) {
+    const existing = getInvoice(listId, invoiceId);
+    const inputLines = Array.isArray(payload.lines) ? payload.lines : [];
+    if (inputLines.length !== existing.lines.length) {
+      throw new DeliveryListDraftError('تمام ردیف‌های فاکتور باید برای ویرایش ارسال شوند');
+    }
+    const existingById = new Map(existing.lines.map((line) => [Number(line.id), line]));
+    const seen = new Set();
+    const lines = inputLines.map((line) => {
+      const id = Number(line.id);
+      const source = existingById.get(id);
+      if (!source || seen.has(id)) throw new DeliveryListDraftError('ردیف فاکتور نامعتبر یا تکراری است');
+      seen.add(id);
+      const chargedDays = Number(line.charged_days);
+      const unitPrice = Number(line.unit_price_toman);
+      if (!Number.isInteger(chargedDays) || chargedDays < 1) {
+        throw new DeliveryListDraftError('تعداد روز هر ردیف باید حداقل یک باشد');
+      }
+      if (!Number.isInteger(unitPrice) || unitPrice < 0) {
+        throw new DeliveryListDraftError('قیمت واحد هر ردیف نامعتبر است');
+      }
+      return {
+        ...source,
+        charged_days: chargedDays,
+        unit_price_toman: unitPrice,
+        line_total_toman: Number(source.quantity) * chargedDays * unitPrice
+      };
+    });
+
+    const extras = normalizeExtras(payload.extras);
+    const discountBasisPoints = nonNegativeInteger(
+      payload.discount_percent_basis_points,
+      'درصد تخفیف'
+    );
+    if (discountBasisPoints > 10000) {
+      throw new DeliveryListDraftError('درصد تخفیف نمی‌تواند بیشتر از صد درصد باشد');
+    }
+    const fixedDiscount = nonNegativeInteger(payload.discount_amount_toman, 'تخفیف ثابت');
+    const rounding = Number(payload.rounding_adjustment_toman || 0);
+    if (!Number.isInteger(rounding) || rounding > 0) {
+      throw new DeliveryListDraftError('مبلغ رند کردن باید صفر یا منفی باشد');
+    }
+    const subtotal = lines.reduce((sum, line) => sum + line.line_total_toman, 0);
+    const extraCharges = extras.reduce((sum, extra) => sum + extra.amount, 0);
+    const gross = subtotal + extraCharges;
+    const percentDiscount = Math.floor(gross * discountBasisPoints / 10000);
+    const totalDiscount = percentDiscount + fixedDiscount;
+    if (totalDiscount > gross) throw new DeliveryListDraftError('مجموع تخفیف از مبلغ فاکتور بیشتر است');
+    const finalAmount = gross - totalDiscount + rounding;
+    if (finalAmount < 0) throw new DeliveryListDraftError('مبلغ نهایی فاکتور نمی‌تواند منفی باشد');
+
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE invoices
+        SET price = ?, notes = ?, subtotal_toman = ?, extra_charges_toman = ?,
+            discount_percent_basis_points = ?, discount_amount_toman = ?,
+            rounding_adjustment_toman = ?, final_amount_toman = ?,
+            send_status = 'NOT_SENT', updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+        WHERE id = ?
+      `).run(finalAmount, textOrNull(payload.notes), subtotal, extraCharges,
+        discountBasisPoints, totalDiscount, rounding, finalAmount, existing.id);
+
+      const updateLine = db.prepare(`
+        UPDATE invoice_lines
+        SET charged_days = ?, unit_price_toman = ?, line_total_toman = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND invoice_id = ? AND deleted_at IS NULL
+      `);
+      lines.forEach((line) => updateLine.run(
+        line.charged_days, line.unit_price_toman, line.line_total_toman,
+        line.id, existing.id
+      ));
+
+      db.prepare(`
+        UPDATE invoice_adjustments
+        SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE invoice_id = ? AND deleted_at IS NULL
+      `).run(existing.id);
+      const insertAdjustment = db.prepare(`
+        INSERT INTO invoice_adjustments (
+          invoice_id, adjustment_type, description, percent_basis_points,
+          amount_toman, sort_order
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      let adjustmentOrder = 0;
+      extras.forEach((extra) => insertAdjustment.run(
+        existing.id, extra.type, extra.description, null, extra.amount, adjustmentOrder++
+      ));
+      if (discountBasisPoints > 0) insertAdjustment.run(
+        existing.id, 'DISCOUNT_PERCENT', 'تخفیف درصدی', discountBasisPoints,
+        -percentDiscount, adjustmentOrder++
+      );
+      if (fixedDiscount > 0) insertAdjustment.run(
+        existing.id, 'DISCOUNT_AMOUNT', 'تخفیف مبلغی', null,
+        -fixedDiscount, adjustmentOrder++
+      );
+      if (rounding < 0) insertAdjustment.run(
+        existing.id, 'ROUNDING', 'رند کردن مبلغ به پایین', null,
+        rounding, adjustmentOrder++
+      );
+
+      recalculateSettlementStatus(db, Number(listId));
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action,
+          before_json, after_json, metadata_json
+        ) VALUES (?, 'INVOICE', ?, 'UPDATE_INVOICE', ?, ?, ?)
+      `).run(
+        actorUserId,
+        String(existing.id),
+        JSON.stringify({
+          subtotal_toman: existing.subtotal_toman,
+          final_amount_toman: existing.final_amount_toman,
+          version: existing.version
+        }),
+        JSON.stringify({ subtotal_toman: subtotal, final_amount_toman: finalAmount }),
+        JSON.stringify({ delivery_list_id: Number(listId), line_count: lines.length })
+      );
+    })();
+    return getInvoice(listId, invoiceId);
+  }
+
   function issueInvoice(listId, payload = {}, actorUserId) {
     const list = getList(listId);
     const lines = normalizeLines(list.id, payload.lines);
@@ -272,7 +437,7 @@ function createDeliveryInvoiceService(db) {
     `).get(invoiceId);
   }
 
-  return { getPreview, issueInvoice };
+  return { getPreview, issueInvoice, getInvoice, updateInvoice };
 }
 
 module.exports = { createDeliveryInvoiceService };

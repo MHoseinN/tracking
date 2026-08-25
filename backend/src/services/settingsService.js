@@ -53,7 +53,40 @@ function createSettingsService(db) {
     return getSettings();
   }
 
-  return { getSettings, updateBillingCutoff };
+  function updateGeneralSettings(payload, actorUserId) {
+    const before = getSettings();
+    const collectionName = String(payload?.collection_name || '').trim();
+    if (collectionName.length < 2 || collectionName.length > 120) {
+      throw new SettingsError('نام مجموعه باید بین ۲ تا ۱۲۰ کاراکتر باشد');
+    }
+    const cutoffMinutes = timeToMinutes(payload?.billing_cutoff_time);
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE app_settings
+        SET collection_name = ?, billing_cutoff_minutes = ?,
+            updated_by_user_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `).run(collectionName, cutoffMinutes, actorUserId);
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action, before_json, after_json
+        ) VALUES (?, 'APP_SETTINGS', '1', 'UPDATE_GENERAL_SETTINGS', ?, ?)
+      `).run(
+        actorUserId,
+        JSON.stringify({
+          collection_name: before.collection_name,
+          billing_cutoff_minutes: before.billing_cutoff_minutes
+        }),
+        JSON.stringify({
+          collection_name: collectionName,
+          billing_cutoff_minutes: cutoffMinutes
+        })
+      );
+    })();
+    return getSettings();
+  }
+
+  return { getSettings, updateBillingCutoff, updateGeneralSettings };
 }
 
 module.exports = { SettingsError, createSettingsService, timeToMinutes, minutesToTime };

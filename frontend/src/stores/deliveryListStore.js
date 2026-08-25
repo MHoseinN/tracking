@@ -156,6 +156,28 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       }
     },
 
+    async getInvoice(id, invoiceId) {
+      try {
+        return { success: true, data: (await deliveryListService.getInvoice(id, invoiceId)).data };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'دریافت اطلاعات فاکتور انجام نشد') };
+      }
+    },
+
+    async updateInvoice(id, invoiceId, payload) {
+      this.saving = true;
+      try {
+        const response = (await deliveryListService.updateInvoice(id, invoiceId, payload)).data;
+        this.currentDraft = response.list;
+        replaceDraft(this.lists, response.list);
+        return { success: true, data: response };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ویرایش فاکتور انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
+    },
+
     async getSettlement(id) {
       try {
         return { success: true, data: (await deliveryListService.getSettlement(id)).data };
@@ -201,7 +223,18 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
     async downloadInvoicePdf(id, invoiceId) {
       try {
         const response = await deliveryListService.downloadInvoicePdf(id, invoiceId);
-        return { success: true, data: response.data };
+        const blob = response.data;
+        const signature = blob instanceof Blob ? await blob.slice(0, 5).text() : '';
+        const contentType = blob?.type || response.headers?.['content-type'] || 'نامشخص';
+
+        if (!(blob instanceof Blob) || !blob.size || signature !== '%PDF-') {
+          const size = blob?.size || 0;
+          throw new Error(
+            `پاسخ PDF معتبر نیست (حجم: ${size} بایت، نوع: ${contentType}، ابتدای پاسخ: ${signature || 'خالی'})`
+          );
+        }
+
+        return { success: true, data: blob };
       } catch (error) {
         return { success: false, message: getApiErrorMessage(error, 'دانلود PDF فاکتور انجام نشد') };
       }

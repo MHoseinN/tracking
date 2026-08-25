@@ -5,15 +5,25 @@ const { DeliveryListDraftError } = require('./deliveryListDraftService');
 const vazirmatnRoot = path.dirname(require.resolve('vazirmatn/package.json'));
 const regularFont = path.join(vazirmatnRoot, 'fonts', 'ttf', 'Vazirmatn-Regular.ttf');
 const boldFont = path.join(vazirmatnRoot, 'fonts', 'ttf', 'Vazirmatn-Bold.ttf');
-const PAGE = { width: 595.28, height: 841.89, margin: 36 };
+const PAGE = { width: 595.28, height: 841.89, margin: 32 };
 const contentWidth = PAGE.width - (PAGE.margin * 2);
+const TABLE_HEADER_HEIGHT = 29;
+const TABLE_BOTTOM = PAGE.height - 68;
+const lineColumns = [
+  { label: 'مبلغ کل', width: 105 },
+  { label: 'مبلغ واحد', width: 88 },
+  { label: 'روز', width: 50 },
+  { label: 'تعداد', width: 50 },
+  { label: 'شرح کالا یا خدمات', width: 190.28 },
+  { label: 'ردیف', width: 48 }
+];
 
-function toPersianNumber(value) {
+function formatNumber(value) {
   return Number(value || 0).toLocaleString('en-US');
 }
 
-function formatCurrency(value) {
-  return toPersianNumber(value);
+function toPersianDigits(value) {
+  return String(value ?? '').replace(/\d/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]);
 }
 
 function formatPersianDateTime(value) {
@@ -29,18 +39,9 @@ function formatPersianDateTime(value) {
   return `${part('year')}/${part('month')}/${part('day')} - ${part('hour')}:${part('minute')}`;
 }
 
-function settlementLabel(status) {
-  return ({ UNPAID: 'تسویه نشده', PARTIAL: 'تسویه جزئی', PAID: 'تسویه کامل' })[status] || status;
-}
-
-function invoiceTypeLabel(type) {
-  return type === 'SUPPLEMENT' ? 'فاکتور تکمیلی' : 'فاکتور اصلی';
-}
-
 function adjustmentLabel(type) {
   return ({
-    DAMAGE: 'خسارت', LOSS: 'مفقودی', TRANSPORT: 'حمل و نقل', OTHER: 'سایر',
-    DISCOUNT_PERCENT: 'تخفیف درصدی', DISCOUNT_AMOUNT: 'تخفیف مبلغی', ROUNDING: 'رند مبلغ'
+    DAMAGE: 'خسارت', LOSS: 'مفقودی', TRANSPORT: 'حمل و نقل', OTHER: 'سایر'
   })[type] || type;
 }
 
@@ -51,11 +52,13 @@ function getInvoicePdfData(db, listId, invoiceId) {
            delivery_lists.delivered_at, delivery_lists.completed_at,
            COALESCE(customers.name, delivery_lists.customer_name_snapshot) AS customer_name,
            customers.phone AS customer_phone,
+           parent_invoice.invoice_number AS parent_invoice_number,
            COALESCE(issuer.display_name, issuer.username) AS issued_by_name,
            COALESCE(app_settings.collection_name, 'مجموعه من') AS collection_name
     FROM invoices
     JOIN delivery_lists ON delivery_lists.id = invoices.delivery_list_id
     LEFT JOIN customers ON customers.id = delivery_lists.customer_id
+    LEFT JOIN invoices parent_invoice ON parent_invoice.id = invoices.parent_invoice_id
     LEFT JOIN users issuer ON issuer.id = invoices.issued_by_user_id
     LEFT JOIN app_settings ON app_settings.id = 1
     WHERE invoices.id = ? AND invoices.delivery_list_id = ?
@@ -99,7 +102,7 @@ function getInvoicePdfData(db, listId, invoiceId) {
 function drawText(doc, text, x, y, width, options = {}) {
   doc.font(options.bold ? 'Vazirmatn-Bold' : 'Vazirmatn')
     .fontSize(options.size || 9)
-    .fillColor(options.color || '#172033')
+    .fillColor(options.color || '#111827')
     .text(String(text ?? ''), x, y, {
       width,
       height: options.height,
@@ -111,62 +114,151 @@ function drawText(doc, text, x, y, width, options = {}) {
 
 function drawCell(doc, x, y, width, height, text, options = {}) {
   doc.save();
-  doc.rect(x, y, width, height).fillAndStroke(options.fill || '#ffffff', options.stroke || '#cbd5e1');
+  doc.lineWidth(options.lineWidth || 0.75)
+    .rect(x, y, width, height)
+    .fillAndStroke(options.fill || '#ffffff', options.stroke || '#111827');
   doc.restore();
-  const fontSize = options.size || 8.5;
-  const textY = y + Math.max(5, (height - (fontSize * 1.55)) / 2);
+  if (text === '') return;
+  const fontSize = options.size || 8.3;
+  const textY = y + Math.max(4, (height - (fontSize * 1.55)) / 2);
   drawText(doc, text, x + 5, textY, width - 10, {
     size: fontSize,
     bold: options.bold,
     color: options.color,
     align: options.align || 'center',
-    height: height - 8
+    height: height - 7,
+    lineBreak: options.lineBreak
   });
 }
 
-function drawKeyValueRow(doc, y, cells) {
-  const widths = [84, 178, 84, 177];
+function fitTextToWidth(doc, text, width, initialSize, minimumSize) {
+  let output = String(text || '');
+  let size = initialSize;
+  doc.font('Vazirmatn');
+  while (size > minimumSize) {
+    doc.fontSize(size);
+    if (doc.widthOfString(output) <= width) break;
+    size -= 0.25;
+  }
+  size = Math.max(minimumSize, size);
+  doc.fontSize(size);
+  while (output.length > 4 && doc.widthOfString(output) > width) {
+    output = `${output.slice(0, -4).trim()}...`;
+  }
+  return { text: output, size };
+}
+
+function drawMetaLine(doc, x, y, width, label, value, options = {}) {
+  const labelWidth = options.labelWidth || 74;
+  const valueGap = Object.hasOwn(options, 'valueGap') ? options.valueGap : 4;
+  drawText(doc, `${label}:`, x + width - labelWidth, y, labelWidth, { bold: true, size: 8.5 });
+  const emptyValue = Object.hasOwn(options, 'emptyValue') ? options.emptyValue : '-';
+  drawText(doc, value || emptyValue, x, y, width - labelWidth - valueGap, { size: 8.5 });
+}
+
+function drawInvoiceTableHeader(doc, y) {
   let x = PAGE.margin;
-  cells.forEach((cell, index) => {
-    drawCell(doc, x, y, widths[index], 28, cell.text, {
-      fill: cell.label ? '#f1f5f9' : '#ffffff',
-      bold: cell.label,
-      align: cell.label ? 'right' : 'right',
-      size: 8.5
+  lineColumns.forEach((column) => {
+    drawCell(doc, x, y, column.width, TABLE_HEADER_HEIGHT, column.label, {
+      fill: '#1f2937', color: '#ffffff', bold: true, size: 8.2, lineWidth: 0.8
     });
-    x += widths[index];
-  });
-}
-
-function drawLineTableHeader(doc, y) {
-  const columns = [
-    { label: 'مبلغ کل به تومان', width: 103 },
-    { label: 'تاریخ برگشت', width: 88 },
-    { label: 'روز', width: 46 },
-    { label: 'تعداد', width: 46 },
-    { label: 'قیمت واحد به تومان', width: 92 },
-    { label: 'نام محصول', width: 148 }
-  ];
-  let x = PAGE.margin;
-  columns.forEach((column) => {
-    drawCell(doc, x, y, column.width, 30, column.label, { fill: '#e0e7ff', bold: true, color: '#3730a3' });
     x += column.width;
   });
-  return columns;
 }
 
-function addPageWithTableHeader(doc) {
+function drawInvoiceRow(doc, y, values, height = 31, options = {}) {
+  let x = PAGE.margin;
+  values.forEach((value, index) => {
+    const isDescription = index === 4;
+    const fitted = isDescription
+      ? fitTextToWidth(doc, value, lineColumns[index].width - 12, 8.4, 6)
+      : { text: value, size: 8.1 };
+    drawCell(doc, x, y, lineColumns[index].width, height, fitted.text, {
+      align: isDescription ? 'right' : 'center',
+      bold: options.boldAmount && index === 0,
+      fill: options.fill || '#ffffff',
+      size: fitted.size,
+      lineBreak: !isDescription
+    });
+    x += lineColumns[index].width;
+  });
+  return y + height;
+}
+
+function drawSummaryRow(doc, y, label, amount, options = {}) {
+  const amountWidth = lineColumns[0].width;
+  drawCell(doc, PAGE.margin, y, amountWidth, 28, formatNumber(amount), {
+    bold: true,
+    fill: options.fill || '#ffffff',
+    color: options.color || '#111827'
+  });
+  drawCell(doc, PAGE.margin + amountWidth, y, contentWidth - amountWidth, 28, label, {
+    align: 'right',
+    bold: true,
+    fill: options.fill || '#f3f4f6',
+    color: options.color || '#111827'
+  });
+  return y + 28;
+}
+
+function drawContinuationHeader(doc, invoice) {
+  drawText(doc, invoice.collection_name, PAGE.margin, 25, contentWidth, {
+    align: 'center', bold: true, size: 13
+  });
+  drawText(doc, 'ادامه فاکتور',
+    PAGE.margin, 47, contentWidth, { align: 'center', size: 8.5, color: '#4b5563' });
+  drawText(doc, invoice.invoice_number, PAGE.margin, 63, contentWidth, {
+    align: 'center', bold: true, size: 8.5, color: '#4b5563'
+  });
+  const y = 84;
+  drawInvoiceTableHeader(doc, y);
+  return y + TABLE_HEADER_HEIGHT;
+}
+
+function addTablePage(doc, invoice) {
   doc.addPage();
-  drawText(doc, 'ادامه اقلام فاکتور', PAGE.margin, 24, contentWidth, { bold: true, size: 11, color: '#3730a3' });
-  return { y: 48, columns: drawLineTableHeader(doc, 48) };
+  return drawContinuationHeader(doc, invoice);
+}
+
+function latestReturnAt(lines) {
+  return lines.reduce((latest, line) => {
+    const time = new Date(line.billing_to_at).getTime();
+    return Number.isNaN(time) || time <= latest.time ? latest : { time, value: line.billing_to_at };
+  }, { time: -Infinity, value: null }).value;
+}
+
+function splitNotes(doc, text) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  doc.font('Vazirmatn').fontSize(8.2);
+  const chunks = [];
+  let current = '';
+  words.forEach((word) => {
+    const candidate = current ? `${current} ${word}` : word;
+    const height = doc.heightOfString(candidate, { width: contentWidth - 16, align: 'right' });
+    if (height > 34 && current) {
+      chunks.push(current);
+      current = word;
+    } else current = candidate;
+  });
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function drawPageFrame(doc, pageNumber) {
+  doc.save();
+  doc.lineWidth(0.8).rect(19, 18, PAGE.width - 38, PAGE.height - 38).strokeColor('#111827').stroke();
+  doc.restore();
+  drawText(doc, formatNumber(pageNumber), PAGE.margin, PAGE.height - 64, contentWidth, {
+    align: 'center', size: 7.5, color: '#6b7280', lineBreak: false, height: 10
+  });
 }
 
 function renderInvoicePdf(data) {
-  const { invoice, lines, adjustments, list_financials: financials } = data;
+  const { invoice, lines, adjustments } = data;
   const doc = new PDFDocument({
     size: 'A4',
-    margins: { top: PAGE.margin, right: PAGE.margin, bottom: 46, left: PAGE.margin },
-    bufferPages: true,
+    margins: { top: PAGE.margin, right: PAGE.margin, bottom: 52, left: PAGE.margin },
     info: {
       Title: `Invoice ${invoice.invoice_number}`,
       Author: invoice.collection_name,
@@ -175,6 +267,12 @@ function renderInvoicePdf(data) {
   });
   doc.registerFont('Vazirmatn', regularFont);
   doc.registerFont('Vazirmatn-Bold', boldFont);
+  let pageNumber = 1;
+  doc.on('pageAdded', () => {
+    pageNumber += 1;
+    drawPageFrame(doc, pageNumber);
+  });
+  drawPageFrame(doc, pageNumber);
 
   const chunks = [];
   const promise = new Promise((resolve, reject) => {
@@ -183,125 +281,118 @@ function renderInvoicePdf(data) {
     doc.on('error', reject);
   });
 
-  doc.roundedRect(PAGE.margin, PAGE.margin, contentWidth, 72, 8).fill('#312e81');
-  drawText(doc, invoice.collection_name, PAGE.margin + 18, PAGE.margin + 13, contentWidth - 36, { align: 'center', bold: true, size: 17, color: '#ffffff' });
-  drawText(doc, invoiceTypeLabel(invoice.invoice_type), PAGE.margin + 18, PAGE.margin + 43, contentWidth - 36, { align: 'center', size: 10, color: '#e0e7ff' });
+  const titleX = PAGE.margin;
+  const titleWidth = contentWidth;
+  const title = fitTextToWidth(doc, invoice.collection_name, titleWidth - 8, 17, 12);
+  drawText(doc, title.text, titleX, 31, titleWidth, {
+    align: 'center', bold: true, size: title.size, lineBreak: false
+  });
+  drawText(doc, 'صورتحساب اجاره تجهیزات', titleX, 60, titleWidth, {
+    align: 'center', bold: true, size: 10.5, color: '#374151'
+  });
+  const headerMetaOptions = { labelWidth: 52, valueGap: 0 };
+  const topInfoGap = 12;
+  const topCustomerWidth = 220;
+  const topInvoiceWidth = 165;
+  const topAttachmentWidth = contentWidth - topCustomerWidth - topInvoiceWidth - (topInfoGap * 2);
+  const topInvoiceX = PAGE.margin + topAttachmentWidth + topInfoGap;
+  const topCustomerX = topInvoiceX + topInvoiceWidth + topInfoGap;
+  drawMetaLine(doc, topCustomerX, 98, topCustomerWidth,
+    'نام مشتری', invoice.customer_name);
+  drawMetaLine(doc, topInvoiceX, 98, topInvoiceWidth,
+    'شماره فاکتور', invoice.invoice_number, headerMetaOptions);
+  drawMetaLine(doc, PAGE.margin, 98, topAttachmentWidth,
+    'پیوست', invoice.parent_invoice_number, { ...headerMetaOptions, emptyValue: '' });
 
-  let y = PAGE.margin + 88;
-  drawKeyValueRow(doc, y, [
-    { text: 'شماره فاکتور', label: true }, { text: invoice.invoice_number },
-    { text: 'شماره لیست', label: true }, { text: invoice.list_number }
-  ]);
-  y += 28;
-  drawKeyValueRow(doc, y, [
-    { text: 'نام مشتری', label: true }, { text: invoice.customer_name || '-' },
-    { text: 'تلفن مشتری', label: true }, { text: invoice.customer_phone || '-' }
-  ]);
-  y += 28;
-  drawKeyValueRow(doc, y, [
-    { text: 'تاریخ صدور', label: true }, { text: formatPersianDateTime(invoice.issued_at) },
-    { text: 'صادرکننده', label: true }, { text: invoice.issued_by_name || '-' }
-  ]);
-  y += 28;
-  drawKeyValueRow(doc, y, [
-    { text: 'زمان تحویل', label: true }, { text: formatPersianDateTime(invoice.delivered_at) },
-    { text: 'وضعیت تسویه لیست', label: true }, { text: settlementLabel(invoice.list_settlement_status) }
-  ]);
+  const infoGap = 22;
+  const infoWidth = (contentWidth - infoGap) / 2;
+  const rightInfoX = PAGE.width - PAGE.margin - infoWidth;
 
-  y += 58;
-  drawText(doc, 'اقلام فاکتور', PAGE.margin, y - 22, contentWidth, { bold: true, size: 11, color: '#312e81' });
-  let columns = drawLineTableHeader(doc, y);
-  y += 30;
-  lines.forEach((line) => {
-    const rowHeight = 38;
-    if (y + rowHeight > PAGE.height - 100) {
-      const pageState = addPageWithTableHeader(doc);
-      y = pageState.y + 30;
-      columns = pageState.columns;
-    }
-    const values = [
-      formatCurrency(line.line_total_toman),
-      formatPersianDateTime(line.billing_to_at),
-      toPersianNumber(line.charged_days),
-      toPersianNumber(line.quantity),
-      formatCurrency(line.unit_price_toman),
-      line.description
-    ];
-    let x = PAGE.margin;
-    values.forEach((value, index) => {
-      drawCell(doc, x, y, columns[index].width, rowHeight, value, {
-        align: index === 5 ? 'right' : 'center',
-        bold: index === 0,
-        size: index === 1 ? 7.5 : 8
-      });
-      x += columns[index].width;
-    });
-    y += rowHeight;
+  let y = 128;
+  drawInvoiceTableHeader(doc, y);
+  y += TABLE_HEADER_HEIGHT;
+
+  const extraAdjustments = adjustments.filter((item) => (
+    ['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type)
+  ));
+  const invoiceRows = [
+    ...lines.map((line) => ({
+      description: toPersianDigits(line.description),
+      quantity: line.quantity,
+      days: line.charged_days,
+      unitPrice: line.unit_price_toman,
+      total: line.line_total_toman
+    })),
+    ...extraAdjustments.map((item) => ({
+      description: toPersianDigits(`${adjustmentLabel(item.adjustment_type)} - ${item.description}`),
+      quantity: 1,
+      days: '-',
+      unitPrice: item.amount_toman,
+      total: item.amount_toman
+    }))
+  ];
+
+  invoiceRows.forEach((row, index) => {
+    if (y + 31 > TABLE_BOTTOM) y = addTablePage(doc, invoice);
+    y = drawInvoiceRow(doc, y, [
+      formatNumber(row.total),
+      formatNumber(row.unitPrice),
+      row.days === '-' ? '-' : formatNumber(row.days),
+      formatNumber(row.quantity),
+      row.description,
+      formatNumber(index + 1)
+    ], 31, { boldAmount: true });
   });
 
-  const extraAdjustments = adjustments.filter((item) => ['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type));
-  if (extraAdjustments.length) {
-    if (y + 55 + (extraAdjustments.length * 28) > PAGE.height - 100) {
-      doc.addPage();
-      y = PAGE.margin;
-    } else y += 18;
-    drawText(doc, 'هزینه های اضافی', PAGE.margin, y, contentWidth, { bold: true, size: 10, color: '#312e81' });
-    y += 22;
-    extraAdjustments.forEach((item) => {
-      drawCell(doc, PAGE.margin, y, 130, 28, formatCurrency(item.amount_toman), { bold: true });
-      drawCell(doc, PAGE.margin + 130, y, 105, 28, adjustmentLabel(item.adjustment_type), { fill: '#f8fafc', bold: true });
-      drawCell(doc, PAGE.margin + 235, y, contentWidth - 235, 28, item.description, { align: 'right' });
-      y += 28;
-    });
+  const blankRows = Math.max(0, 7 - invoiceRows.length);
+  for (let index = 0; index < blankRows; index += 1) {
+    if (y + 31 > TABLE_BOTTOM) y = addTablePage(doc, invoice);
+    y = drawInvoiceRow(doc, y, ['', '', '', '', '', formatNumber(invoiceRows.length + index + 1)], 31);
   }
 
-  if (y + 300 > PAGE.height - 60) {
-    doc.addPage();
-    y = PAGE.margin;
-  } else y += 18;
-  drawText(doc, 'جمع بندی مالی این فاکتور', PAGE.margin, y, contentWidth, { bold: true, size: 10, color: '#312e81' });
-  y += 24;
+  const noteChunks = splitNotes(doc, invoice.notes);
+  noteChunks.forEach((note, index) => {
+    if (y + 44 > TABLE_BOTTOM) y = addTablePage(doc, invoice);
+    drawCell(doc, PAGE.margin, y, contentWidth, 44,
+      `${index === 0 ? 'توضیحات: ' : ''}${note}`,
+      { align: 'right', fill: '#fffbeb', size: 8.2 });
+    y += 44;
+  });
+
   const summaryRows = [
     ['جمع اجاره اقلام به تومان', invoice.subtotal_toman],
     ['هزینه های اضافی به تومان', invoice.extra_charges_toman],
-    ['مجموع تخفیف به تومان', -Number(invoice.discount_amount_toman || 0)],
-    ['رند مبلغ به تومان', Number(invoice.rounding_adjustment_toman || 0)],
-    ['مبلغ نهایی فاکتور به تومان', invoice.final_amount_toman]
+    ['تخفیف به تومان', -Number(invoice.discount_amount_toman || 0)],
+    ['جمع کل این فاکتور به تومان', invoice.final_amount_toman]
   ];
+  if (y + (summaryRows.length * 28) > TABLE_BOTTOM) y = addTablePage(doc, invoice);
   summaryRows.forEach(([label, amount], index) => {
-    const isFinal = index === summaryRows.length - 1;
-    drawCell(doc, PAGE.margin, y, 190, 30, formatCurrency(amount), { bold: true, fill: isFinal ? '#dcfce7' : '#ffffff', color: isFinal ? '#166534' : '#172033' });
-    drawCell(doc, PAGE.margin + 190, y, contentWidth - 190, 30, label, { align: 'right', bold: isFinal, fill: isFinal ? '#dcfce7' : '#f8fafc', color: isFinal ? '#166534' : '#172033' });
-    y += 30;
+    const isInvoiceTotal = index === summaryRows.length - 1;
+    y = drawSummaryRow(doc, y, label, amount, {
+      fill: isInvoiceTotal ? '#e5e7eb' : undefined,
+      color: '#111827'
+    });
   });
 
-  y += 18;
-  drawText(doc, 'وضعیت مالی کل لیست', PAGE.margin, y, contentWidth, { bold: true, size: 10, color: '#312e81' });
-  y += 24;
-  const financialCells = [
-    ['جمع کل فاکتورها به تومان', financials.invoiced_toman],
-    ['جمع پرداخت معتبر به تومان', financials.paid_toman],
-    ['مانده کل لیست به تومان', financials.balance_toman]
-  ];
-  const financialWidth = contentWidth / 3;
-  financialCells.forEach(([label, amount], index) => {
-    const x = PAGE.margin + (index * financialWidth);
-    drawCell(doc, x, y, financialWidth, 25, label, { fill: '#e0e7ff', bold: true, color: '#3730a3' });
-    drawCell(doc, x, y + 25, financialWidth, 31, formatCurrency(amount), { bold: true });
+  if (y + 42 > TABLE_BOTTOM) {
+    doc.addPage();
+    y = 72;
+  } else y += 12;
+  drawMetaLine(doc, rightInfoX, y, infoWidth,
+    'تاریخ تحویل', formatPersianDateTime(invoice.delivered_at));
+  drawMetaLine(doc, PAGE.margin, y, infoWidth,
+    'تاریخ برگشت', formatPersianDateTime(latestReturnAt(lines)));
+  y += 30;
+
+  if (y + 96 > PAGE.height - 30) {
+    doc.addPage();
+    y = 72;
+  } else y += 14;
+  const signatureWidth = 194;
+  const signatureX = PAGE.width - PAGE.margin - signatureWidth;
+  drawText(doc, 'مهر و امضای مجموعه', signatureX + 8, y + 8, signatureWidth - 16, {
+    bold: true, align: 'center', size: 8.5
   });
-  y += 72;
-
-  if (invoice.notes) {
-    drawCell(doc, PAGE.margin, y, contentWidth, 48, `توضیحات: ${invoice.notes}`, { align: 'right', fill: '#fffbeb', size: 8.5 });
-  }
-
-  const range = doc.bufferedPageRange();
-  for (let index = range.start; index < range.start + range.count; index += 1) {
-    doc.switchToPage(index);
-    doc.moveTo(PAGE.margin, PAGE.height - 75).lineTo(PAGE.width - PAGE.margin, PAGE.height - 75).strokeColor('#cbd5e1').stroke();
-    drawText(doc, `${toPersianNumber(index + 1)} / ${toPersianNumber(range.count)}`, PAGE.margin, PAGE.height - 68, contentWidth, { align: 'center', size: 7.5, color: '#64748b', lineBreak: false, height: 10 });
-  }
-
   doc.end();
   return promise;
 }

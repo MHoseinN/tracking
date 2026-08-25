@@ -70,6 +70,25 @@ function issueInvoice(req, res) {
   } catch (error) { return handleError(error, res); }
 }
 
+function getIssuedInvoice(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.json(invoiceService.getInvoice(req.params.id, req.params.invoiceId)); }
+  catch (error) { return handleError(error, res); }
+}
+
+function updateIssuedInvoice(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const invoice = invoiceService.updateInvoice(
+      req.params.id,
+      req.params.invoiceId,
+      req.body,
+      req.user.id
+    );
+    return res.json({ invoice, list: draftService.getList(req.params.id) });
+  } catch (error) { return handleError(error, res); }
+}
+
 function getSettlement(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try { return res.json(settlementService.getSummary(req.params.id)); }
@@ -92,6 +111,16 @@ async function downloadInvoicePdf(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try {
     const result = await invoicePdfService.generate(req.params.id, req.params.invoiceId);
+
+    if (req.query.transport === 'base64') {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({
+        filename: result.filename,
+        content_type: 'application/pdf',
+        data_base64: result.buffer.toString('base64')
+      });
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.buffer.length);
@@ -127,6 +156,8 @@ module.exports = {
   recordReturn,
   getInvoicePreview,
   issueInvoice,
+  getIssuedInvoice,
+  updateIssuedInvoice,
   getSettlement,
   recordPayment,
   voidPayment,

@@ -439,11 +439,15 @@ test('marks damage for follow-up and requires reasons for issues and day overrid
   }
 });
 
-test('manager can update the cutoff used by new delivery-list snapshots', () => {
+test('manager can update collection identity and the cutoff used by new lists', () => {
   const db = createDatabase();
   try {
     const settingsService = createSettingsService(db);
-    const updated = settingsService.updateBillingCutoff('10:30', 1);
+    const updated = settingsService.updateGeneralSettings({
+      collection_name: 'مجموعه تصویربرداری آلفا',
+      billing_cutoff_time: '10:30'
+    }, 1);
+    assert.equal(updated.collection_name, 'مجموعه تصویربرداری آلفا');
     assert.equal(updated.billing_cutoff_minutes, 630);
     assert.equal(updated.billing_cutoff_time, '10:30');
     const draft = createDeliveryListDraftService(db).createDraft(1);
@@ -513,6 +517,27 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(listService.getList(draft.id).invoice_status, 'PARTIALLY_ISSUED');
     assert.equal(invoiceService.getPreview(draft.id).lines.length, 0);
 
+    const primaryDetail = invoiceService.getInvoice(draft.id, primary.id);
+    const editedPrimary = invoiceService.updateInvoice(draft.id, primary.id, {
+      lines: primaryDetail.lines.map((line) => ({
+        id: line.id,
+        charged_days: 2,
+        unit_price_toman: 1200000
+      })),
+      extras: [{ type: 'TRANSPORT', description: 'حمل و نقل ویرایش شده', amount_toman: 200000 }],
+      discount_percent_basis_points: 0,
+      discount_amount_toman: 100000,
+      rounding_adjustment_toman: -50000,
+      notes: 'نسخه ویرایش شده پیش از دانلود'
+    }, 1);
+    assert.equal(editedPrimary.subtotal_toman, 2400000);
+    assert.equal(editedPrimary.final_amount_toman, 2450000);
+    assert.equal(editedPrimary.lines[0].charged_days, 2);
+    assert.equal(editedPrimary.extras[0].amount_toman, 200000);
+    assert.equal(editedPrimary.fixed_discount_toman, 100000);
+    assert.equal(editedPrimary.notes, 'نسخه ویرایش شده پیش از دانلود');
+    assert.equal(editedPrimary.version, 5);
+
     listService.recordReturn(draft.id, {
       returned_at: '2026-08-26T11:00:00+03:30',
       items: [{ delivery_list_item_id: itemId, healthy_quantity: 2 }]
@@ -527,6 +552,8 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(supplement.invoice_number, '4051001');
     assert.equal(supplement.invoice_type, 'SUPPLEMENT');
     assert.equal(supplement.parent_invoice_id, primary.id);
+    const supplementPdfData = createInvoicePdfService(db).getInvoicePdfData(draft.id, supplement.id);
+    assert.equal(supplementPdfData.invoice.parent_invoice_number, primary.invoice_number);
     const finalList = listService.getList(draft.id);
     assert.equal(finalList.invoice_status, 'ISSUED');
     assert.equal(finalList.invoices.length, 2);
@@ -628,6 +655,7 @@ test('generates a downloadable Persian PDF for an issued workflow invoice', asyn
     assert.ok(result.buffer.length > 10000);
     assert.equal(result.data.lines.length, 1);
     assert.equal(result.data.adjustments.length, 3);
+    assert.equal(result.data.invoice.parent_invoice_number, null);
   } finally {
     db.close();
   }
