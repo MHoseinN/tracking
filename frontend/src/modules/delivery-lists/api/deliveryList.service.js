@@ -13,5 +13,8 @@ export const deliveryListService = {
   issueInvoice(id, payload) { return api.post(`/delivery-lists/${id}/invoices`, payload); },
   getSettlement(id) { return api.get(`/delivery-lists/${id}/settlement`); },
   recordPayment(id, payload) { return api.post(`/delivery-lists/${id}/payments`, payload); },
-  voidPayment(id, paymentId) { return api.post(`/delivery-lists/${id}/payments/${paymentId}/void`); }
+  voidPayment(id, paymentId) { return api.post(`/delivery-lists/${id}/payments/${paymentId}/void`); },
+  downloadInvoicePdf(id, invoiceId) {
+    return api.get(`/delivery-lists/${id}/invoices/${invoiceId}/pdf`, { responseType: 'blob' });
+  }
 };

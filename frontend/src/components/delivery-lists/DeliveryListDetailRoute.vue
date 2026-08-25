@@ -86,7 +86,23 @@
 
       <section v-if="list.invoices?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-300 p-5"><h3 class="text-base font-black text-slate-800">فاکتورهای صادرشده این لیست</h3></div>
-        <div class="overflow-x-auto p-5"><table class="w-full min-w-[900px] border-collapse border border-slate-300"><thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','زمان صدور','تعداد ردیف','جمع اقلام','هزینه اضافی','تخفیف','مبلغ نهایی','صادرکننده']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead><tbody><tr v-for="invoice in list.invoices" :key="invoice.id"><td class="border border-slate-300 px-3 py-3 font-bold text-indigo-700">{{ invoice.invoice_number }}</td><td class="border border-slate-300 px-3 py-3">{{ invoice.invoice_type === 'PRIMARY' ? 'اصلی' : 'تکمیلی' }}</td><td class="border border-slate-300 px-3 py-3">{{ formatDateTime(invoice.issued_at) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatNumber(invoice.lines?.length) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.subtotal_toman) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.extra_charges_toman) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.discount_amount_toman) }}</td><td class="border border-slate-300 px-3 py-3 font-black">{{ formatCurrency(invoice.final_amount_toman) }}</td><td class="border border-slate-300 px-3 py-3">{{ invoice.issued_by_name || '—' }}</td></tr></tbody></table></div>
+        <div class="overflow-x-auto p-5">
+          <table class="w-full min-w-[1050px] border-collapse border border-slate-300">
+            <thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','زمان صدور','تعداد ردیف','جمع اقلام','هزینه اضافی','تخفیف','مبلغ نهایی','صادرکننده','عملیات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead>
+            <tbody><tr v-for="invoice in list.invoices" :key="invoice.id">
+              <td class="border border-slate-300 px-3 py-3 font-bold text-indigo-700">{{ invoice.invoice_number }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ invoice.invoice_type === 'PRIMARY' ? 'اصلی' : 'تکمیلی' }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ formatDateTime(invoice.issued_at) }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ formatNumber(invoice.lines?.length) }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.subtotal_toman) }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.extra_charges_toman) }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.discount_amount_toman) }}</td>
+              <td class="border border-slate-300 px-3 py-3 font-black">{{ formatCurrency(invoice.final_amount_toman) }}</td>
+              <td class="border border-slate-300 px-3 py-3">{{ invoice.issued_by_name || '—' }}</td>
+              <td class="border border-slate-300 px-3 py-3"><button type="button" class="app-button-secondary whitespace-nowrap px-3 py-2 text-xs" :disabled="downloadingInvoiceId === invoice.id" @click="downloadInvoicePdf(invoice)">{{ downloadingInvoiceId === invoice.id ? 'در حال دانلود...' : 'دانلود PDF' }}</button></td>
+            </tr></tbody>
+          </table>
+        </div>
       </section>
 
       <section v-else class="rounded-lg border border-violet-300 bg-violet-50 p-5 text-sm text-violet-800">
@@ -130,6 +146,7 @@ const loadingSettlement = ref(false);
 const settlementSaving = ref(false);
 const showSettlementModal = ref(false);
 const settlementSummary = ref(null);
+const downloadingInvoiceId = ref(null);
 
 const dailyTotal = computed(() => (list.value?.items || []).reduce((sum, item) => (
   sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
@@ -233,6 +250,23 @@ async function handleVoidPayment(paymentId) {
   settlementSummary.value = result.data;
   list.value.settlement_status = result.data.list.settlement_status;
   toast.success('پرداخت باطل شد و وضعیت تسویه دوباره محاسبه شد');
+}
+
+async function downloadInvoicePdf(invoice) {
+  if (downloadingInvoiceId.value) return;
+  downloadingInvoiceId.value = invoice.id;
+  const result = await listStore.downloadInvoicePdf(list.value.id, invoice.id);
+  downloadingInvoiceId.value = null;
+  if (!result.success) return toast.error(result.message);
+  const url = URL.createObjectURL(result.data);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `invoice-${invoice.invoice_number}.pdf`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  toast.success('فایل PDF فاکتور دانلود شد');
 }
 
 function itemStatusMeta(status) {

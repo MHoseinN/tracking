@@ -14,7 +14,8 @@ const {
   issueInvoice,
   getSettlement,
   recordPayment,
-  voidPayment
+  voidPayment,
+  downloadInvoicePdf
 } = require('../controllers/deliveryListController');
 
 const router = express.Router();
@@ -90,5 +91,9 @@ router.post('/:id/payments/:paymentId/void', [
   idValidation,
   param('paymentId').isInt({ min: 1 })
 ], voidPayment);
+router.get('/:id/invoices/:invoiceId/pdf', [
+  idValidation,
+  param('invoiceId').isInt({ min: 1 })
+], downloadInvoicePdf);
 
 module.exports = router;

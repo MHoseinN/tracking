@@ -196,6 +196,15 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       } finally {
         this.saving = false;
       }
+    },
+
+    async downloadInvoicePdf(id, invoiceId) {
+      try {
+        const response = await deliveryListService.downloadInvoicePdf(id, invoiceId);
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'دانلود PDF فاکتور انجام نشد') };
+      }
     }
   }
 });

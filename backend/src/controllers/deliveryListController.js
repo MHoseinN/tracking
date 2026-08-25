@@ -6,10 +6,12 @@ const {
 } = require('../services/deliveryListDraftService');
 const { createDeliveryInvoiceService } = require('../services/deliveryInvoiceService');
 const { createDeliverySettlementService } = require('../services/deliverySettlementService');
+const { createInvoicePdfService } = require('../services/invoicePdfService');
 
 const draftService = createDeliveryListDraftService(db);
 const invoiceService = createDeliveryInvoiceService(db);
 const settlementService = createDeliverySettlementService(db);
+const invoicePdfService = createInvoicePdfService(db);
 
 function hasValidationErrors(req, res) {
   const errors = validationResult(req);
@@ -86,6 +88,17 @@ function voidPayment(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+async function downloadInvoicePdf(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const result = await invoicePdfService.generate(req.params.id, req.params.invoiceId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader('Content-Length', result.buffer.length);
+    return res.send(result.buffer);
+  } catch (error) { return handleError(error, res); }
+}
+
 function createDraft(req, res) {
   try { return res.status(201).json(draftService.createDraft(req.user.id)); }
   catch (error) { return handleError(error, res); }
@@ -116,5 +129,6 @@ module.exports = {
   issueInvoice,
   getSettlement,
   recordPayment,
-  voidPayment
+  voidPayment,
+  downloadInvoicePdf
 };

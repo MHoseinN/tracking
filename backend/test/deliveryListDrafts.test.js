@@ -10,6 +10,7 @@ const { createSettingsService } = require('../src/services/settingsService');
 const { createDeliveryInvoiceService } = require('../src/services/deliveryInvoiceService');
 const { createDeliverySettlementService } = require('../src/services/deliverySettlementService');
 const { getPersianYear } = require('../src/services/workflowNumberingService');
+const { createInvoicePdfService } = require('../src/services/invoicePdfService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -23,6 +24,7 @@ function createDatabase() {
     CREATE TABLE customers (
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
+      phone TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       deleted_at TEXT
     );
@@ -587,6 +589,45 @@ test('records deposits, completes settlement after final invoice and recalculate
     assert.equal(summary.total_paid_toman, 500000);
     assert.equal(summary.payments[0].voided_by_name, 'مدیر');
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action IN ('RECORD_PAYMENT', 'VOID_PAYMENT')").get().count, 3);
+  } finally {
+    db.close();
+  }
+});
+
+test('generates a downloadable Persian PDF for an issued workflow invoice', async () => {
+  const db = createDatabase();
+  try {
+    db.prepare("UPDATE customers SET phone = '09120000000' WHERE id = 1").run();
+    const listService = createDeliveryListDraftService(db);
+    const invoiceService = createDeliveryInvoiceService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-25T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
+    });
+    const delivered = listService.finalizeDraft(draft.id, saved.version, 1);
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 2 }]
+    }, 1);
+    const invoice = invoiceService.issueInvoice(draft.id, {
+      issued_at: '2026-08-25T12:00:00+03:30',
+      lines: invoiceService.getPreview(draft.id).lines,
+      extras: [{ type: 'TRANSPORT', description: 'هزینه حمل تجهیزات', amount_toman: 200000 }],
+      discount_percent_basis_points: 500,
+      rounding_adjustment_toman: -10000,
+      notes: 'با تشکر از مشتری گرامی'
+    }, 1);
+
+    const result = await createInvoicePdfService(db).generate(draft.id, invoice.id);
+    assert.equal(result.filename, 'invoice-4051000.pdf');
+    assert.equal(result.buffer.subarray(0, 5).toString(), '%PDF-');
+    assert.ok(result.buffer.length > 10000);
+    assert.equal(result.data.lines.length, 1);
+    assert.equal(result.data.adjustments.length, 3);
   } finally {
     db.close();
   }
