@@ -20,6 +20,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <span class="app-badge" :class="listStatus.className">{{ listStatus.label }}</span>
               <span class="app-badge" :class="invoiceStatus.className">{{ invoiceStatus.label }}</span>
+              <span class="app-badge" :class="invoiceSendStatus.className">{{ invoiceSendStatus.label }}</span>
               <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
             </div>
             <h2 class="mt-3 text-2xl font-black text-slate-900">{{ list.list_number || `لیست #${list.id}` }}</h2>
@@ -87,8 +88,8 @@
       <section v-if="list.invoices?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-300 p-5"><h3 class="text-base font-black text-slate-800">فاکتورهای صادرشده این لیست</h3></div>
         <div class="overflow-x-auto p-5">
-          <table class="w-full min-w-[1050px] border-collapse border border-slate-300">
-            <thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','زمان صدور','تعداد ردیف','جمع اقلام','هزینه اضافی','تخفیف','مبلغ نهایی','صادرکننده','عملیات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead>
+          <table class="w-full min-w-[1350px] border-collapse border border-slate-300">
+            <thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','زمان صدور','تعداد ردیف','جمع اقلام','هزینه اضافی','تخفیف','مبلغ نهایی','وضعیت ارسال','آخرین ارسال','صادرکننده','عملیات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead>
             <tbody><tr v-for="invoice in list.invoices" :key="invoice.id">
               <td class="border border-slate-300 px-3 py-3 font-bold text-indigo-700">{{ invoice.invoice_number }}</td>
               <td class="border border-slate-300 px-3 py-3">{{ invoice.invoice_type === 'PRIMARY' ? 'اصلی' : 'تکمیلی' }}</td>
@@ -98,6 +99,20 @@
               <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.extra_charges_toman) }}</td>
               <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.discount_amount_toman) }}</td>
               <td class="border border-slate-300 px-3 py-3 font-black">{{ formatCurrency(invoice.final_amount_toman) }}</td>
+              <td class="border border-slate-300 px-3 py-3">
+                <button type="button" class="app-badge cursor-pointer"
+                  :class="invoiceSendStatusMeta(invoice.send_status).className"
+                  :disabled="loadingSendInvoiceId === invoice.id" @click="openInvoiceSend(invoice)">
+                  {{ loadingSendInvoiceId === invoice.id ? 'در حال دریافت...' : invoiceSendStatusMeta(invoice.send_status).label }}
+                </button>
+              </td>
+              <td class="border border-slate-300 px-3 py-3 text-xs">
+                <template v-if="invoice.send_status === 'SENT'">
+                  <div class="font-bold text-slate-700">{{ formatDateTime(invoice.last_sent_at) }}</div>
+                  <div class="mt-1 text-slate-500">{{ invoice.last_sent_by_name || '—' }}</div>
+                </template>
+                <span v-else>—</span>
+              </td>
               <td class="border border-slate-300 px-3 py-3">{{ invoice.issued_by_name || '—' }}</td>
               <td class="border border-slate-300 px-3 py-3"><button type="button" class="app-button-secondary whitespace-nowrap px-3 py-2 text-xs" :disabled="openingInvoiceId === invoice.id" @click="openIssuedInvoice(invoice)">{{ openingInvoiceId === invoice.id ? 'در حال آماده‌سازی...' : 'مشاهده و ویرایش' }}</button></td>
             </tr></tbody>
@@ -119,8 +134,15 @@
       :downloading="Boolean(downloadingInvoiceId)" @close="closeIssuedInvoiceModal"
       @save="handleUpdateIssuedInvoice($event, false)" @save-download="handleUpdateIssuedInvoice($event, true)"
       @download="downloadPreparedInvoice" />
+    <DeliveryInvoiceSendModal :is-open="showInvoiceSendModal" :invoice="sendInvoice"
+      :saving="updatingSendStatus" @close="closeInvoiceSendModal"
+      @save="handleInvoiceSend" @request-unsent="invoiceToResetSend = sendInvoice" />
     <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
       @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
+    <ConfirmModal :is-open="Boolean(invoiceToResetSend)" title="لغو وضعیت ارسال فاکتور"
+      :message="`فاکتور ${invoiceToResetSend?.invoice_number || ''} دوباره به وضعیت «ارسال‌نشده» برگردد؟ این عملیات در تاریخچه ثبت می‌شود.`"
+      :loading="updatingSendStatus" confirm-text="بله، ارسال‌نشده شود" loading-text="در حال ثبت..."
+      @confirm="confirmResetInvoiceSend" @cancel="invoiceToResetSend = null" />
   </div>
 </template>
 
@@ -129,9 +151,11 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
+import ConfirmModal from '../ConfirmModal.vue';
 import DeliveryReturnModal from './DeliveryReturnModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryInvoicePreviewModal from './DeliveryInvoicePreviewModal.vue';
+import DeliveryInvoiceSendModal from './DeliveryInvoiceSendModal.vue';
 import DeliverySettlementModal from './DeliverySettlementModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
@@ -160,6 +184,11 @@ const showIssuedInvoiceModal = ref(false);
 const selectedInvoice = ref(null);
 const invoicePdfBlob = ref(null);
 const invoicePdfUrl = ref('');
+const showInvoiceSendModal = ref(false);
+const sendInvoice = ref(null);
+const loadingSendInvoiceId = ref(null);
+const updatingSendStatus = ref(false);
+const invoiceToResetSend = ref(null);
 
 const dailyTotal = computed(() => (list.value?.items || []).reduce((sum, item) => (
   sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
@@ -183,6 +212,7 @@ const invoiceStatus = computed(() => ({
   PARTIALLY_ISSUED: { label: 'صدور جزئی', className: 'bg-amber-100 text-amber-700' },
   ISSUED: { label: 'فاکتور صادرشده', className: 'bg-emerald-100 text-emerald-700' }
 }[list.value?.invoice_status] || { label: 'بدون فاکتور', className: 'bg-slate-100 text-slate-600' }));
+const invoiceSendStatus = computed(() => invoiceSendStatusMeta(list.value?.invoice_send_status));
 const settlementStatus = computed(() => ({
   UNPAID: { label: 'تسویه‌نشده', className: 'bg-rose-100 text-rose-700' },
   PARTIAL: { label: 'تسویه جزئی / بیعانه', className: 'bg-amber-100 text-amber-700' },
@@ -300,6 +330,51 @@ async function handleUpdateIssuedInvoice(payload, downloadAfter) {
   if (downloadAfter && refreshed) await downloadPreparedInvoice();
 }
 
+async function openInvoiceSend(invoice) {
+  if (loadingSendInvoiceId.value) return;
+  loadingSendInvoiceId.value = invoice.id;
+  const result = await listStore.getInvoice(list.value.id, invoice.id);
+  loadingSendInvoiceId.value = null;
+  if (!result.success) return toast.error(result.message);
+  sendInvoice.value = result.data;
+  showInvoiceSendModal.value = true;
+}
+
+async function handleInvoiceSend(payload) {
+  if (updatingSendStatus.value || !sendInvoice.value) return;
+  updatingSendStatus.value = true;
+  const result = await listStore.updateInvoiceSendStatus(list.value.id, sendInvoice.value.id, payload);
+  updatingSendStatus.value = false;
+  if (!result.success) return toast.error(result.message);
+  list.value = result.data.list;
+  sendInvoice.value = result.data.invoice;
+  toast.success('ارسال فاکتور ثبت شد');
+}
+
+async function confirmResetInvoiceSend() {
+  if (updatingSendStatus.value || !invoiceToResetSend.value) return;
+  updatingSendStatus.value = true;
+  const result = await listStore.updateInvoiceSendStatus(list.value.id, invoiceToResetSend.value.id, {
+    send_status: 'NOT_SENT',
+    channel: 'MANUAL',
+    sent_at: new Date().toISOString(),
+    notes: 'وضعیت ارسال با تأیید کاربر لغو شد'
+  });
+  updatingSendStatus.value = false;
+  if (!result.success) return toast.error(result.message);
+  list.value = result.data.list;
+  sendInvoice.value = result.data.invoice;
+  invoiceToResetSend.value = null;
+  toast.success('فاکتور به وضعیت ارسال‌نشده برگشت');
+}
+
+function closeInvoiceSendModal() {
+  if (updatingSendStatus.value) return;
+  showInvoiceSendModal.value = false;
+  sendInvoice.value = null;
+  invoiceToResetSend.value = null;
+}
+
 async function refreshInvoicePdf() {
   if (!selectedInvoice.value || loadingInvoicePdf.value) return false;
   loadingInvoicePdf.value = true;
@@ -354,6 +429,14 @@ function itemStatusMeta(status) {
     REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
     DAMAGE: { label: 'خسارت/مفقودی', className: 'bg-rose-100 text-rose-700' }
   }[status] || { label: status || 'نامشخص', className: 'bg-slate-100 text-slate-600' };
+}
+
+function invoiceSendStatusMeta(status) {
+  return {
+    NOT_SENT: { label: 'ارسال‌نشده', className: 'bg-rose-100 text-rose-700' },
+    PARTIALLY_SENT: { label: 'ارسال جزئی', className: 'bg-amber-100 text-amber-700' },
+    SENT: { label: 'ارسال‌شده', className: 'bg-cyan-100 text-cyan-700' }
+  }[status] || { label: 'ارسال‌نشده', className: 'bg-slate-100 text-slate-600' };
 }
 
 function formatNumber(value) { return Number(value || 0).toLocaleString('fa-IR'); }

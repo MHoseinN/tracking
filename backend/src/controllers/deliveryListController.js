@@ -89,6 +89,19 @@ function updateIssuedInvoice(req, res) {
   } catch (error) { return handleError(error, res); }
 }
 
+function updateInvoiceSendStatus(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const invoice = invoiceService.updateSendStatus(
+      req.params.id,
+      req.params.invoiceId,
+      req.body,
+      req.user.id
+    );
+    return res.json({ invoice, list: draftService.getList(req.params.id) });
+  } catch (error) { return handleError(error, res); }
+}
+
 function getSettlement(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try { return res.json(settlementService.getSummary(req.params.id)); }
@@ -158,6 +171,7 @@ module.exports = {
   issueInvoice,
   getIssuedInvoice,
   updateIssuedInvoice,
+  updateInvoiceSendStatus,
   getSettlement,
   recordPayment,
   voidPayment,

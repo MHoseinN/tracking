@@ -14,6 +14,7 @@ const {
   issueInvoice,
   getIssuedInvoice,
   updateIssuedInvoice,
+  updateInvoiceSendStatus,
   getSettlement,
   recordPayment,
   voidPayment,
@@ -99,6 +100,15 @@ router.put('/:id/invoices/:invoiceId', [
   body('discount_amount_toman').optional().isInt({ min: 0 }),
   body('rounding_adjustment_toman').optional().isInt({ max: 0 })
 ], updateIssuedInvoice);
+router.patch('/:id/invoices/:invoiceId/send-status', [
+  idValidation,
+  param('invoiceId').isInt({ min: 1 }),
+  body('send_status').isIn(['SENT', 'NOT_SENT']),
+  body('channel').optional().isIn(['EITA', 'PRINT', 'MANUAL', 'OTHER']),
+  body('recipient').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('sent_at').optional().isISO8601(),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 2000 })
+], updateInvoiceSendStatus);
 router.get('/:id/settlement', [idValidation], getSettlement);
 router.post('/:id/payments', [
   idValidation,

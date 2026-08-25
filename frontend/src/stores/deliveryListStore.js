@@ -178,6 +178,20 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       }
     },
 
+    async updateInvoiceSendStatus(id, invoiceId, payload) {
+      this.saving = true;
+      try {
+        const response = (await deliveryListService.updateInvoiceSendStatus(id, invoiceId, payload)).data;
+        this.currentDraft = response.list;
+        replaceDraft(this.lists, response.list);
+        return { success: true, data: response };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'تغییر وضعیت ارسال فاکتور انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
+    },
+
     async getSettlement(id) {
       try {
         return { success: true, data: (await deliveryListService.getSettlement(id)).data };

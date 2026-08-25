@@ -207,6 +207,20 @@ function createDatabase() {
       FOREIGN KEY (voided_by_user_id) REFERENCES users(id)
     );
 
+    CREATE TABLE invoice_send_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER NOT NULL,
+      channel TEXT NOT NULL DEFAULT 'MANUAL',
+      recipient TEXT,
+      status TEXT NOT NULL DEFAULT 'SENT',
+      sent_at TEXT NOT NULL,
+      sent_by_user_id INTEGER NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+      FOREIGN KEY (sent_by_user_id) REFERENCES users(id)
+    );
+
     CREATE TABLE audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       actor_user_id INTEGER,
@@ -537,6 +551,16 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(editedPrimary.fixed_discount_toman, 100000);
     assert.equal(editedPrimary.notes, 'نسخه ویرایش شده پیش از دانلود');
     assert.equal(editedPrimary.version, 5);
+    const sentPrimary = invoiceService.updateSendStatus(draft.id, primary.id, {
+      send_status: 'SENT',
+      channel: 'EITA',
+      recipient: '09120000000',
+      sent_at: '2026-08-25T13:00:00+03:30'
+    }, 1);
+    assert.equal(sentPrimary.send_status, 'SENT');
+    assert.equal(sentPrimary.send_logs[0].channel, 'EITA');
+    assert.equal(sentPrimary.send_logs[0].sent_by_name, 'مدیر');
+    assert.equal(listService.getList(draft.id).invoice_send_status, 'SENT');
 
     listService.recordReturn(draft.id, {
       returned_at: '2026-08-26T11:00:00+03:30',
@@ -552,6 +576,17 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(supplement.invoice_number, '4051001');
     assert.equal(supplement.invoice_type, 'SUPPLEMENT');
     assert.equal(supplement.parent_invoice_id, primary.id);
+    assert.equal(listService.getList(draft.id).invoice_send_status, 'PARTIALLY_SENT');
+    invoiceService.updateSendStatus(draft.id, supplement.id, {
+      send_status: 'SENT', channel: 'EITA'
+    }, 1);
+    assert.equal(listService.getList(draft.id).invoice_send_status, 'SENT');
+    const resetPrimary = invoiceService.updateSendStatus(draft.id, primary.id, {
+      send_status: 'NOT_SENT', notes: 'نیاز به ارسال مجدد'
+    }, 1);
+    assert.equal(resetPrimary.send_status, 'NOT_SENT');
+    assert.equal(resetPrimary.send_logs[0].status, 'FAILED');
+    assert.equal(listService.getList(draft.id).invoice_send_status, 'PARTIALLY_SENT');
     const supplementPdfData = createInvoicePdfService(db).getInvoicePdfData(draft.id, supplement.id);
     assert.equal(supplementPdfData.invoice.parent_invoice_number, primary.invoice_number);
     const finalList = listService.getList(draft.id);

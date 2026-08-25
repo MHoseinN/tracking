@@ -23,6 +23,26 @@ function invoiceDate(dateValue) {
   return `${value('year')}-${value('month')}-${value('day')}`;
 }
 
+function recalculateInvoiceSendStatus(db, listId) {
+  const counts = db.prepare(`
+    SELECT COUNT(*) AS total,
+           SUM(CASE WHEN send_status = 'SENT' THEN 1 ELSE 0 END) AS sent
+    FROM invoices
+    WHERE delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+  `).get(listId);
+  const total = Number(counts.total) || 0;
+  const sent = Number(counts.sent) || 0;
+  const status = total > 0 && sent === total
+    ? 'SENT'
+    : (sent > 0 ? 'PARTIALLY_SENT' : 'NOT_SENT');
+  db.prepare(`
+    UPDATE delivery_lists
+    SET invoice_send_status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(status, listId);
+  return status;
+}
+
 function createDeliveryInvoiceService(db) {
   function getList(listId) {
     const list = db.prepare(`
@@ -166,7 +186,68 @@ function createDeliveryInvoiceService(db) {
     invoice.fixed_discount_toman = Math.abs(adjustments
       .filter((item) => item.adjustment_type === 'DISCOUNT_AMOUNT')
       .reduce((sum, item) => sum + Number(item.amount_toman), 0));
+    invoice.send_logs = db.prepare(`
+      SELECT invoice_send_logs.id, invoice_send_logs.channel,
+             invoice_send_logs.recipient, invoice_send_logs.status,
+             invoice_send_logs.sent_at, invoice_send_logs.notes,
+             COALESCE(users.display_name, users.username) AS sent_by_name
+      FROM invoice_send_logs
+      JOIN users ON users.id = invoice_send_logs.sent_by_user_id
+      WHERE invoice_send_logs.invoice_id = ?
+      ORDER BY invoice_send_logs.sent_at DESC, invoice_send_logs.id DESC
+    `).all(invoice.id);
     return invoice;
+  }
+
+  function updateSendStatus(listId, invoiceId, payload = {}, actorUserId) {
+    const existing = getInvoice(listId, invoiceId);
+    const nextStatus = String(payload.send_status || '').toUpperCase();
+    if (!['SENT', 'NOT_SENT'].includes(nextStatus)) {
+      throw new DeliveryListDraftError('وضعیت ارسال فاکتور نامعتبر است');
+    }
+    const allowedChannels = new Set(['EITA', 'PRINT', 'MANUAL', 'OTHER']);
+    const channel = String(payload.channel || (nextStatus === 'SENT' ? 'EITA' : 'MANUAL')).toUpperCase();
+    if (!allowedChannels.has(channel)) throw new DeliveryListDraftError('روش ارسال فاکتور نامعتبر است');
+    const sentDate = payload.sent_at ? new Date(payload.sent_at) : new Date();
+    if (Number.isNaN(sentDate.getTime())) throw new DeliveryListDraftError('زمان ارسال فاکتور نامعتبر است');
+    const sentAt = sentDate.toISOString();
+    const recipient = textOrNull(payload.recipient);
+    const notes = textOrNull(payload.notes);
+
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO invoice_send_logs (
+          invoice_id, channel, recipient, status, sent_at, sent_by_user_id, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(existing.id, channel, recipient,
+        nextStatus === 'SENT' ? 'SENT' : 'FAILED', sentAt, actorUserId, notes);
+      db.prepare(`
+        UPDATE invoices
+        SET send_status = ?, updated_at = CURRENT_TIMESTAMP, version = version + 1
+        WHERE id = ?
+      `).run(nextStatus, existing.id);
+      const listSendStatus = recalculateInvoiceSendStatus(db, Number(listId));
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action,
+          before_json, after_json, metadata_json
+        ) VALUES (?, 'INVOICE', ?, ?, ?, ?, ?)
+      `).run(
+        actorUserId,
+        String(existing.id),
+        nextStatus === 'SENT' ? 'MARK_INVOICE_SENT' : 'MARK_INVOICE_NOT_SENT',
+        JSON.stringify({ send_status: existing.send_status }),
+        JSON.stringify({ send_status: nextStatus }),
+        JSON.stringify({
+          delivery_list_id: Number(listId),
+          list_send_status: listSendStatus,
+          channel,
+          recipient
+        })
+      );
+    })();
+
+    return getInvoice(listId, invoiceId);
   }
 
   function updateInvoice(listId, invoiceId, payload = {}, actorUserId) {
@@ -272,6 +353,7 @@ function createDeliveryInvoiceService(db) {
       );
 
       recalculateSettlementStatus(db, Number(listId));
+      recalculateInvoiceSendStatus(db, Number(listId));
       db.prepare(`
         INSERT INTO audit_logs (
           actor_user_id, entity_type, entity_id, action,
@@ -418,6 +500,7 @@ function createDeliveryInvoiceService(db) {
         WHERE id = ?
       `).run(nextStatus, list.id);
       recalculateSettlementStatus(db, list.id);
+      recalculateInvoiceSendStatus(db, list.id);
       db.prepare(`
         INSERT INTO audit_logs (
           actor_user_id, entity_type, entity_id, action, after_json, metadata_json
@@ -437,7 +520,7 @@ function createDeliveryInvoiceService(db) {
     `).get(invoiceId);
   }
 
-  return { getPreview, issueInvoice, getInvoice, updateInvoice };
+  return { getPreview, issueInvoice, getInvoice, updateInvoice, updateSendStatus };
 }
 
-module.exports = { createDeliveryInvoiceService };
+module.exports = { createDeliveryInvoiceService, recalculateInvoiceSendStatus };

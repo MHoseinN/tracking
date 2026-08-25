@@ -44,7 +44,15 @@
               <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ formatDateTime(draft.delivered_at) }}</td>
               <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ draft.last_returned_at ? formatDateTime(draft.last_returned_at) : '' }}</td>
               <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="listStatusMeta(draft.status).className">{{ listStatusMeta(draft.status).label }}</span></td>
-              <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="invoiceStatusMeta(draft.invoice_status).className">{{ invoiceStatusMeta(draft.invoice_status).label }}</span></td>
+              <td class="border border-slate-300 px-4 py-4">
+                <div class="flex flex-col items-start gap-2">
+                  <span class="app-badge" :class="invoiceStatusMeta(draft.invoice_status).className">{{ invoiceStatusMeta(draft.invoice_status).label }}</span>
+                  <span v-if="draft.invoice_status !== 'NONE' && draft.invoice_status !== 'PROFORMA'"
+                    class="app-badge" :class="invoiceSendStatusMeta(draft.invoice_send_status).className">
+                    {{ invoiceSendStatusMeta(draft.invoice_send_status).label }}
+                  </span>
+                </div>
+              </td>
               <td class="border border-slate-300 px-4 py-4"><button v-if="draft.status !== 'DRAFT'" type="button" class="app-badge cursor-pointer" :class="settlementStatusMeta(draft.settlement_status).className" @click="openSettlement(draft)">{{ settlementStatusMeta(draft.settlement_status).label }}</button><span v-else class="app-badge" :class="settlementStatusMeta(draft.settlement_status).className">{{ settlementStatusMeta(draft.settlement_status).label }}</span></td>
               <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ draft.created_by_name || '—' }}</td>
               <td class="border border-slate-300 px-4 py-4">
@@ -140,6 +148,14 @@ function invoiceStatusMeta(status) {
     PARTIALLY_ISSUED: { label: 'صدور جزئی', className: 'bg-amber-100 text-amber-700' },
     ISSUED: { label: 'صادرشده', className: 'bg-emerald-100 text-emerald-700' }
   }[status] || { label: status || 'نامشخص', className: 'bg-slate-100 text-slate-600' };
+}
+
+function invoiceSendStatusMeta(status) {
+  return {
+    NOT_SENT: { label: 'ارسال‌نشده', className: 'bg-rose-100 text-rose-700' },
+    PARTIALLY_SENT: { label: 'ارسال جزئی', className: 'bg-amber-100 text-amber-700' },
+    SENT: { label: 'ارسال‌شده', className: 'bg-cyan-100 text-cyan-700' }
+  }[status] || { label: 'ارسال‌نشده', className: 'bg-slate-100 text-slate-600' };
 }
 
 function settlementStatusMeta(status) {

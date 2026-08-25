@@ -15,6 +15,9 @@ export const deliveryListService = {
   updateInvoice(id, invoiceId, payload) {
     return api.put(`/delivery-lists/${id}/invoices/${invoiceId}`, payload);
   },
+  updateInvoiceSendStatus(id, invoiceId, payload) {
+    return api.patch(`/delivery-lists/${id}/invoices/${invoiceId}/send-status`, payload);
+  },
   getSettlement(id) { return api.get(`/delivery-lists/${id}/settlement`); },
   recordPayment(id, payload) { return api.post(`/delivery-lists/${id}/payments`, payload); },
   voidPayment(id, paymentId) { return api.post(`/delivery-lists/${id}/payments/${paymentId}/void`); },

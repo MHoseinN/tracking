@@ -195,7 +195,20 @@ function createDeliveryListDraftService(db) {
              invoices.discount_percent_basis_points, invoices.discount_amount_toman,
              invoices.rounding_adjustment_toman, invoices.final_amount_toman,
              invoices.issued_at, invoices.created_at,
-             COALESCE(users.display_name, users.username) AS issued_by_name
+             COALESCE(users.display_name, users.username) AS issued_by_name,
+             (SELECT invoice_send_logs.sent_at
+                FROM invoice_send_logs
+               WHERE invoice_send_logs.invoice_id = invoices.id
+                 AND invoice_send_logs.status = 'SENT'
+               ORDER BY invoice_send_logs.sent_at DESC, invoice_send_logs.id DESC
+               LIMIT 1) AS last_sent_at,
+             (SELECT COALESCE(send_user.display_name, send_user.username)
+                FROM invoice_send_logs
+                JOIN users send_user ON send_user.id = invoice_send_logs.sent_by_user_id
+               WHERE invoice_send_logs.invoice_id = invoices.id
+                 AND invoice_send_logs.status = 'SENT'
+               ORDER BY invoice_send_logs.sent_at DESC, invoice_send_logs.id DESC
+               LIMIT 1) AS last_sent_by_name
       FROM invoices
       LEFT JOIN users ON users.id = invoices.issued_by_user_id
       WHERE invoices.delivery_list_id = ? AND invoices.status = 'ISSUED'
