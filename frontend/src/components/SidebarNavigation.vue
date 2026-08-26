@@ -1,5 +1,12 @@
 <template>
-  <aside class="app-shell__nav border-l border-gray-200">
+  <button
+    v-if="mobileOpen"
+    type="button"
+    class="app-shell__backdrop lg:hidden"
+    aria-label="بستن منوی اصلی"
+    @click="$emit('close-mobile')"
+  />
+  <aside class="app-shell__nav" :class="{ 'app-shell__nav--mobile-open': mobileOpen }">
     <div class="flex h-full flex-col px-3">
       <div class="py-6">
         <div class="flex items-center gap-3">
@@ -19,6 +26,7 @@
         <div v-for="group in navGroups" :key="group.key" class="py-1 last-0">
           <button v-if="!group.items?.length" type="button" class="flex w-full rounded-lg text-right transition app-shell__menu-button px-4"
             :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
+            :aria-current="isGroupActive(group) ? 'page' : undefined"
             @click="$emit('navigate', group.to)">
             <span class="flex items-center justify-center gap-2 min-w-0"><span class="app-shell__menu-icon"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path v-for="(path, index) in group.icon" :key="`${group.key}-${index}`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="path" /></svg></span><span class="truncate text-sm font-semibold app-shell__label-text">{{ group.label }}</span></span>
           </button>
@@ -31,7 +39,7 @@
             </button>
             <div v-if="openGroups[group.key]" class="mr-10 py-1 app-shell__submenu">
               <button v-for="item in group.items" :key="item.key" type="button" class="flex w-full px-6 items-center justify-between rounded-lg text-right text-sm transition app-shell__menu-button"
-                :class="isActiveRoute(item) ? 'app-shell__menu-button--subactive font-bold text-blue-700' : 'bg-white text-zinc-700 hover:bg-slate-50 hover:text-blue-700'"
+                :class="isActiveRoute(item) ? 'app-shell__menu-button--subactive font-bold text-indigo-700' : 'bg-white text-zinc-700 hover:bg-slate-50 hover:text-indigo-700'"
                 @click="$emit('navigate', item.to)"><span class="flex items-center gap-2 min-w-0"><span class="truncate app-shell__label-text">{{ item.label }}</span></span></button>
             </div>
           </template>
@@ -44,8 +52,12 @@
 <script setup>
 import { useRoute } from 'vue-router';
 
-defineProps({ navGroups: { type: Array, required: true }, openGroups: { type: Object, required: true } });
-defineEmits(['toggle-sidebar', 'toggle-group', 'navigate']);
+defineProps({
+  navGroups: { type: Array, required: true },
+  openGroups: { type: Object, required: true },
+  mobileOpen: { type: Boolean, default: false }
+});
+defineEmits(['toggle-sidebar', 'toggle-group', 'navigate', 'close-mobile']);
 const route = useRoute();
 
 function isActiveRoute(item) {
@@ -55,7 +67,11 @@ function isActiveRoute(item) {
 }
 
 function isGroupActive(group) {
-  if (!group.items?.length && group.to) return route.path === group.to;
+  if (!group.items?.length && group.to) {
+    if (group.to === '/users') return route.path === '/users' || route.path.startsWith('/customer/');
+    if (group.to === '/lists') return route.path.startsWith('/lists');
+    return route.path === group.to;
+  }
   return group.items.some((item) => isActiveRoute(item));
 }
 </script>

@@ -17,7 +17,7 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: 'خانه',
-      subtitle: 'نمای کلی سیستم، آمار تجمیعی و دسترسی سریع به بخش‌های اصلی را از اینجا ببین'
+      subtitle: 'نمای کلی فعالیت مجموعه و دسترسی سریع به بخش‌های اصلی'
     }
   },
   {
@@ -26,8 +26,8 @@ const routes = [
     component: () => import('./components/dashboard/AccountsRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'حساب‌ها',
-      subtitle: 'فهرست حساب‌ها، فیلترها و عملیات روزانه را در این صفحه مستقل مدیریت کن'
+      title: 'حساب‌های قدیمی',
+      subtitle: 'فاکتورهای مستقل ثبت‌شده در نسخه قبلی سیستم'
     }
   },
   {
@@ -36,8 +36,8 @@ const routes = [
     component: () => import('./components/customers/CustomerDetailRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'صفحه مشتری',
-      subtitle: 'جزئیات مشتری، حساب‌ها و عملیات مرتبط را بدون ترک شِل اصلی مدیریت کن'
+      title: 'جزئیات مشتری',
+      subtitle: 'اطلاعات مشتری و سابقه لیست‌ها و حساب‌های مرتبط'
     },
     props: true
   },
@@ -47,8 +47,8 @@ const routes = [
     component: () => import('./components/reports/ReportsRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'آمار',
-      subtitle: 'روند درآمد، تعداد فاکتورها و عملکرد مشتری‌ها را در نماهای تحلیلی یکپارچه مرور کن'
+      title: 'گزارش‌ها و آمار',
+      subtitle: 'مرور روند درآمد، فاکتورها و عملکرد مشتریان'
     }
   },
   {
@@ -57,8 +57,8 @@ const routes = [
     component: () => import('./components/users/UsersManagementRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'مدیریت کاربران',
-      subtitle: 'فهرست مشتری‌ها، وضعیت حساب و عملیات سریع مرتبط با کاربران را یکجا مدیریت کن'
+      title: 'مشتریان',
+      subtitle: 'فهرست، جست‌وجو و مدیریت اطلاعات مشتریان'
     }
   },
   {
@@ -67,8 +67,8 @@ const routes = [
     component: () => import('./components/products/ProductsManagementRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'مدیریت محصولات',
-      subtitle: 'نام، دسته‌بندی، قیمت روزانه و وضعیت محصولات را مدیریت کنید'
+      title: 'محصولات',
+      subtitle: 'نام، دسته‌بندی، قیمت روزانه و وضعیت محصولات'
     }
   },
   {
@@ -77,8 +77,8 @@ const routes = [
     component: () => import('./components/delivery-lists/DeliveryListDraftsRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'لیست‌های تحویل',
-      subtitle: 'پیش‌نویس‌های مستقل را ایجاد کنید و بعداً بدون از دست رفتن تغییرات ادامه دهید'
+      title: 'مدیریت لیست‌ها',
+      subtitle: 'پیگیری یکپارچه پیش‌نویس، تحویل، برگشت، فاکتور و تسویه'
     }
   },
   {
@@ -87,7 +87,7 @@ const routes = [
     component: () => import('./components/delivery-lists/DeliveryListDraftEditorRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'ویرایش پیش‌نویس لیست',
+      title: 'ایجاد و ویرایش لیست',
       subtitle: 'مشخصات مشتری، زمان تحویل و اقلام به‌صورت خودکار ذخیره می‌شوند'
     }
   },
@@ -97,8 +97,8 @@ const routes = [
     component: () => import('./components/delivery-lists/DeliveryListDetailRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'جزئیات لیست تحویل',
-      subtitle: 'وضعیت لیست، اقلام تحویل‌شده و پیش‌فاکتور متصل را مشاهده کنید'
+      title: 'جزئیات لیست',
+      subtitle: 'مدیریت اقلام، برگشت، فاکتور، ارسال و وضعیت تسویه'
     }
   },
   {
@@ -108,8 +108,8 @@ const routes = [
     meta: {
       requiresAuth: true,
       roles: ['MANAGER'],
-      title: 'مدیریت ادمین‌ها',
-      subtitle: 'حساب‌های ادمین مجموعه و وضعیت دسترسی آن‌ها را مدیریت کنید'
+      title: 'ادمین‌ها',
+      subtitle: 'مدیریت حساب‌های ادمین و وضعیت دسترسی آن‌ها'
     }
   },
   {
@@ -119,8 +119,8 @@ const routes = [
     meta: {
       requiresAuth: true,
       roles: ['MANAGER'],
-      title: 'تنظیمات سیستم',
-      subtitle: 'ساعت مرزی محاسبه روز و تنظیمات عمومی مجموعه را مدیریت کنید'
+      title: 'تنظیمات',
+      subtitle: 'ساعت مرزی محاسبه روز و تنظیمات عمومی مجموعه'
     }
   },
   {

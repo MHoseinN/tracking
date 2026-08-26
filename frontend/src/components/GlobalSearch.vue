@@ -1,14 +1,14 @@
 <template>
   <div ref="searchRoot" class="relative flex-1">
     <div
-      class="flex h-12 w-[75%] items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 shadow-md transition duration-200 focus-within:ring-4 focus-within:ring-blue-100">
+      class="flex h-11 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-sm transition duration-200 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-100 sm:h-12 sm:gap-3 sm:px-4">
       <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
       </svg>
       <input v-model.trim="query" type="text"
         class="h-12 min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-        placeholder="جست‌وجوی سراسری در حساب‌، مشتری‌ و محصول" @focus="handleFocus" @keydown.esc="closeResults" />
+        placeholder="جست‌وجوی لیست، مشتری یا محصول..." @focus="handleFocus" @keydown.esc="closeResults" />
       <button v-if="query" type="button" class="app-icon-button h-9 w-9 rounded-lg border-0 bg-gray-300"
         @click="clearSearch">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,7 +18,7 @@
     </div>
 
     <div v-if="showResults"
-      class="absolute inset-x-0 z-[90] mt-1 w-[75%] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md">
+      class="absolute inset-x-0 z-[90] mt-2 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
       <div v-if="loading" class="px-4 py-6 text-sm text-slate-500">در حال آماده‌سازی نتایج...</div>
       <div v-else-if="sections.length === 0" class="px-4 py-6 text-sm text-slate-500">نتیجه‌ای پیدا نشد.</div>
       <div v-else class="max-h-[420px] overflow-y-auto p-3">
@@ -58,11 +58,11 @@ const dataInitialized = ref(false);
 
 const routeItems = [
   { key: 'route-home', type: 'route', label: 'خانه', meta: 'نمای کلی سیستم', badge: 'صفحه', to: '/home' },
-  { key: 'route-lists', type: 'route', label: 'لیست‌های تحویل', meta: 'پیش‌نویس‌ها و ثبت اقلام تحویلی', badge: 'صفحه', to: '/lists' },
-  { key: 'route-accounts', type: 'route', label: 'حساب‌ها', meta: 'مدیریت و جستجوی همه حساب‌ها', badge: 'صفحه', to: '/accounts' },
-  { key: 'route-reports', type: 'route', label: 'آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
-  { key: 'route-users', type: 'route', label: 'مدیریت کاربران', meta: 'لیست و وضعیت حساب مشتری‌ها', badge: 'صفحه', to: '/users' },
-  { key: 'route-products', type: 'route', label: 'مدیریت محصولات', meta: 'دسته‌بندی، قیمت و وضعیت محصولات', badge: 'صفحه', to: '/products' }
+  { key: 'route-lists', type: 'route', label: 'مدیریت لیست‌ها', meta: 'تحویل، برگشت، فاکتور و تسویه', badge: 'صفحه', to: '/lists' },
+  { key: 'route-accounts', type: 'route', label: 'حساب‌های قدیمی', meta: 'فاکتورهای مستقل ثبت‌شده در نسخه قبلی', badge: 'صفحه', to: '/accounts' },
+  { key: 'route-reports', type: 'route', label: 'گزارش‌ها و آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
+  { key: 'route-users', type: 'route', label: 'مشتریان', meta: 'فهرست و اطلاعات مشتریان', badge: 'صفحه', to: '/users' },
+  { key: 'route-products', type: 'route', label: 'محصولات', meta: 'دسته‌بندی، قیمت و وضعیت محصولات', badge: 'صفحه', to: '/products' }
 ];
 
 const sections = computed(() => {

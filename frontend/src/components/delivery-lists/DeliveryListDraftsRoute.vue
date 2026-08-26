@@ -6,15 +6,6 @@
       </AppButton>
     </Teleport>
 
-    <AppPageHeader
-      title="مدیریت لیست‌ها"
-      description="از پیش‌نویس و تحویل تا برگشت، فاکتور، ارسال و تسویه را در یک مسیر پیگیری کنید."
-    >
-      <template #badge>
-        <AppStatusBadge tone="neutral" :label="`${filteredDrafts.length.toLocaleString('fa-IR')} لیست`" :show-dot="false" />
-      </template>
-    </AppPageHeader>
-
     <AppTablePanel
       title="لیست‌های تحویل"
       description="پیش‌نویس‌ها و لیست‌های ثبت‌شده در یک جدول قابل پیگیری هستند."
@@ -127,7 +118,6 @@ import CustomSelect from '../CustomSelect.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
 import AppFilterBar from '../ui/AppFilterBar.vue';
-import AppPageHeader from '../ui/AppPageHeader.vue';
 import AppStatusBadge from '../ui/AppStatusBadge.vue';
 import AppStatusButton from '../ui/AppStatusButton.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
