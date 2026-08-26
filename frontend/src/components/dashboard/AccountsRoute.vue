@@ -1,21 +1,20 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <button @click="openAddModal" class="app-button-primary w-full justify-between">
-        <span> حساب جدید</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
-      <button @click="exportInvoices"
-        class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
+      <AppButton variant="primary" block @click="router.push('/lists')">رفتن به مدیریت لیست‌ها</AppButton>
+      <AppButton variant="info" block @click="exportInvoices">
         گزارش‌گیری
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <template #trailing><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-      </button>
+        </svg></template>
+      </AppButton>
     </Teleport>
+    <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900">
+      این صفحه فقط برای مشاهده و ویرایش حساب‌های مستقل نسخه قبلی نگه داشته شده است. حساب‌ها و فاکتورهای جدید از مسیر
+      <button type="button" class="font-black text-indigo-700 hover:underline" @click="router.push('/lists')">مدیریت لیست‌ها</button>
+      ایجاد می‌شوند.
+    </div>
     <!-- Invoice table -->
     <div ref="tableSectionRef" class="app-panel">
       <div class="px-4 py-4">
@@ -66,6 +65,7 @@ import { useToast } from 'vue-toastification';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 
 import AppContentState from '../AppContentState.vue';
+import AppButton from '../ui/AppButton.vue';
 import AppPagination from '../AppPagination.vue';
 import InvoiceTable from '../InvoiceTable.vue';
 import InvoiceForm from '../InvoiceForm.vue';
@@ -182,11 +182,6 @@ function toggleSort(column) {
 }
 
 // Modal handlers
-function openAddModal() {
-  selectedInvoice.value = null;
-  showInvoiceForm.value = true;
-}
-
 function openEditModal(invoice) {
   selectedInvoice.value = invoice;
   showInvoiceForm.value = true;

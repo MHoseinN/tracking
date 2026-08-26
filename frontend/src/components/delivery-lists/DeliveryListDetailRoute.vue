@@ -23,7 +23,8 @@
               <span class="app-badge" :class="invoiceSendStatus.className">{{ invoiceSendStatus.label }}</span>
               <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
             </div>
-            <h2 class="mt-3 text-2xl font-black text-slate-900">{{ list.list_number || `لیست #${list.id}` }}</h2>
+            <p class="mt-3 text-xs font-semibold text-slate-500">{{ list.list_number ? 'شماره لیست' : 'شناسه پیش‌نویس' }}</p>
+            <h2 class="mt-1 text-2xl font-black text-slate-900">{{ list.list_number || list.id }}</h2>
             <p class="mt-1 text-sm text-slate-500">{{ list.customer_name || 'مشتری نامشخص' }}</p>
           </div>
           <div class="rounded-lg border border-violet-200 bg-violet-50 px-5 py-4 text-center">
@@ -44,8 +45,8 @@
         <div class="border-b border-slate-100 p-5">
           <h3 class="text-base font-black text-slate-800">اقلام تحویل‌شده</h3>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[760px] border-collapse border border-slate-300">
+        <div>
+          <table class="w-full table-fixed border-collapse border border-slate-300">
             <thead class="bg-slate-100">
               <tr>
                 <th v-for="heading in ['نام محصول','قیمت روزانه','تعداد','برگشت سالم','خسارت/مفقودی','مانده','جمع روزانه','وضعیت']" :key="heading" class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">{{ heading }}</th>
@@ -75,11 +76,18 @@
 
       <section v-if="list.return_events?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-100 p-5"><h3 class="text-base font-black text-slate-800">تاریخچه مرجوعی‌ها</h3></div>
-        <div class="overflow-x-auto p-5">
-          <table class="w-full min-w-[1200px] border-collapse border border-slate-300">
-            <thead class="bg-slate-100"><tr><th v-for="heading in ['تاریخ برگشت','تحویل‌گیرنده','محصول','سالم','خسارت','مفقودی','روز سیستم','روز نهایی','وضعیت فاکتور','توضیحات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs text-slate-600">{{ heading }}</th></tr></thead>
+        <div class="p-5">
+          <table class="w-full table-fixed border-collapse border border-slate-300">
+            <thead class="bg-slate-100"><tr><th v-for="heading in ['تاریخ برگشت','تحویل‌گیرنده','محصول','سالم','خسارت/مفقودی','روز نهایی','فاکتور','توضیحات']" :key="heading" class="border border-slate-300 px-2 py-3 text-right text-xs text-slate-600">{{ heading }}</th></tr></thead>
             <tbody><tr v-for="row in returnRows" :key="row.id">
-              <td class="border border-slate-300 px-3 py-3 text-sm">{{ formatDateTime(row.returned_at) }}</td><td class="border border-slate-300 px-3 py-3 text-sm">{{ row.received_by_name || '—' }}</td><td class="border border-slate-300 px-3 py-3 text-sm font-bold">{{ row.product_name_snapshot }}</td><td class="border border-slate-300 px-3 py-3">{{ formatNumber(row.healthy_quantity) }}</td><td class="border border-slate-300 px-3 py-3 text-rose-700">{{ formatNumber(row.damaged_quantity) }}</td><td class="border border-slate-300 px-3 py-3 text-rose-700">{{ formatNumber(row.lost_quantity) }}</td><td class="border border-slate-300 px-3 py-3">{{ formatNumber(row.system_calculated_days) }}</td><td class="border border-slate-300 px-3 py-3 font-bold">{{ formatNumber(row.final_charged_days) }}</td><td class="border border-slate-300 px-3 py-3"><span class="app-badge" :class="row.rental_invoice_id ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">{{ row.rental_invoice_id ? 'فاکتور شده' : 'آماده صدور' }}</span></td><td class="border border-slate-300 px-3 py-3 text-xs">{{ row.damage_notes || row.day_override_reason || '—' }}</td>
+              <td class="border border-slate-300 px-2 py-3 text-xs">{{ formatDateTime(row.returned_at) }}</td>
+              <td class="border border-slate-300 px-2 py-3 text-sm">{{ row.received_by_name || '—' }}</td>
+              <td class="border border-slate-300 px-2 py-3 text-sm font-bold">{{ row.product_name_snapshot }}</td>
+              <td class="border border-slate-300 px-2 py-3">{{ formatNumber(row.healthy_quantity) }}</td>
+              <td class="border border-slate-300 px-2 py-3 text-rose-700">{{ formatNumber(Number(row.damaged_quantity) + Number(row.lost_quantity)) }}</td>
+              <td class="border border-slate-300 px-2 py-3 font-bold">{{ formatNumber(row.final_charged_days) }}</td>
+              <td class="border border-slate-300 px-2 py-3"><span class="app-badge px-2 text-[11px]" :class="row.rental_invoice_id ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">{{ row.rental_invoice_id ? 'فاکتور شده' : 'آماده صدور' }}</span></td>
+              <td class="border border-slate-300 px-2 py-3 text-xs">{{ row.damage_notes || row.day_override_reason || '—' }}</td>
             </tr></tbody>
           </table>
         </div>
@@ -87,17 +95,13 @@
 
       <section v-if="list.invoices?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-300 p-5"><h3 class="text-base font-black text-slate-800">فاکتورهای صادرشده این لیست</h3></div>
-        <div class="overflow-x-auto p-5">
-          <table class="w-full min-w-[1350px] border-collapse border border-slate-300">
-            <thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','زمان صدور','تعداد ردیف','جمع اقلام','هزینه اضافی','تخفیف','مبلغ نهایی','وضعیت ارسال','آخرین ارسال','صادرکننده','عملیات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead>
+        <div class="p-5">
+          <table class="w-full table-fixed border-collapse border border-slate-300">
+            <thead class="bg-slate-100"><tr><th v-for="heading in ['شماره فاکتور','نوع','تاریخ صدور','مبلغ نهایی','وضعیت ارسال','عملیات']" :key="heading" class="border border-slate-300 px-3 py-3 text-right text-xs">{{ heading }}</th></tr></thead>
             <tbody><tr v-for="invoice in list.invoices" :key="invoice.id">
               <td class="border border-slate-300 px-3 py-3 font-bold text-indigo-700">{{ invoice.invoice_number }}</td>
               <td class="border border-slate-300 px-3 py-3">{{ invoice.invoice_type === 'PRIMARY' ? 'اصلی' : 'تکمیلی' }}</td>
               <td class="border border-slate-300 px-3 py-3">{{ formatDateTime(invoice.issued_at) }}</td>
-              <td class="border border-slate-300 px-3 py-3">{{ formatNumber(invoice.lines?.length) }}</td>
-              <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.subtotal_toman) }}</td>
-              <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.extra_charges_toman) }}</td>
-              <td class="border border-slate-300 px-3 py-3">{{ formatCurrency(invoice.discount_amount_toman) }}</td>
               <td class="border border-slate-300 px-3 py-3 font-black">{{ formatCurrency(invoice.final_amount_toman) }}</td>
               <td class="border border-slate-300 px-3 py-3">
                 <button type="button" class="app-badge cursor-pointer"
@@ -106,14 +110,6 @@
                   {{ loadingSendInvoiceId === invoice.id ? 'در حال دریافت...' : invoiceSendStatusMeta(invoice.send_status).label }}
                 </button>
               </td>
-              <td class="border border-slate-300 px-3 py-3 text-xs">
-                <template v-if="invoice.send_status === 'SENT'">
-                  <div class="font-bold text-slate-700">{{ formatDateTime(invoice.last_sent_at) }}</div>
-                  <div class="mt-1 text-slate-500">{{ invoice.last_sent_by_name || '—' }}</div>
-                </template>
-                <span v-else>—</span>
-              </td>
-              <td class="border border-slate-300 px-3 py-3">{{ invoice.issued_by_name || '—' }}</td>
               <td class="border border-slate-300 px-3 py-3"><button type="button" class="app-button-secondary whitespace-nowrap px-3 py-2 text-xs" :disabled="openingInvoiceId === invoice.id" @click="openIssuedInvoice(invoice)">{{ openingInvoiceId === invoice.id ? 'در حال آماده‌سازی...' : 'مشاهده و ویرایش' }}</button></td>
             </tr></tbody>
           </table>
@@ -447,3 +443,21 @@ function formatDateTime(value) {
   return `${toPersianDate(text.slice(0, 10))} - ${text.slice(11, 16)}`;
 }
 </script>
+
+<style scoped>
+table {
+  table-layout: fixed;
+}
+
+th,
+td {
+  overflow-wrap: anywhere;
+}
+
+.app-badge {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
+}
+</style>

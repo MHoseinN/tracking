@@ -273,6 +273,16 @@ function createDeliveryListDraftService(db) {
                  AND invoices.status = 'PROFORMA'
                  AND invoices.deleted_at IS NULL
                ORDER BY invoices.id DESC LIMIT 1) AS proforma_invoice_id
+             ,COALESCE((SELECT SUM(invoices.final_amount_toman)
+                FROM invoices
+               WHERE invoices.delivery_list_id = delivery_lists.id
+                 AND invoices.status = 'ISSUED'
+                 AND invoices.deleted_at IS NULL), 0) AS invoice_total_toman
+             ,(SELECT COUNT(*)
+                FROM invoices
+               WHERE invoices.delivery_list_id = delivery_lists.id
+                 AND invoices.status = 'ISSUED'
+                 AND invoices.deleted_at IS NULL) AS issued_invoice_count
              ,(SELECT MAX(return_events.returned_at)
                 FROM return_events
                WHERE return_events.delivery_list_id = delivery_lists.id
@@ -422,6 +432,40 @@ function createDeliveryListDraftService(db) {
     `).run(id);
     if (result.changes !== 1) throw new DeliveryListDraftError('حذف پیش‌نویس انجام نشد', 409);
     return { id: Number(id), deleted: true };
+  }
+
+  function archiveList(id, actorUserId) {
+    const list = getListRow(id);
+    const archive = db.transaction(() => {
+      const result = db.prepare(`
+        UPDATE delivery_lists
+        SET archived_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+        WHERE id = ? AND archived_at IS NULL
+      `).run(id);
+      if (result.changes !== 1) {
+        throw new DeliveryListDraftError('حذف لیست انجام نشد', 409);
+      }
+
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action, before_json, after_json
+        ) VALUES (?, 'DELIVERY_LIST', ?, 'ARCHIVE_DELIVERY_LIST', ?, ?)
+      `).run(
+        actorUserId,
+        String(id),
+        JSON.stringify({
+          status: list.status,
+          list_number: list.list_number,
+          customer_name: list.customer_name
+        }),
+        JSON.stringify({ archived: true })
+      );
+    });
+
+    archive();
+    return { id: Number(id), deleted: true, archived: true };
   }
 
   function finalizeDraft(id, expectedVersion, actorUserId) {
@@ -674,6 +718,7 @@ function createDeliveryListDraftService(db) {
     createDraft,
     saveDraft,
     deleteDraft,
+    archiveList,
     finalizeDraft,
     recordReturn
   };

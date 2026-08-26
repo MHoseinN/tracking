@@ -3,7 +3,7 @@ const test = require('node:test');
 const Database = require('better-sqlite3');
 const { runMigrations } = require('../src/db/migrations');
 
-function createLegacyDatabase() {
+function createLegacyDatabase({ includeLegacyInvoice = true } = {}) {
   const db = new Database(':memory:');
   db.pragma('foreign_keys = ON');
   db.exec(`
@@ -103,10 +103,14 @@ function createLegacyDatabase() {
     INSERT INTO inventory_reservation_items (
       reservation_order_id, unit_id
     ) VALUES (1, 1);
-    INSERT INTO invoices (
-      customer_id, date, price, description, is_shipped, is_settled
-    ) VALUES (1, '2026-08-01', 1250000.4, 'فاکتور قدیمی', 1, 1);
   `);
+  if (includeLegacyInvoice) {
+    db.prepare(`
+      INSERT INTO invoices (
+        customer_id, date, price, description, is_shipped, is_settled
+      ) VALUES (1, '2026-08-01', 1250000.4, 'فاکتور قدیمی', 1, 1)
+    `).run();
+  }
   return db;
 }
 
@@ -118,7 +122,7 @@ test('migrates legacy data and is idempotent', () => {
 
     assert.equal(
       db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
-      2
+      3
     );
     assert.equal(db.prepare('SELECT role FROM users WHERE id = 1').get().role, 'MANAGER');
     assert.equal(
@@ -153,11 +157,24 @@ test('migrates legacy data and is idempotent', () => {
     });
 
     const invoice = db.prepare('SELECT * FROM invoices WHERE id = 1').get();
-    assert.equal(invoice.invoice_type, 'LEGACY');
+    assert.equal(invoice.invoice_type, 'PRIMARY');
     assert.equal(invoice.status, 'ISSUED');
     assert.equal(invoice.settlement_status, 'PAID');
     assert.equal(invoice.send_status, 'SENT');
     assert.equal(invoice.final_amount_toman, 1250000);
+    assert.match(invoice.invoice_number, /^405\d{4}$/);
+
+    const convertedList = db.prepare('SELECT * FROM delivery_lists WHERE legacy_invoice_id = 1').get();
+    assert.ok(convertedList);
+    assert.match(convertedList.list_number, /^05\d{4}$/);
+    assert.equal(convertedList.status, 'COMPLETED');
+    assert.equal(convertedList.invoice_status, 'ISSUED');
+    assert.equal(convertedList.invoice_send_status, 'SENT');
+    assert.equal(convertedList.settlement_status, 'PAID');
+    assert.equal(db.prepare('SELECT COUNT(*) count FROM delivery_list_items WHERE delivery_list_id = ?').get(convertedList.id).count, 1);
+    assert.equal(db.prepare('SELECT COUNT(*) count FROM invoice_lines WHERE invoice_id = 1').get().count, 1);
+    assert.equal(db.prepare('SELECT amount_toman FROM payments WHERE invoice_id = 1').get().amount_toman, 1250000);
+    assert.equal(db.prepare('SELECT COUNT(*) count FROM invoice_send_logs WHERE invoice_id = 1').get().count, 1);
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   } finally {
     db.close();
@@ -165,7 +182,7 @@ test('migrates legacy data and is idempotent', () => {
 });
 
 test('enforces delivery and return invariants', () => {
-  const db = createLegacyDatabase();
+  const db = createLegacyDatabase({ includeLegacyInvoice: false });
   try {
     runMigrations(db);
     db.prepare(`

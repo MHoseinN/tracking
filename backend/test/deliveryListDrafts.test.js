@@ -283,6 +283,36 @@ test('creates multiple drafts and autosaves customer, dates and items', () => {
   }
 });
 
+test('archives a finalized list while preserving its invoices and audit history', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T10:00:00+03:30',
+      expected_return_at: '2026-08-25T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+    });
+    service.finalizeDraft(draft.id, saved.version, 1);
+
+    const result = service.archiveList(draft.id, 1);
+    assert.deepEqual(result, { id: draft.id, deleted: true, archived: true });
+    assert.equal(service.listDeliveryLists().some((list) => list.id === draft.id), false);
+    assert.ok(db.prepare('SELECT archived_at FROM delivery_lists WHERE id = ?').get(draft.id).archived_at);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices WHERE delivery_list_id = ?').get(draft.id).count, 1);
+    assert.equal(
+      db.prepare('SELECT action FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1')
+        .get('DELIVERY_LIST', String(draft.id)).action,
+      'ARCHIVE_DELIVERY_LIST'
+    );
+    assert.throws(() => service.getList(draft.id), /لیست پیدا نشد/);
+  } finally {
+    db.close();
+  }
+});
+
 test('rejects stale autosaves and duplicate products', () => {
   const db = createDatabase();
   try {
@@ -551,6 +581,9 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(editedPrimary.fixed_discount_toman, 100000);
     assert.equal(editedPrimary.notes, 'نسخه ویرایش شده پیش از دانلود');
     assert.equal(editedPrimary.version, 5);
+    const primaryListSummary = listService.listDeliveryLists().find((list) => list.id === draft.id);
+    assert.equal(primaryListSummary.issued_invoice_count, 1);
+    assert.equal(primaryListSummary.invoice_total_toman, 2450000);
     const sentPrimary = invoiceService.updateSendStatus(draft.id, primary.id, {
       send_status: 'SENT',
       channel: 'EITA',
@@ -576,6 +609,9 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(supplement.invoice_number, '4051001');
     assert.equal(supplement.invoice_type, 'SUPPLEMENT');
     assert.equal(supplement.parent_invoice_id, primary.id);
+    const completedListSummary = listService.listDeliveryLists().find((list) => list.id === draft.id);
+    assert.equal(completedListSummary.issued_invoice_count, 2);
+    assert.equal(completedListSummary.invoice_total_toman, 8450000);
     assert.equal(listService.getList(draft.id).invoice_send_status, 'PARTIALLY_SENT');
     invoiceService.updateSendStatus(draft.id, supplement.id, {
       send_status: 'SENT', channel: 'EITA'

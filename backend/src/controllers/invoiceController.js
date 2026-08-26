@@ -17,6 +17,11 @@ const invoiceQuery = `
   FROM invoices i
   JOIN customers c ON i.customer_id = c.id
 `;
+const legacyInvoiceCondition = `
+  i.delivery_list_id IS NULL
+  AND i.invoice_type = 'LEGACY'
+  AND i.deleted_at IS NULL
+`;
 
 // GET /api/invoices?year=&month=
 function getInvoicesByMonth(req, res) {
@@ -29,11 +34,11 @@ function getInvoicesByMonth(req, res) {
       // Filter by Gregorian year/month
       const paddedMonth = String(month).padStart(2, '0');
       const datePrefix = `${year}-${paddedMonth}`;
-      query = `${invoiceQuery} WHERE i.date LIKE ? ORDER BY i.date DESC, i.id DESC`;
+      query = `${invoiceQuery} WHERE ${legacyInvoiceCondition} AND i.date LIKE ? ORDER BY i.date DESC, i.id DESC`;
       rows = db.prepare(query).all(`${datePrefix}%`);
     } else {
       // Return all invoices if no filter provided
-      query = `${invoiceQuery} ORDER BY i.date DESC, i.id DESC`;
+      query = `${invoiceQuery} WHERE ${legacyInvoiceCondition} ORDER BY i.date DESC, i.id DESC`;
       rows = db.prepare(query).all();
     }
 
@@ -54,7 +59,7 @@ function getCustomerInvoices(req, res) {
       return res.status(404).json({ message: 'Customer not found' });
     }
 
-    const rows = db.prepare(`${invoiceQuery} WHERE i.customer_id = ? ORDER BY i.date DESC, i.id DESC`).all(customerId);
+    const rows = db.prepare(`${invoiceQuery} WHERE ${legacyInvoiceCondition} AND i.customer_id = ? ORDER BY i.date DESC, i.id DESC`).all(customerId);
     res.json({ customer, invoices: rows.map(normalizeInvoiceNotesValue) });
   } catch (err) {
     console.error('Get customer invoices error:', err);
@@ -67,7 +72,7 @@ function searchInvoices(req, res) {
   const { q, start_date, end_date, customer_id } = req.query;
 
   try {
-    let conditions = [];
+    let conditions = [legacyInvoiceCondition];
     let params = [];
 
     if (customer_id) {
@@ -144,7 +149,11 @@ function updateInvoice(req, res) {
   const { customer_id, date, price, description, notes } = req.body;
 
   try {
-    const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+    const invoice = db.prepare(`
+      SELECT * FROM invoices
+      WHERE id = ? AND delivery_list_id IS NULL
+        AND invoice_type = 'LEGACY' AND deleted_at IS NULL
+    `).get(id);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
@@ -175,7 +184,7 @@ function updateInvoice(req, res) {
       id
     );
 
-    const updated = db.prepare(`${invoiceQuery} WHERE i.id = ?`).get(id);
+    const updated = db.prepare(`${invoiceQuery} WHERE ${legacyInvoiceCondition} AND i.id = ?`).get(id);
     res.json(normalizeInvoiceNotesValue(updated));
   } catch (err) {
     console.error('Update invoice error:', err);
@@ -188,7 +197,11 @@ function deleteInvoice(req, res) {
   const { id } = req.params;
 
   try {
-    const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+    const invoice = db.prepare(`
+      SELECT * FROM invoices
+      WHERE id = ? AND delivery_list_id IS NULL
+        AND invoice_type = 'LEGACY' AND deleted_at IS NULL
+    `).get(id);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
@@ -212,14 +225,18 @@ function updateInvoiceStatus(req, res) {
   }
 
   try {
-    const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+    const invoice = db.prepare(`
+      SELECT * FROM invoices
+      WHERE id = ? AND delivery_list_id IS NULL
+        AND invoice_type = 'LEGACY' AND deleted_at IS NULL
+    `).get(id);
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
     db.prepare(`UPDATE invoices SET ${field} = ? WHERE id = ?`).run(value ? 1 : 0, id);
 
-    const updated = db.prepare(`${invoiceQuery} WHERE i.id = ?`).get(id);
+    const updated = db.prepare(`${invoiceQuery} WHERE ${legacyInvoiceCondition} AND i.id = ?`).get(id);
     res.json(normalizeInvoiceNotesValue(updated));
   } catch (err) {
     console.error('Update invoice status error:', err);

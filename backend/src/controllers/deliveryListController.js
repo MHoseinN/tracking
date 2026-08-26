@@ -158,6 +158,12 @@ function deleteDraft(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+function archiveList(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try { return res.json(draftService.archiveList(req.params.id, req.user.id)); }
+  catch (error) { return handleError(error, res); }
+}
+
 module.exports = {
   listDeliveryLists,
   listDrafts,
@@ -165,6 +171,7 @@ module.exports = {
   createDraft,
   saveDraft,
   deleteDraft,
+  archiveList,
   finalizeDraft,
   recordReturn,
   getInvoicePreview,

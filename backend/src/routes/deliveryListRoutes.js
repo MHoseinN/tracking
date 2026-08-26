@@ -7,7 +7,7 @@ const {
   getList,
   createDraft,
   saveDraft,
-  deleteDraft,
+  archiveList,
   finalizeDraft,
   recordReturn,
   getInvoicePreview,
@@ -45,7 +45,9 @@ router.put('/:id/draft', [
   body('items.*.delivered_quantity').isInt({ min: 1 }),
   body('items.*.notes').optional({ nullable: true }).isString().isLength({ max: 1000 })
 ], saveDraft);
-router.delete('/:id/draft', [idValidation], deleteDraft);
+// Keep the original delete URL as a backwards-compatible alias for safe list archiving.
+router.delete('/:id/draft', [idValidation], archiveList);
+router.delete('/:id', [idValidation], archiveList);
 router.post('/:id/finalize', [
   idValidation,
   body('version').isInt({ min: 1 })

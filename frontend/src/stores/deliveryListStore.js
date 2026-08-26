@@ -62,6 +62,14 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       }
     },
 
+    async getListDetails(id) {
+      try {
+        return { success: true, data: (await deliveryListService.getDraft(id)).data };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'خطا در دریافت جزئیات لیست') };
+      }
+    },
+
     async createDraft() {
       try {
         const draft = (await deliveryListService.createDraft()).data;
@@ -102,6 +110,18 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
         return { success: true };
       } catch (error) {
         return { success: false, message: getApiErrorMessage(error, 'حذف پیش‌نویس انجام نشد') };
+      }
+    },
+
+    async deleteList(id) {
+      try {
+        await deliveryListService.deleteList(id);
+        this.drafts = this.drafts.filter((draft) => Number(draft.id) !== Number(id));
+        this.lists = this.lists.filter((list) => Number(list.id) !== Number(id));
+        if (Number(this.currentDraft?.id) === Number(id)) this.currentDraft = null;
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'حذف لیست انجام نشد') };
       }
     },
 
