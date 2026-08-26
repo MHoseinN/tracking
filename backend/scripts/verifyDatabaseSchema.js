@@ -55,8 +55,14 @@ try {
   if (foreignKeyErrors.length > 0) {
     throw new Error(`Foreign-key errors: ${JSON.stringify(foreignKeyErrors)}`);
   }
-  if (settings?.timezone !== 'Asia/Tehran' || settings?.billing_cutoff_minutes !== 660) {
-    throw new Error(`Unexpected default settings: ${JSON.stringify(settings)}`);
+  const cutoffMinutes = Number(settings?.billing_cutoff_minutes);
+  if (
+    settings?.timezone !== 'Asia/Tehran'
+    || !Number.isInteger(cutoffMinutes)
+    || cutoffMinutes < 0
+    || cutoffMinutes > 1439
+  ) {
+    throw new Error(`Invalid application settings: ${JSON.stringify(settings)}`);
   }
 
   const migrationCount = db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count;
