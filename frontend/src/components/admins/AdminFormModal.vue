@@ -1,67 +1,86 @@
 <template>
-  <Teleport to="body">
-    <div v-if="isOpen" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4"
-      @click.self="$emit('close')">
-      <form class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl" @submit.prevent="submitForm">
-        <div class="mb-6 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-bold text-slate-900">{{ admin ? 'ویرایش ادمین' : 'افزودن ادمین' }}</h2>
-            <p class="mt-1 text-xs text-slate-500">تمام ادمین‌ها دسترسی عملیاتی یکسان دارند.</p>
-          </div>
-          <button type="button" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100" @click="$emit('close')">
-            <span class="sr-only">بستن</span>
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+  <AppModal
+    :is-open="isOpen"
+    :title="admin ? 'ویرایش ادمین' : 'افزودن ادمین'"
+    description="تمام ادمین‌ها دسترسی عملیاتی یکسان دارند."
+    size="md"
+    :busy="saving"
+    @close="$emit('close')"
+  >
+    <form id="admin-form" class="space-y-5" @submit.prevent="submitForm">
+      <AppFormField for-id="admin-display-name" label="نام نمایشی" :error="errors.display_name" required>
+        <template #default="{ controlId, describedBy }">
+          <input
+            :id="controlId"
+            v-model.trim="form.display_name"
+            type="text"
+            maxlength="100"
+            autocomplete="name"
+            class="app-input h-12"
+            :aria-describedby="describedBy"
+            :aria-invalid="Boolean(errors.display_name)"
+          />
+        </template>
+      </AppFormField>
 
-        <div class="space-y-4">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">نام نمایشی</label>
-            <input v-model.trim="form.display_name" type="text" maxlength="100" autocomplete="name"
-              class="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100" />
-            <p v-if="errors.display_name" class="mt-1 text-xs text-rose-600">{{ errors.display_name }}</p>
-          </div>
+      <AppFormField for-id="admin-username" label="نام کاربری" :error="errors.username" required>
+        <template #default="{ controlId, describedBy }">
+          <input
+            :id="controlId"
+            v-model.trim="form.username"
+            type="text"
+            maxlength="50"
+            autocomplete="username"
+            dir="ltr"
+            class="app-input h-12 text-left"
+            :aria-describedby="describedBy"
+            :aria-invalid="Boolean(errors.username)"
+          />
+        </template>
+      </AppFormField>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">نام کاربری</label>
-            <input v-model.trim="form.username" type="text" maxlength="50" autocomplete="username" dir="ltr"
-              class="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100" />
-            <p v-if="errors.username" class="mt-1 text-xs text-rose-600">{{ errors.username }}</p>
-          </div>
+      <AppFormField
+        for-id="admin-password"
+        label="رمز عبور"
+        :hint="admin ? 'برای حفظ رمز فعلی، این فیلد را خالی بگذارید.' : ''"
+        :error="errors.password"
+        :required="!admin"
+      >
+        <template #default="{ controlId, describedBy }">
+          <input
+            :id="controlId"
+            v-model="form.password"
+            type="password"
+            maxlength="128"
+            autocomplete="new-password"
+            dir="ltr"
+            class="app-input h-12 text-left"
+            :aria-describedby="describedBy"
+            :aria-invalid="Boolean(errors.password)"
+          />
+        </template>
+      </AppFormField>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">
-              رمز عبور
-              <span v-if="admin" class="font-normal text-slate-400">(برای حفظ رمز فعلی خالی بگذارید)</span>
-            </label>
-            <input v-model="form.password" type="password" maxlength="128" autocomplete="new-password"
-              class="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100" />
-            <p v-if="errors.password" class="mt-1 text-xs text-rose-600">{{ errors.password }}</p>
-          </div>
+      <label v-if="admin" class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-300 bg-slate-50 p-4">
+        <input v-model="form.is_active" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-200" />
+        <span class="text-sm font-medium text-slate-700">حساب ادمین فعال باشد</span>
+      </label>
+    </form>
 
-          <label v-if="admin" class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-4">
-            <input v-model="form.is_active" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600" />
-            <span class="text-sm font-medium text-slate-700">حساب ادمین فعال باشد</span>
-          </label>
-        </div>
-
-        <div class="mt-7 flex gap-3">
-          <button type="submit" :disabled="saving" class="app-button-primary flex-1 justify-center disabled:opacity-50">
-            {{ saving ? 'در حال ذخیره...' : 'ذخیره ادمین' }}
-          </button>
-          <button type="button" :disabled="saving" class="app-button-secondary flex-1 justify-center" @click="$emit('close')">
-            انصراف
-          </button>
-        </div>
-      </form>
-    </div>
-  </Teleport>
+    <template #footer>
+      <AppButton type="submit" form="admin-form" variant="primary" size="lg" :loading="saving">
+        {{ saving ? 'در حال ذخیره...' : 'ذخیره ادمین' }}
+      </AppButton>
+      <AppButton variant="secondary" size="lg" :disabled="saving" @click="$emit('close')">انصراف</AppButton>
+    </template>
+  </AppModal>
 </template>
 
 <script setup>
 import { reactive, watch } from 'vue';
+import AppButton from '../ui/AppButton.vue';
+import AppFormField from '../ui/AppFormField.vue';
+import AppModal from '../ui/AppModal.vue';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },

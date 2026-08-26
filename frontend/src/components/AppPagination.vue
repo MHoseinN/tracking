@@ -19,34 +19,35 @@
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-2 text-sm text-gray-500">
           <CustomSelect :model-value="pageSize" :options="pageSizeOptions"
-            trigger-class="min-w-[95px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition hover:border-gray-300 hover:shadow-md"
+            trigger-class="h-10 min-w-[95px] rounded-lg border border-slate-300 bg-white px-3 text-sm transition hover:border-slate-400 focus:ring-4 focus:ring-indigo-100"
             @update:model-value="$emit('update:page-size', Number($event))" />
         </div>
       </div>
     </div>
 
     <div class="flex flex-wrap items-center justify-center gap-2">
-      <button @click="$emit('go-to-page', currentPage - 1)" :disabled="currentPage === 1" class="app-pagination-button">
+      <AppButton size="md" variant="secondary" @click="$emit('go-to-page', currentPage - 1)" :disabled="currentPage === 1">
         قبلی
-      </button>
+      </AppButton>
 
-      <button v-for="page in visiblePageNumbers" :key="page" @click="$emit('go-to-page', page)" :class="page === currentPage
-        ? ' bg-blue-700 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-200'
-        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'" class="app-pagination-button"
+      <AppButton v-for="page in visiblePageNumbers" :key="page" size="md"
+        :variant="page === currentPage ? 'primary' : 'secondary'" class="min-w-10 px-3"
+        @click="$emit('go-to-page', page)"
         :aria-current="page === currentPage ? 'page' : null">
         {{ page.toLocaleString('fa-IR') }}
-      </button>
+      </AppButton>
 
-      <button @click="$emit('go-to-page', currentPage + 1)" :disabled="currentPage === totalPages"
-        class="app-pagination-button">
+      <AppButton size="md" variant="secondary" @click="$emit('go-to-page', currentPage + 1)"
+        :disabled="currentPage === totalPages">
         بعدی
-      </button>
+      </AppButton>
     </div>
   </div>
 </template>
 
 <script setup>
 import CustomSelect from './CustomSelect.vue';
+import AppButton from './ui/AppButton.vue';
 
 defineProps({
   totalRows: { type: Number, required: true },
