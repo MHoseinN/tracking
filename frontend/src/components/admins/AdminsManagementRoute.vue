@@ -15,27 +15,24 @@
           <template #actions><AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
         </AppFilterBar>
       </template>
-      <AppDataTable class="admins-table" :column-count="8" :loading="loading" :empty="!filteredUsers.length"
+      <AppDataTable class="admins-table" :column-count="10" :loading="loading" :empty="!filteredUsers.length"
         min-width="100%" loading-message="در حال دریافت حساب‌های داخلی..."
         empty-message="حسابی با این مشخصات پیدا نشد.">
         <template #head>
-          <tr><th>ردیف</th><th>نام</th><th>نام کاربری</th><th>شماره تماس</th><th>نقش</th><th>وضعیت</th><th>عملکرد امروز</th><th>عملیات</th></tr>
+          <tr><th>ردیف</th><th>نام</th><th>نام خانوادگی</th><th>نام کاربری</th><th>شماره تماس</th><th>نقش</th><th>وضعیت</th><th>تحویل</th><th>دریافت</th><th>عملیات</th></tr>
         </template>
 
         <tr v-for="(user, index) in paginatedUsers" :key="user.id" class="app-table-row">
           <td class="text-center font-bold text-slate-500">{{ (rowStartIndex + index + 1).toLocaleString('fa-IR') }}</td>
-          <td class="font-black text-slate-900">{{ user.display_name }}</td>
+          <td class="font-black text-slate-900">{{ user.first_name || user.display_name }}</td>
+          <td class="font-bold text-slate-700">{{ user.last_name || '—' }}</td>
           <td class="text-center" dir="ltr">{{ user.username }}</td>
           <td class="text-center" dir="ltr">{{ user.phone || '—' }}</td>
           <td class="text-center"><AppStatusBadge :label="user.role === 'MANAGER' ? 'مدیر' : 'ادمین'"
             :tone="user.role === 'MANAGER' ? 'violet' : 'info'" /></td>
           <td class="text-center"><AppStatusBadge group="active" :status="Boolean(user.is_active)" /></td>
-          <td class="text-center text-xs font-bold text-slate-700">
-            <button type="button" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 transition hover:border-indigo-300 hover:bg-indigo-50"
-              @click="performanceAdmin = user">
-              تحویل {{ formatNumber(user.performance?.day?.delivered) }} · دریافت {{ formatNumber(user.performance?.day?.received) }}
-            </button>
-          </td>
+          <td class="text-center font-black text-indigo-700">{{ formatNumber(user.delivered_count) }}</td>
+          <td class="text-center font-black text-emerald-700">{{ formatNumber(user.received_count) }}</td>
           <td>
             <div class="flex items-center justify-center gap-1">
               <AppIconButton label="آمار عملکرد" size="sm" @click="performanceAdmin = user">
@@ -112,7 +109,7 @@ const deleting = ref(false);
 function normalize(value) { return String(value || '').trim().toLowerCase().replace(/ي/g, 'ی').replace(/ك/g, 'ک'); }
 const filteredUsers = computed(() => users.value.filter((user) => {
   const query = normalize(searchQuery.value);
-  return !query || normalize(`${user.display_name} ${user.username} ${user.phone || ''}`).includes(query);
+  return !query || normalize(`${user.first_name || ''} ${user.last_name || ''} ${user.display_name} ${user.username} ${user.phone || ''}`).includes(query);
 }));
 const { currentPage, pageSize, pageSizeOptions, totalRows, totalPages, rowStartIndex,
   paginatedItems: paginatedUsers, visiblePageNumbers, goToPage } = usePaginatedList(filteredUsers, {
@@ -160,23 +157,27 @@ onMounted(loadAdmins);
 <style scoped>
 .admins-table :deep(.app-table) { width: 100%; table-layout: fixed; }
 .admins-table :deep(.app-table-wrapper) { overflow-x: hidden; }
-.admins-table :deep(th), .admins-table :deep(td) { padding: .7rem .5rem; vertical-align: middle; }
-.admins-table :deep(th:nth-child(1)) { width: 5%; }
-.admins-table :deep(th:nth-child(2)) { width: 15%; }
-.admins-table :deep(th:nth-child(3)) { width: 13%; }
-.admins-table :deep(th:nth-child(4)) { width: 13%; }
-.admins-table :deep(th:nth-child(5)) { width: 9%; }
-.admins-table :deep(th:nth-child(6)) { width: 10%; }
-.admins-table :deep(th:nth-child(7)) { width: 20%; }
-.admins-table :deep(th:nth-child(8)) { width: 15%; }
+.admins-table :deep(th), .admins-table :deep(td) { padding: .65rem .3rem; vertical-align: middle; overflow-wrap: anywhere; }
+.admins-table :deep(th:nth-child(1)) { width: 4%; }
+.admins-table :deep(th:nth-child(2)) { width: 9%; }
+.admins-table :deep(th:nth-child(3)) { width: 11%; }
+.admins-table :deep(th:nth-child(4)) { width: 11%; }
+.admins-table :deep(th:nth-child(5)) { width: 12%; }
+.admins-table :deep(th:nth-child(6)) { width: 8%; }
+.admins-table :deep(th:nth-child(7)) { width: 8%; }
+.admins-table :deep(th:nth-child(8)) { width: 7%; }
+.admins-table :deep(th:nth-child(9)) { width: 7%; }
+.admins-table :deep(th:nth-child(10)) { width: 23%; }
 @media (max-width: 767px) {
-  .admins-table :deep(th:nth-child(4)), .admins-table :deep(td:nth-child(4)),
   .admins-table :deep(th:nth-child(5)), .admins-table :deep(td:nth-child(5)),
-  .admins-table :deep(th:nth-child(6)), .admins-table :deep(td:nth-child(6)) { display: none; }
+  .admins-table :deep(th:nth-child(6)), .admins-table :deep(td:nth-child(6)),
+  .admins-table :deep(th:nth-child(7)), .admins-table :deep(td:nth-child(7)) { display: none; }
   .admins-table :deep(th:nth-child(1)) { width: 10%; }
-  .admins-table :deep(th:nth-child(2)) { width: 22%; }
-  .admins-table :deep(th:nth-child(3)) { width: 22%; }
-  .admins-table :deep(th:nth-child(7)) { width: 28%; }
-  .admins-table :deep(th:nth-child(8)) { width: 18%; }
+  .admins-table :deep(th:nth-child(2)) { width: 15%; }
+  .admins-table :deep(th:nth-child(3)) { width: 17%; }
+  .admins-table :deep(th:nth-child(4)) { width: 18%; }
+  .admins-table :deep(th:nth-child(8)) { width: 10%; }
+  .admins-table :deep(th:nth-child(9)) { width: 10%; }
+  .admins-table :deep(th:nth-child(10)) { width: 20%; }
 }
 </style>

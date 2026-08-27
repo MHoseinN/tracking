@@ -836,11 +836,20 @@ test('counts delivered and received lists for Jalali day, week, month and year',
     assert.equal(keys.year, '1405');
     assert.equal(keys.month, '1405-06');
     assert.equal(keys.week, '2026-08-22');
-    const performance = createInternalUserPerformanceService(db)
-      .getUserPerformance(1, new Date('2026-08-27T12:00:00+03:30'));
+    const performanceService = createInternalUserPerformanceService(db);
+    const performance = performanceService.getUserPerformance(1, new Date('2026-08-27T12:00:00+03:30'));
     ['day', 'week', 'month', 'year'].forEach((period) => {
       assert.equal(performance[period].delivered, 1);
       assert.equal(performance[period].received, 1);
+    });
+    const selectedDay = keys.day.replaceAll('-', '/');
+    assert.deepEqual(performanceService.getUserPerformanceRange(1, { from: selectedDay, to: selectedDay }), {
+      delivered: 1,
+      received: 1
+    });
+    assert.deepEqual(performanceService.getUserPerformanceRange(1, { from: '1405/01/01', to: '1405/01/02' }), {
+      delivered: 0,
+      received: 0
     });
   } finally {
     db.close();

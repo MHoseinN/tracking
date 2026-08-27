@@ -8,20 +8,27 @@
     @close="$emit('close')"
   >
     <form id="admin-form" class="space-y-5" @submit.prevent="submitForm">
-      <AppFormField for-id="admin-display-name" label="نام نمایشی" :error="errors.display_name" required>
+      <div class="grid gap-4 sm:grid-cols-2">
+      <AppFormField for-id="admin-first-name" label="نام" :error="errors.first_name" required>
         <template #default="{ controlId, describedBy }">
           <input
             :id="controlId"
-            v-model.trim="form.display_name"
+            v-model.trim="form.first_name"
             type="text"
-            maxlength="100"
-            autocomplete="name"
+            maxlength="50"
+            autocomplete="given-name"
             class="app-input h-12"
             :aria-describedby="describedBy"
-            :aria-invalid="Boolean(errors.display_name)"
+            :aria-invalid="Boolean(errors.first_name)"
           />
         </template>
       </AppFormField>
+      <AppFormField for-id="admin-last-name" label="نام خانوادگی" :error="errors.last_name" required>
+        <template #default="{ controlId, describedBy }"><input :id="controlId" v-model.trim="form.last_name"
+          type="text" maxlength="70" autocomplete="family-name" class="app-input h-12"
+          :aria-describedby="describedBy" :aria-invalid="Boolean(errors.last_name)" /></template>
+      </AppFormField>
+      </div>
 
       <AppFormField for-id="admin-username" label="نام کاربری" :error="errors.username" required>
         <template #default="{ controlId, describedBy }">
@@ -97,31 +104,36 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 
-const form = reactive({ display_name: '', username: '', phone: '', password: '', is_active: true });
-const errors = reactive({ display_name: '', username: '', password: '' });
+const form = reactive({ first_name: '', last_name: '', username: '', phone: '', password: '', is_active: true });
+const errors = reactive({ first_name: '', last_name: '', username: '', password: '' });
 
 function resetForm() {
-  form.display_name = props.admin?.display_name || '';
+  form.first_name = props.admin?.first_name || props.admin?.display_name || '';
+  form.last_name = props.admin?.last_name || '';
   form.username = props.admin?.username || '';
   form.phone = props.admin?.phone || '';
   form.password = '';
   form.is_active = props.admin?.is_active ?? true;
-  errors.display_name = '';
+  errors.first_name = '';
+  errors.last_name = '';
   errors.username = '';
   errors.password = '';
 }
 
 function submitForm() {
-  errors.display_name = form.display_name ? '' : 'نام نمایشی الزامی است';
+  errors.first_name = form.first_name ? '' : 'نام الزامی است';
+  errors.last_name = form.last_name ? '' : 'نام خانوادگی الزامی است';
   errors.username = form.username.length >= 3 ? '' : 'نام کاربری باید حداقل ۳ کاراکتر باشد';
   errors.password = (!props.admin && form.password.length < 6) || (form.password && form.password.length < 6)
     ? 'رمز عبور باید حداقل ۶ کاراکتر باشد'
     : '';
 
-  if (errors.display_name || errors.username || errors.password) return;
+  if (errors.first_name || errors.last_name || errors.username || errors.password) return;
 
   emit('save', {
-    display_name: form.display_name,
+    first_name: form.first_name,
+    last_name: form.last_name,
+    display_name: `${form.first_name} ${form.last_name}`.trim(),
     username: form.username,
     phone: form.phone || null,
     password: form.password || undefined,

@@ -40,6 +40,16 @@ function emptyPerformance() {
   return Object.fromEntries(PERIODS.map((period) => [period, { delivered: 0, received: 0 }]));
 }
 
+function normalizeJalaliDate(value) {
+  const match = String(value || '').trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 function createInternalUserPerformanceService(db) {
   function tableExists(name) {
     return Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name));
@@ -97,11 +107,88 @@ function createInternalUserPerformanceService(db) {
     return Object.fromEntries(counters);
   }
 
+  function eventRows() {
+    const rows = [];
+    const hasLegacyMarker = columnExists('delivery_lists', 'legacy_invoice_id');
+    const currentWorkflowOnly = hasLegacyMarker ? 'AND legacy_invoice_id IS NULL' : '';
+    const currentReturnWorkflowOnly = hasLegacyMarker ? 'AND delivery_lists.legacy_invoice_id IS NULL' : '';
+
+    if (tableExists('delivery_lists')) {
+      rows.push(...db.prepare(`
+        SELECT delivered_by_user_id AS user_id, id AS list_id, delivered_at AS occurred_at,
+               'delivered' AS action
+        FROM delivery_lists
+        WHERE delivered_by_user_id IS NOT NULL AND delivered_at IS NOT NULL AND archived_at IS NULL
+          ${currentWorkflowOnly}
+      `).all());
+    }
+
+    if (tableExists('return_events') && tableExists('delivery_lists')) {
+      rows.push(...db.prepare(`
+        SELECT return_events.received_by_user_id AS user_id,
+               return_events.delivery_list_id AS list_id,
+               return_events.returned_at AS occurred_at,
+               'received' AS action
+        FROM return_events
+        JOIN delivery_lists ON delivery_lists.id = return_events.delivery_list_id
+        WHERE return_events.received_by_user_id IS NOT NULL
+          AND return_events.deleted_at IS NULL AND delivery_lists.archived_at IS NULL
+          ${currentReturnWorkflowOnly}
+      `).all());
+    }
+
+    return rows;
+  }
+
+  function getPerformanceByUserRange({ from = null, to = null } = {}) {
+    const fromKey = normalizeJalaliDate(from);
+    const toKey = normalizeJalaliDate(to);
+    const userRows = db.prepare(`
+      SELECT id FROM users ${columnExists('users', 'deleted_at') ? 'WHERE deleted_at IS NULL' : ''}
+    `).all();
+    const counters = new Map(userRows.map((user) => [Number(user.id), { delivered: 0, received: 0 }]));
+    const unique = new Set();
+
+    eventRows().forEach((row) => {
+      const userId = Number(row.user_id);
+      const dayKey = periodKeys(row.occurred_at)?.day;
+      if (!counters.has(userId) || !dayKey) return;
+      if (fromKey && dayKey < fromKey) return;
+      if (toKey && dayKey > toKey) return;
+      const uniqueKey = `${userId}:${row.action}:${row.list_id}`;
+      if (unique.has(uniqueKey)) return;
+      unique.add(uniqueKey);
+      counters.get(userId)[row.action] += 1;
+    });
+
+    return Object.fromEntries(counters);
+  }
+
+  function getUserPerformanceRange(userId, range = {}) {
+    return getPerformanceByUserRange(range)[Number(userId)] || { delivered: 0, received: 0 };
+  }
+
+  function getAvailableYears(userId = null) {
+    const years = new Set([periodKeys(new Date()).year]);
+    eventRows().forEach((row) => {
+      if (userId !== null && Number(row.user_id) !== Number(userId)) return;
+      const year = periodKeys(row.occurred_at)?.year;
+      if (year) years.add(year);
+    });
+    return [...years].sort((a, b) => Number(b) - Number(a));
+  }
+
   function getUserPerformance(userId, referenceDate = new Date()) {
     return getPerformanceByUser(referenceDate)[Number(userId)] || emptyPerformance();
   }
 
-  return { getPerformanceByUser, getUserPerformance };
+  return {
+    getPerformanceByUser,
+    getUserPerformance,
+    getPerformanceByUserRange,
+    getUserPerformanceRange,
+    getAvailableYears
+  };
 }
 
-module.exports = { createInternalUserPerformanceService, periodKeys };
+module.exports = { createInternalUserPerformanceService, normalizeJalaliDate, periodKeys };

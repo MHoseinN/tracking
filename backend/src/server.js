@@ -36,7 +36,8 @@ app.use(express.urlencoded({ extended: true }));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX || 30),
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'تعداد درخواست‌های ورود بیش از حد مجاز. لطفاً بعداً دوباره تلاش کنید.' }
@@ -44,14 +45,15 @@ const authLimiter = rateLimit({
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: Number(process.env.API_RATE_LIMIT_MAX || 3000),
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'تعداد درخواست‌ها بیش از حد مجاز.' }
 });
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/invoices', apiLimiter, invoiceRoutes);
 app.use('/api/customers', apiLimiter, customerRoutes);
 app.use('/api/backups', apiLimiter, backupRoutes);

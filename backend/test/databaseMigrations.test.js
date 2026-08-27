@@ -122,10 +122,12 @@ test('migrates legacy data and is idempotent', () => {
 
     assert.equal(
       db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
-      4
+      5
     );
     assert.equal(db.prepare('SELECT role FROM users WHERE id = 1').get().role, 'MANAGER');
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name = 'phone'").get().count, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name = 'first_name'").get().count, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name = 'last_name'").get().count, 1);
     assert.equal(
       db.prepare('SELECT billing_cutoff_minutes FROM app_settings WHERE id = 1').get()
         .billing_cutoff_minutes,

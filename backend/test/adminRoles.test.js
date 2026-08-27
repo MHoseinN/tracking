@@ -13,6 +13,8 @@ function createDatabase() {
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       display_name TEXT,
+      first_name TEXT,
+      last_name TEXT,
       phone TEXT,
       role TEXT NOT NULL CHECK (role IN ('MANAGER', 'ADMIN')),
       is_active INTEGER NOT NULL DEFAULT 1,

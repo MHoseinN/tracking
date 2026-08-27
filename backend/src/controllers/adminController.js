@@ -37,6 +37,15 @@ function createAdmin(req, res) {
   }
 }
 
+function getAdminPerformance(req, res) {
+  if (sendValidationErrors(req, res)) return undefined;
+  try {
+    return res.json(adminService.getUserPerformance(req.params.id, req.query));
+  } catch (error) {
+    return handleAdminError(error, res);
+  }
+}
+
 function updateAdmin(req, res) {
   if (sendValidationErrors(req, res)) return undefined;
   try {
@@ -71,6 +80,7 @@ function deleteAdmin(req, res) {
 
 module.exports = {
   listAdmins,
+  getAdminPerformance,
   createAdmin,
   updateAdmin,
   updateAdminStatus,

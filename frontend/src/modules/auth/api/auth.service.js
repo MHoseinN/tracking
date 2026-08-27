@@ -12,6 +12,14 @@ export function getProfile() {
   return api.get('/auth/profile');
 }
 
+export function getProfilePerformance(params = {}) {
+  return api.get('/auth/profile/performance', { params });
+}
+
 export function updateProfile(payload) {
   return api.patch('/auth/profile', payload);
+}
+
+export function changePassword(payload) {
+  return api.patch('/auth/profile/password', payload);
 }

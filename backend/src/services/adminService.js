@@ -13,6 +13,8 @@ function serializeInternalUser(user) {
   return {
     id: user.id,
     username: user.username,
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
     display_name: user.display_name || user.username,
     phone: user.phone || '',
     role: user.role,
@@ -25,7 +27,7 @@ function serializeInternalUser(user) {
 function createAdminService(db) {
   const performanceService = createInternalUserPerformanceService(db);
   const selectPublicColumns = `
-    SELECT id, username, display_name, phone, role, is_active, created_at, updated_at
+    SELECT id, username, first_name, last_name, display_name, phone, role, is_active, created_at, updated_at
     FROM users
   `;
 
@@ -35,8 +37,12 @@ function createAdminService(db) {
       WHERE deleted_at IS NULL
       ORDER BY CASE role WHEN 'MANAGER' THEN 0 ELSE 1 END, id ASC
     `).all().map(serializeInternalUser);
-    const performance = performanceService.getPerformanceByUser();
-    return users.map((user) => ({ ...user, performance: performance[user.id] }));
+    const totals = performanceService.getPerformanceByUserRange();
+    return users.map((user) => ({
+      ...user,
+      delivered_count: totals[user.id]?.delivered || 0,
+      received_count: totals[user.id]?.received || 0
+    }));
   }
 
   function getEditableAdmin(id) {
@@ -62,18 +68,21 @@ function createAdminService(db) {
     throw error;
   }
 
-  function createAdmin({ username, password, display_name, phone }) {
+  function createAdmin({ username, password, first_name, last_name, display_name, phone }) {
     const normalizedUsername = String(username || '').trim();
-    const normalizedDisplayName = String(display_name || '').trim();
+    const normalizedFirstName = String(first_name || display_name || '').trim();
+    const normalizedLastName = String(last_name || '').trim();
+    const normalizedDisplayName = [normalizedFirstName, normalizedLastName].filter(Boolean).join(' ') || normalizedUsername;
     const passwordHash = bcrypt.hashSync(password, 10);
 
     try {
       const result = db.prepare(`
         INSERT INTO users (
-          username, password, display_name, phone, role, is_active, updated_at
+          username, password, first_name, last_name, display_name, phone, role, is_active, updated_at
         )
-        VALUES (?, ?, ?, ?, 'ADMIN', 1, CURRENT_TIMESTAMP)
-      `).run(normalizedUsername, passwordHash, normalizedDisplayName || normalizedUsername, String(phone || '').trim() || null);
+        VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', 1, CURRENT_TIMESTAMP)
+      `).run(normalizedUsername, passwordHash, normalizedFirstName || null, normalizedLastName || null,
+        normalizedDisplayName, String(phone || '').trim() || null);
 
       return serializeInternalUser(db.prepare(`
         ${selectPublicColumns}
@@ -89,15 +98,20 @@ function createAdminService(db) {
     const username = updates.username === undefined
       ? current.username
       : String(updates.username || '').trim();
-    const displayName = updates.display_name === undefined
-      ? current.display_name
-      : String(updates.display_name || '').trim();
+    const firstName = updates.first_name === undefined
+      ? (updates.display_name === undefined ? current.first_name : String(updates.display_name || '').trim())
+      : String(updates.first_name || '').trim();
+    const lastName = updates.last_name === undefined
+      ? current.last_name
+      : String(updates.last_name || '').trim();
+    const normalizedFirstName = firstName;
+    const displayName = [normalizedFirstName, lastName].filter(Boolean).join(' ') || username;
     const isActive = updates.is_active === undefined
       ? current.is_active
       : Number(Boolean(updates.is_active));
     const phone = updates.phone === undefined ? current.phone : (String(updates.phone || '').trim() || null);
 
-    const values = [username, displayName || username, phone, isActive];
+    const values = [username, normalizedFirstName || null, lastName || null, displayName, phone, isActive];
     let passwordAssignment = '';
     if (updates.password) {
       passwordAssignment = ', password = ?';
@@ -108,7 +122,7 @@ function createAdminService(db) {
     try {
       db.prepare(`
         UPDATE users
-        SET username = ?, display_name = ?, phone = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+        SET username = ?, first_name = ?, last_name = ?, display_name = ?, phone = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
           ${passwordAssignment}
         WHERE id = ? AND role = 'ADMIN' AND deleted_at IS NULL
       `).run(...values);
@@ -120,6 +134,16 @@ function createAdminService(db) {
       ${selectPublicColumns}
       WHERE id = ?
     `).get(id));
+  }
+
+  function getUserPerformance(id, range = {}) {
+    const user = db.prepare(`${selectPublicColumns} WHERE id = ? AND deleted_at IS NULL`).get(id);
+    if (!user) throw new AdminServiceError('Admin not found', 404);
+    return {
+      user: serializeInternalUser(user),
+      performance: performanceService.getUserPerformanceRange(id, range),
+      available_years: performanceService.getAvailableYears(id)
+    };
   }
 
   function setAdminStatus(id, isActive) {
@@ -152,6 +176,7 @@ function createAdminService(db) {
 
   return {
     listInternalUsers,
+    getUserPerformance,
     createAdmin,
     updateAdmin,
     setAdminStatus,

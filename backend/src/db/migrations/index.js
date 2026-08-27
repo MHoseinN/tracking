@@ -2,12 +2,14 @@ const deliveryWorkflowMigration = require('./001-delivery-workflow');
 const removeLegacyReservationsMigration = require('./002-remove-legacy-reservations');
 const convertLegacyAccountsMigration = require('./003-convert-legacy-accounts');
 const internalUserProfilesMigration = require('./004-internal-user-profiles');
+const internalUserNamesMigration = require('./005-internal-user-names');
 
 const migrations = [
   deliveryWorkflowMigration,
   removeLegacyReservationsMigration,
   convertLegacyAccountsMigration,
-  internalUserProfilesMigration
+  internalUserProfilesMigration,
+  internalUserNamesMigration
 ];
 
 function ensureMigrationTable(db) {

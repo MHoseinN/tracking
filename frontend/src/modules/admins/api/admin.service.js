@@ -4,6 +4,10 @@ export function getAdmins() {
   return api.get('/admins');
 }
 
+export function getAdminPerformance(id, params = {}) {
+  return api.get(`/admins/${id}/performance`, { params });
+}
+
 export function createAdmin(payload) {
   return api.post('/admins', payload);
 }
