@@ -14,10 +14,12 @@
 
       <section ref="tableSectionRef" class="space-y-6">
         <ProductCatalogList :category-name="selectedCategoryObject?.name" :search-query="productSearch"
+          :selected-category-id="selectedCategoryId" :category-options="categoryFilterOptions"
           :products="paginatedItems" :loading="catalogStore.loading" :total-rows="totalRows"
           :row-start-index="rowStartIndex" :page-size="pageSize" :page-size-options="pageSizeOptions"
           :current-page="currentPage" :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers"
           @update:search-query="productSearch = $event"
+          @update:selected-category-id="selectedCategoryId = $event || null"
           @clear-filters="clearProductFilters" @update:page-size="pageSize = $event"
           @go-to-page="goToPage" @edit="openProductModal" @delete="openDeleteProduct" />
       </section>
@@ -101,6 +103,10 @@ const visibleProducts = computed(() => {
     return matchesSearch && matchesCategory;
   });
 });
+const categoryFilterOptions = computed(() => [
+  { label: 'همه دسته‌بندی‌ها', value: '' },
+  ...flatCategoryOptions.value.map((category) => ({ label: category.label, value: category.id }))
+]);
 
 const {
   currentPage,

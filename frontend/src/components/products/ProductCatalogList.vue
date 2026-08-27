@@ -7,8 +7,9 @@
         <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام یا دسته‌بندی محصول</span>
           <input :value="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی محصول یا دسته‌بندی"
             @input="$emit('update:search-query', $event.target.value)" /></label>
-        <div class="space-y-1"><span class="text-xs font-bold text-slate-600">دسته‌بندی انتخاب‌شده</span>
-          <span class="app-filter-control flex items-center">{{ categoryName || 'همه دسته‌ها' }}</span></div>
+        <label class="space-y-1"><span class="text-xs font-bold text-slate-600">دسته‌بندی محصول</span>
+          <CustomSelect :model-value="selectedCategoryId || ''" :options="categoryOptions"
+            trigger-class="app-filter-control" @update:model-value="$emit('update:selected-category-id', $event)" /></label>
         <template #actions><AppButton variant="secondary" @click="$emit('clear-filters')">پاک‌کردن فیلترها</AppButton></template>
       </AppFilterBar>
     </template>
@@ -46,6 +47,7 @@
 
 <script setup>
 import AppPagination from '../AppPagination.vue';
+import CustomSelect from '../CustomSelect.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
 import AppFilterBar from '../ui/AppFilterBar.vue';
@@ -54,13 +56,14 @@ import AppTablePanel from '../ui/AppTablePanel.vue';
 
 defineProps({
   categoryName: { type: String, default: '' }, searchQuery: { type: String, default: '' },
+  selectedCategoryId: { type: [String, Number], default: null }, categoryOptions: { type: Array, default: () => [] },
   products: { type: Array, default: () => [] }, loading: { type: Boolean, default: false },
   totalRows: { type: Number, default: 0 }, rowStartIndex: { type: Number, default: 0 },
   pageSize: { type: Number, required: true }, pageSizeOptions: { type: Array, default: () => [] },
   currentPage: { type: Number, required: true }, totalPages: { type: Number, required: true },
   visiblePageNumbers: { type: Array, default: () => [] }
 });
-defineEmits(['update:search-query', 'clear-filters', 'update:page-size', 'go-to-page', 'edit', 'delete']);
+defineEmits(['update:search-query', 'update:selected-category-id', 'clear-filters', 'update:page-size', 'go-to-page', 'edit', 'delete']);
 function formatPrice(value) { return `${Math.round(Number(value) || 0).toLocaleString('fa-IR')} تومان`; }
 </script>
 

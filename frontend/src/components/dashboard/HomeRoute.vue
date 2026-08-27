@@ -11,12 +11,20 @@
     <template v-else>
       <p v-if="errorMessage" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ errorMessage }}</p>
 
-      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <AppStatCard label="کل لیست‌ها" :value="formatNumber(summary.list_count)" value-class="text-indigo-600" />
-        <AppStatCard label="فاکتورهای صادرشده" :value="formatNumber(summary.invoice_count)" value-class="text-violet-600" />
+      <section class="app-panel flex flex-wrap items-center justify-between gap-4 p-4">
+        <div><h2 class="text-lg font-black text-slate-900">نمای کلی مجموعه</h2>
+          <p class="mt-1 text-xs text-slate-500">خلاصه مالی و عملیاتی بازه انتخاب‌شده</p></div>
+        <div class="w-full sm:w-52"><CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" /></div>
+      </section>
+
+      <section class="grid gap-3 md:grid-cols-3">
         <AppStatCard label="جمع فاکتورها" :value="formatCurrency(summary.total_invoiced_toman)" value-class="text-slate-800" />
-        <AppStatCard label="مبلغ دریافت‌شده" :value="formatCurrency(summary.total_paid_toman)" value-class="text-emerald-600" />
         <AppStatCard label="مانده قابل دریافت" :value="formatCurrency(summary.outstanding_toman)" value-class="text-rose-600" />
+        <AppStatCard label="مبلغ دریافت‌شده" :value="formatCurrency(summary.total_paid_toman)" value-class="text-emerald-600" />
+      </section>
+      <section class="grid gap-3 md:grid-cols-3">
+        <AppStatCard label="تعداد فاکتورها" :value="formatNumber(summary.invoice_count)" value-class="text-violet-600" />
+        <AppStatCard label="بهترین مشتری" :value="bestCustomer?.customer_name || '—'" value-class="text-sky-700" />
         <AppStatCard label="مانده / پیگیری" :value="formatNumber(openListCount)" value-class="text-amber-600" />
       </section>
 
@@ -69,12 +77,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import AppStatCard from '../AppStatCard.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
+import CustomSelect from '../CustomSelect.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
@@ -94,11 +103,19 @@ const loading = ref(true);
 const creatingList = ref(false);
 const errorMessage = ref('');
 const showCustomerForm = ref(false);
+const selectedYear = ref(currentPersianYear());
 const report = ref({ summary: {}, operational: { list_status: {} }, dashboard: {} });
 const summary = computed(() => report.value.summary || {});
 const dashboard = computed(() => report.value.dashboard || {});
 const recentLists = computed(() => dashboard.value.recent_lists || []);
 const recentPayments = computed(() => dashboard.value.recent_payments || []);
+const bestCustomer = computed(() => report.value.top_customers?.[0] || null);
+const yearOptions = computed(() => {
+  const years = new Set((report.value.available_years || []).map(String));
+  years.add(String(selectedYear.value));
+  return [{ label: 'همه سال‌ها', value: 'all' }, ...[...years].sort((a, b) => Number(b) - Number(a))
+    .map((year) => ({ label: `سال ${Number(year).toLocaleString('fa-IR')}`, value: year }))];
+});
 const openListCount = computed(() => Number(report.value.operational?.list_status?.REMAINING || 0)
   + Number(report.value.operational?.list_status?.NEEDS_FOLLOW_UP || 0));
 
@@ -107,7 +124,10 @@ onMounted(async () => {
 });
 async function loadDashboard() {
   loading.value = true; errorMessage.value = '';
-  try { report.value = (await reportService.getOverview()).data; }
+  try {
+    const params = selectedYear.value === 'all' ? {} : { persian_year: selectedYear.value };
+    report.value = (await reportService.getOverview(params)).data;
+  }
   catch (error) { errorMessage.value = getApiErrorMessage(error, 'دریافت اطلاعات داشبورد با خطا مواجه شد'); }
   finally { loading.value = false; }
 }
@@ -120,12 +140,18 @@ async function createNewList() {
   router.push(`/lists/${result.data.id}/edit`);
 }
 async function handleCustomerSaved() { showCustomerForm.value = false; await Promise.all([invoiceStore.fetchCustomers(), loadDashboard()]); }
+function currentPersianYear() {
+  const part = new Intl.DateTimeFormat('en-u-ca-persian', { year: 'numeric', timeZone: 'Asia/Tehran' })
+    .formatToParts(new Date()).find((entry) => entry.type === 'year');
+  return part?.value || 'all';
+}
 function hasInvoice(list) { return ['PARTIALLY_ISSUED', 'ISSUED'].includes(list.invoice_status); }
 function displayListNumber(list) { return list.list_number || (list.status === 'DRAFT' ? `پیش‌نویس ${formatNumber(list.id)}` : `سابقه ${formatNumber(list.id)}`); }
 function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleString('fa-IR'); }
 function formatCurrency(value) { return `${formatNumber(value)} تومان`; }
 function formatDate(value) { return value ? toPersianDate(String(value).slice(0, 10)) : '—'; }
 function formatDateTime(value) { return value ? `${formatDate(value)} - ${String(value).slice(11, 16)}` : '—'; }
+watch(selectedYear, loadDashboard);
 </script>
 
 <style scoped>

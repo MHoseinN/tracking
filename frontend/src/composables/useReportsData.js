@@ -54,7 +54,8 @@ export function useReportsData(options = {}) {
       { label: 'مبلغ دریافت‌شده', value: formatCurrency(summary.total_paid_toman), valueClass: 'text-emerald-600' },
       { label: 'مانده قابل دریافت', value: formatCurrency(summary.outstanding_toman), valueClass: 'text-rose-600' },
       { label: 'تعداد فاکتورها', value: formatNumber(summary.invoice_count), valueClass: 'text-blue-600' },
-      { label: 'تعداد لیست‌ها', value: formatNumber(summary.list_count), valueClass: 'text-violet-600' }
+      { label: 'تعداد لیست‌ها', value: formatNumber(summary.list_count), valueClass: 'text-violet-600' },
+      { label: 'بهترین مشتری', value: report.value.top_customers?.[0]?.customer_name || '—', valueClass: 'text-sky-700' }
     ];
   });
 

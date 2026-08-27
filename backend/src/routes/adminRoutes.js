@@ -26,11 +26,13 @@ const passwordValidation = body('password')
   .withMessage('Password must be between 6 and 128 characters');
 
 router.get('/', listAdmins);
-router.post('/', [usernameValidation, displayNameValidation, passwordValidation], createAdmin);
+router.post('/', [usernameValidation, displayNameValidation, passwordValidation,
+  body('phone').optional({ nullable: true }).isString().isLength({ max: 50 })], createAdmin);
 router.put('/:id', [
   idValidation,
   body('username').optional().isString().trim().isLength({ min: 3, max: 50 }),
   body('display_name').optional().isString().trim().isLength({ min: 1, max: 100 }),
+  body('phone').optional({ nullable: true }).isString().isLength({ max: 50 }),
   body('password').optional({ checkFalsy: true }).isString().isLength({ min: 6, max: 128 }),
   body('is_active').optional().isBoolean()
 ], updateAdmin);

@@ -13,6 +13,7 @@ function createDatabase() {
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       display_name TEXT,
+      phone TEXT,
       role TEXT NOT NULL CHECK (role IN ('MANAGER', 'ADMIN')),
       is_active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -33,11 +34,13 @@ test('manager can create, edit and deactivate admins without exposing password h
     const created = service.createAdmin({
       username: 'admin01',
       password: 'secret12',
-      display_name: 'ادمین اول'
+      display_name: 'ادمین اول',
+      phone: '09120000000'
     });
 
     assert.equal(created.role, 'ADMIN');
     assert.equal(created.is_active, true);
+    assert.equal(created.phone, '09120000000');
     assert.equal(Object.hasOwn(created, 'password'), false);
 
     const storedPassword = db.prepare('SELECT password FROM users WHERE id = ?').get(created.id).password;

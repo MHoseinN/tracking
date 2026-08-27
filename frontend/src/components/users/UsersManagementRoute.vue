@@ -8,16 +8,14 @@
     <p v-if="errorMessage" class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ errorMessage }}</p>
 
     <AppTablePanel title="مدیریت مشتریان"
-      description="مشخصات مشتری و خلاصه لیست‌ها و فاکتورهای مدل جدید را از این جدول مدیریت کنید."
+      description="مشخصات مشتری و خلاصه لیست‌های ثبت‌شده را از این جدول مدیریت کنید."
       :count="loading ? null : filteredRows.length">
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-3">
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام مشتری</span>
-            <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی نام مشتری" /></label>
+        <AppFilterBar columns-class="md:grid-cols-2">
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">جست‌وجوی مشتری</span>
+            <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="نام مشتری یا شماره تماس" /></label>
           <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت حساب</span>
             <CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="app-filter-control" /></label>
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">شماره تماس</span>
-            <input v-model.trim="phoneFilter" class="app-filter-control" type="search" placeholder="جست‌وجوی شماره تماس" dir="ltr" /></label>
           <template #actions><AppButton size="md" variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
         </AppFilterBar>
       </template>
@@ -26,7 +24,7 @@
         <template #head>
           <tr>
             <th>ردیف</th><th>نام مشتری</th><th>وضعیت حساب</th><th>تعداد لیست</th>
-            <th>تعداد فاکتور</th><th>مبلغ فاکتورها</th><th>شماره تماس</th><th>عملیات</th>
+            <th>مبلغ فاکتورها</th><th>شماره تماس</th><th>معرف</th><th>عملیات</th>
           </tr>
         </template>
 
@@ -41,9 +39,9 @@
               @update:model-value="handleStatusChange(row, $event)" />
           </td>
           <td class="text-center font-bold">{{ formatNumber(row.list_count) }}</td>
-          <td class="text-center font-bold">{{ formatNumber(row.invoice_count) }}</td>
           <td class="text-center font-black text-slate-800">{{ formatCurrency(row.total_invoices_amount) }}</td>
           <td class="text-center" dir="ltr">{{ row.phone || '—' }}</td>
+          <td class="text-center">{{ row.referrer || '—' }}</td>
           <td>
             <div class="flex items-center justify-center gap-1">
               <AppIconButton label="مشاهده جزئیات" size="sm" @click="navigateToCustomer(row.id)">
@@ -103,7 +101,6 @@ const loading = ref(false);
 const errorMessage = ref('');
 const tableSectionRef = ref(null);
 const searchQuery = ref('');
-const phoneFilter = ref('');
 const statusFilter = ref('all');
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
 const accountStatusSelectOptions = computed(() => [{ label: 'بدون وضعیت', value: '' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
@@ -116,15 +113,15 @@ function normalize(value) {
 }
 const filteredRows = computed(() => rows.value.filter((row) => {
   const name = normalize(`${row.first_name || ''} ${row.last_name || ''}`);
-  return (!searchQuery.value || name.includes(normalize(searchQuery.value)))
-    && (!phoneFilter.value || normalize(row.phone).includes(normalize(phoneFilter.value)))
+  const query = normalize(searchQuery.value);
+  return (!query || name.includes(query) || normalize(row.phone).includes(query))
     && (statusFilter.value === 'all' || row.account_status === statusFilter.value);
 }));
 
 const { currentPage, pageSize, pageSizeOptions: pageSizeSelectOptions, totalRows, totalPages, rowStartIndex,
   paginatedItems: paginatedRows, visiblePageNumbers, goToPage } = usePaginatedList(filteredRows, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, phoneFilter, statusFilter], scrollTarget: tableSectionRef
+  resetSources: [searchQuery, statusFilter], scrollTarget: tableSectionRef
 });
 const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({ onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد') });
 const { statusSavingId, showForm, selectedCustomer, showDeleteConfirm, deletingCustomer, deleteConfirmMessage,
@@ -134,8 +131,8 @@ const { statusSavingId, showForm, selectedCustomer, showDeleteConfirm, deletingC
 function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleString('fa-IR'); }
 function formatCurrency(value) { return `${formatNumber(value)} تومان`; }
 function statusTriggerClass(status) { return ['customers-status-control', status ? getAccountStatusTone(status) : 'border-slate-300 bg-white text-slate-500']; }
-function navigateToCustomer(id) { router.push(`/customer/${id}`); }
-function clearFilters() { searchQuery.value = ''; phoneFilter.value = ''; statusFilter.value = 'all'; }
+function navigateToCustomer(id) { router.push({ name: 'CustomerDetail', params: { id } }); }
+function clearFilters() { searchQuery.value = ''; statusFilter.value = 'all'; }
 
 async function loadOverview() {
   loading.value = true; errorMessage.value = '';
@@ -145,9 +142,9 @@ async function loadOverview() {
 }
 function exportCustomers() {
   exportRowsToExcel({ fileName: 'customers-export', sheetTitle: 'فهرست مشتریان',
-    headers: ['نام', 'نام خانوادگی', 'وضعیت حساب', 'تعداد لیست', 'تعداد فاکتور', 'مبلغ کل', 'شماره تماس'],
+    headers: ['نام', 'نام خانوادگی', 'وضعیت حساب', 'تعداد لیست', 'مبلغ کل', 'شماره تماس', 'معرف'],
     rows: filteredRows.value.map((row) => [row.first_name || '', row.last_name || '', row.account_status || '',
-      row.list_count, row.invoice_count, row.total_invoices_amount, row.phone || '']) });
+      row.list_count, row.total_invoices_amount, row.phone || '', row.referrer || '']) });
 }
 onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]); });
 </script>
@@ -157,21 +154,22 @@ onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCus
 .customers-table :deep(.app-table-wrapper) { overflow-x: hidden; }
 .customers-table :deep(th), .customers-table :deep(td) { padding: .65rem .45rem; vertical-align: middle; }
 .customers-table :deep(th:nth-child(1)) { width: 5%; }
-.customers-table :deep(th:nth-child(2)) { width: 19%; }
-.customers-table :deep(th:nth-child(3)) { width: 15%; }
-.customers-table :deep(th:nth-child(4)), .customers-table :deep(th:nth-child(5)) { width: 9%; }
-.customers-table :deep(th:nth-child(6)) { width: 15%; }
-.customers-table :deep(th:nth-child(7)) { width: 13%; }
-.customers-table :deep(th:nth-child(8)) { width: 15%; }
+.customers-table :deep(th:nth-child(2)) { width: 17%; }
+.customers-table :deep(th:nth-child(3)) { width: 14%; }
+.customers-table :deep(th:nth-child(4)) { width: 8%; }
+.customers-table :deep(th:nth-child(5)) { width: 15%; }
+.customers-table :deep(th:nth-child(6)) { width: 13%; }
+.customers-table :deep(th:nth-child(7)) { width: 12%; }
+.customers-table :deep(th:nth-child(8)) { width: 16%; }
 .customers-table :deep(.customers-status-control) { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: 0 .5rem; font-size: .72rem; }
 @media (max-width: 1023px) {
   .customers-table :deep(th:nth-child(4)), .customers-table :deep(td:nth-child(4)),
-  .customers-table :deep(th:nth-child(5)), .customers-table :deep(td:nth-child(5)),
   .customers-table :deep(th:nth-child(7)), .customers-table :deep(td:nth-child(7)) { display: none; }
   .customers-table :deep(th:nth-child(1)) { width: 8%; }
   .customers-table :deep(th:nth-child(2)) { width: 27%; }
   .customers-table :deep(th:nth-child(3)) { width: 22%; }
-  .customers-table :deep(th:nth-child(6)) { width: 23%; }
+  .customers-table :deep(th:nth-child(5)) { width: 23%; }
+  .customers-table :deep(th:nth-child(6)) { width: 20%; }
   .customers-table :deep(th:nth-child(8)) { width: 20%; }
 }
 </style>

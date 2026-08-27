@@ -1,9 +1,10 @@
 <template>
   <div class="flex shrink-0 items-center gap-2">
-    <div class="ml-2 hidden text-right xl:block">
+    <button type="button" class="ml-2 hidden rounded-lg px-2 py-1 text-right transition hover:bg-slate-100 xl:block"
+      title="مدیریت پروفایل" @click="router.push('/profile')">
       <p class="text-xs font-semibold text-slate-700">{{ authStore.user?.display_name || authStore.user?.username }}</p>
       <p class="text-[11px] text-slate-400">{{ authStore.user?.role === 'MANAGER' ? 'مدیر' : 'ادمین' }}</p>
-    </div>
+    </button>
     <AppIconButton class="hidden sm:inline-flex" label="گرفتن بکاپ" variant="warning" :loading="backupLoading"
       @click="handleManualBackup">
       <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">

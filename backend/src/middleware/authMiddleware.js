@@ -12,7 +12,7 @@ function authMiddleware(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = db.prepare(`
-      SELECT id, username, display_name, role, is_active, deleted_at
+      SELECT id, username, display_name, phone, role, is_active, deleted_at
       FROM users
       WHERE id = ?
     `).get(decoded.id);

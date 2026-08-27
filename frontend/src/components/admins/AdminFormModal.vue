@@ -39,6 +39,13 @@
         </template>
       </AppFormField>
 
+      <AppFormField for-id="admin-phone" label="شماره تماس">
+        <template #default="{ controlId }">
+          <input :id="controlId" v-model.trim="form.phone" type="text" maxlength="50"
+            autocomplete="tel" dir="ltr" class="app-input h-12 text-left" />
+        </template>
+      </AppFormField>
+
       <AppFormField
         for-id="admin-password"
         label="رمز عبور"
@@ -90,12 +97,13 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 
-const form = reactive({ display_name: '', username: '', password: '', is_active: true });
+const form = reactive({ display_name: '', username: '', phone: '', password: '', is_active: true });
 const errors = reactive({ display_name: '', username: '', password: '' });
 
 function resetForm() {
   form.display_name = props.admin?.display_name || '';
   form.username = props.admin?.username || '';
+  form.phone = props.admin?.phone || '';
   form.password = '';
   form.is_active = props.admin?.is_active ?? true;
   errors.display_name = '';
@@ -115,6 +123,7 @@ function submitForm() {
   emit('save', {
     display_name: form.display_name,
     username: form.username,
+    phone: form.phone || null,
     password: form.password || undefined,
     is_active: form.is_active
   });

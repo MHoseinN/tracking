@@ -8,32 +8,40 @@
       description="مدیر اصلی می‌تواند حساب‌های ادمین را ایجاد، ویرایش، فعال یا غیرفعال کند."
       :count="loading ? null : filteredUsers.length">
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-3">
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام ادمین</span>
-            <input v-model.trim="nameFilter" class="app-filter-control" type="search" placeholder="جست‌وجوی نام ادمین" /></label>
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام کاربری</span>
-            <input v-model.trim="usernameFilter" class="app-filter-control" type="search" placeholder="جست‌وجوی نام کاربری" dir="ltr" /></label>
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت دسترسی</span>
-            <CustomSelect v-model="statusFilter" :options="statusFilterOptions" trigger-class="app-filter-control" /></label>
+        <AppFilterBar columns-class="md:grid-cols-1">
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">جست‌وجوی ادمین</span>
+            <input v-model.trim="searchQuery" class="app-filter-control" type="search"
+              placeholder="نام، نام کاربری یا شماره تماس" /></label>
           <template #actions><AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
         </AppFilterBar>
       </template>
-      <AppDataTable class="admins-table" :column-count="6" :loading="loading" :empty="!filteredUsers.length"
+      <AppDataTable class="admins-table" :column-count="8" :loading="loading" :empty="!filteredUsers.length"
         min-width="100%" loading-message="در حال دریافت حساب‌های داخلی..."
         empty-message="حسابی با این مشخصات پیدا نشد.">
         <template #head>
-          <tr><th>ردیف</th><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>عملیات</th></tr>
+          <tr><th>ردیف</th><th>نام</th><th>نام کاربری</th><th>شماره تماس</th><th>نقش</th><th>وضعیت</th><th>عملکرد امروز</th><th>عملیات</th></tr>
         </template>
 
         <tr v-for="(user, index) in paginatedUsers" :key="user.id" class="app-table-row">
           <td class="text-center font-bold text-slate-500">{{ (rowStartIndex + index + 1).toLocaleString('fa-IR') }}</td>
           <td class="font-black text-slate-900">{{ user.display_name }}</td>
           <td class="text-center" dir="ltr">{{ user.username }}</td>
+          <td class="text-center" dir="ltr">{{ user.phone || '—' }}</td>
           <td class="text-center"><AppStatusBadge :label="user.role === 'MANAGER' ? 'مدیر' : 'ادمین'"
             :tone="user.role === 'MANAGER' ? 'violet' : 'info'" /></td>
           <td class="text-center"><AppStatusBadge group="active" :status="Boolean(user.is_active)" /></td>
+          <td class="text-center text-xs font-bold text-slate-700">
+            <button type="button" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 transition hover:border-indigo-300 hover:bg-indigo-50"
+              @click="performanceAdmin = user">
+              تحویل {{ formatNumber(user.performance?.day?.delivered) }} · دریافت {{ formatNumber(user.performance?.day?.received) }}
+            </button>
+          </td>
           <td>
-            <div v-if="user.role === 'ADMIN'" class="flex items-center justify-center gap-1">
+            <div class="flex items-center justify-center gap-1">
+              <AppIconButton label="آمار عملکرد" size="sm" @click="performanceAdmin = user">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 19V9m5 10V5m5 14v-7m5 7V3" /></svg>
+              </AppIconButton>
+              <template v-if="user.role === 'ADMIN'">
               <AppIconButton label="ویرایش ادمین" size="sm" variant="primary" @click="openEditModal(user)">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" /></svg>
               </AppIconButton>
@@ -45,8 +53,8 @@
               <AppIconButton label="حذف ادمین" size="sm" variant="danger" @click="openDeleteConfirm(user)">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 7h12m-9 0V5h6v2m-8 0 1 13h8l1-13" /></svg>
               </AppIconButton>
+              </template>
             </div>
-            <p v-else class="text-center text-xs text-slate-400">مدیر اصلی</p>
           </td>
         </tr>
       </AppDataTable>
@@ -59,6 +67,7 @@
   </div>
 
   <AdminFormModal :is-open="formOpen" :admin="editingAdmin" :saving="saving" @close="closeForm" @save="saveAdmin" />
+  <AdminPerformanceModal :is-open="Boolean(performanceAdmin)" :admin="performanceAdmin" @close="performanceAdmin = null" />
   <ConfirmModal :is-open="statusConfirmOpen" :title="pendingStatusAdmin?.is_active ? 'غیرفعال‌سازی ادمین' : 'فعال‌سازی ادمین'"
     :message="pendingStatusAdmin?.is_active ? `با غیرفعال‌کردن ${pendingStatusAdmin?.display_name || 'این ادمین'}، دسترسی او بلافاصله قطع می‌شود. ادامه می‌دهید؟` : `آیا دسترسی ${pendingStatusAdmin?.display_name || 'این ادمین'} دوباره فعال شود؟`"
     :loading="statusSavingId === pendingStatusAdmin?.id" :confirm-text="pendingStatusAdmin?.is_active ? 'بله، غیرفعال شود' : 'بله، فعال شود'"
@@ -73,8 +82,8 @@ import { computed, onMounted, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import AppPagination from '../AppPagination.vue';
 import ConfirmModal from '../ConfirmModal.vue';
-import CustomSelect from '../CustomSelect.vue';
 import AdminFormModal from './AdminFormModal.vue';
+import AdminPerformanceModal from './AdminPerformanceModal.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
 import AppFilterBar from '../ui/AppFilterBar.vue';
@@ -92,28 +101,26 @@ const saving = ref(false);
 const statusSavingId = ref(null);
 const statusConfirmOpen = ref(false);
 const pendingStatusAdmin = ref(null);
-const nameFilter = ref('');
-const usernameFilter = ref('');
-const statusFilter = ref('all');
+const searchQuery = ref('');
+const performanceAdmin = ref(null);
 const tableSectionRef = ref(null);
 const formOpen = ref(false);
 const editingAdmin = ref(null);
 const deleteConfirmOpen = ref(false);
 const deletingAdmin = ref(null);
 const deleting = ref(false);
-const statusFilterOptions = [{ label: 'همه وضعیت‌ها', value: 'all' }, { label: 'فعال', value: 'active' }, { label: 'غیرفعال', value: 'inactive' }];
 function normalize(value) { return String(value || '').trim().toLowerCase().replace(/ي/g, 'ی').replace(/ك/g, 'ک'); }
-const filteredUsers = computed(() => users.value.filter((user) => (
-  (!nameFilter.value || normalize(user.display_name).includes(normalize(nameFilter.value)))
-  && (!usernameFilter.value || normalize(user.username).includes(normalize(usernameFilter.value)))
-  && (statusFilter.value === 'all' || (statusFilter.value === 'active' ? user.is_active : !user.is_active))
-)));
+const filteredUsers = computed(() => users.value.filter((user) => {
+  const query = normalize(searchQuery.value);
+  return !query || normalize(`${user.display_name} ${user.username} ${user.phone || ''}`).includes(query);
+}));
 const { currentPage, pageSize, pageSizeOptions, totalRows, totalPages, rowStartIndex,
   paginatedItems: paginatedUsers, visiblePageNumbers, goToPage } = usePaginatedList(filteredUsers, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50],
-  resetSources: [nameFilter, usernameFilter, statusFilter], scrollTarget: tableSectionRef
+  resetSources: [searchQuery], scrollTarget: tableSectionRef
 });
-function clearFilters() { nameFilter.value = ''; usernameFilter.value = ''; statusFilter.value = 'all'; }
+function clearFilters() { searchQuery.value = ''; }
+function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleString('fa-IR'); }
 
 async function loadAdmins() {
   loading.value = true;
@@ -154,18 +161,22 @@ onMounted(loadAdmins);
 .admins-table :deep(.app-table) { width: 100%; table-layout: fixed; }
 .admins-table :deep(.app-table-wrapper) { overflow-x: hidden; }
 .admins-table :deep(th), .admins-table :deep(td) { padding: .7rem .5rem; vertical-align: middle; }
-.admins-table :deep(th:nth-child(1)) { width: 7%; }
-.admins-table :deep(th:nth-child(2)) { width: 24%; }
-.admins-table :deep(th:nth-child(3)) { width: 22%; }
+.admins-table :deep(th:nth-child(1)) { width: 5%; }
+.admins-table :deep(th:nth-child(2)) { width: 15%; }
+.admins-table :deep(th:nth-child(3)) { width: 13%; }
 .admins-table :deep(th:nth-child(4)) { width: 13%; }
-.admins-table :deep(th:nth-child(5)) { width: 14%; }
-.admins-table :deep(th:nth-child(6)) { width: 20%; }
+.admins-table :deep(th:nth-child(5)) { width: 9%; }
+.admins-table :deep(th:nth-child(6)) { width: 10%; }
+.admins-table :deep(th:nth-child(7)) { width: 20%; }
+.admins-table :deep(th:nth-child(8)) { width: 15%; }
 @media (max-width: 767px) {
-  .admins-table :deep(th:nth-child(4)), .admins-table :deep(td:nth-child(4)) { display: none; }
+  .admins-table :deep(th:nth-child(4)), .admins-table :deep(td:nth-child(4)),
+  .admins-table :deep(th:nth-child(5)), .admins-table :deep(td:nth-child(5)),
+  .admins-table :deep(th:nth-child(6)), .admins-table :deep(td:nth-child(6)) { display: none; }
   .admins-table :deep(th:nth-child(1)) { width: 10%; }
-  .admins-table :deep(th:nth-child(2)) { width: 25%; }
-  .admins-table :deep(th:nth-child(3)) { width: 25%; }
-  .admins-table :deep(th:nth-child(5)) { width: 17%; }
-  .admins-table :deep(th:nth-child(6)) { width: 23%; }
+  .admins-table :deep(th:nth-child(2)) { width: 22%; }
+  .admins-table :deep(th:nth-child(3)) { width: 22%; }
+  .admins-table :deep(th:nth-child(7)) { width: 28%; }
+  .admins-table :deep(th:nth-child(8)) { width: 18%; }
 }
 </style>

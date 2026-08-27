@@ -68,7 +68,17 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: 'محصولات',
-      subtitle: 'نام، دسته‌بندی، قیمت روزانه و وضعیت محصولات'
+      subtitle: 'نام، دسته‌بندی و قیمت روزانه محصولات'
+    }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('./components/profile/ProfileRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'پروفایل من',
+      subtitle: 'مدیریت مشخصات، رمز عبور و مشاهده عملکرد شخصی'
     }
   },
   {

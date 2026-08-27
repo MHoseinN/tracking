@@ -1,6 +1,6 @@
 
 import { defineStore } from "pinia";
-import { getCurrentUser, login as loginRequest } from '../modules/auth/api/auth.service';
+import { getCurrentUser, login as loginRequest, updateProfile as updateProfileRequest } from '../modules/auth/api/auth.service';
 import { getApiErrorMessage } from '../utils/apiError';
 import { cancelPendingRequests } from '../utils/api';
 
@@ -83,5 +83,16 @@ export const useAuthStore = defineStore("auth", {
         return false;
       }
     },
+
+    async updateProfile(payload) {
+      try {
+        const response = await updateProfileRequest(payload);
+        this.user = response.data.user;
+        localStorage.setItem('user', JSON.stringify(this.user));
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ذخیره پروفایل با خطا مواجه شد') };
+      }
+    }
   },
 });

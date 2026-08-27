@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { createInternalUserPerformanceService } = require('./internalUserPerformanceService');
 
 class AdminServiceError extends Error {
   constructor(message, statusCode = 400) {
@@ -13,6 +14,7 @@ function serializeInternalUser(user) {
     id: user.id,
     username: user.username,
     display_name: user.display_name || user.username,
+    phone: user.phone || '',
     role: user.role,
     is_active: Boolean(user.is_active),
     created_at: user.created_at,
@@ -21,17 +23,20 @@ function serializeInternalUser(user) {
 }
 
 function createAdminService(db) {
+  const performanceService = createInternalUserPerformanceService(db);
   const selectPublicColumns = `
-    SELECT id, username, display_name, role, is_active, created_at, updated_at
+    SELECT id, username, display_name, phone, role, is_active, created_at, updated_at
     FROM users
   `;
 
   function listInternalUsers() {
-    return db.prepare(`
+    const users = db.prepare(`
       ${selectPublicColumns}
       WHERE deleted_at IS NULL
       ORDER BY CASE role WHEN 'MANAGER' THEN 0 ELSE 1 END, id ASC
     `).all().map(serializeInternalUser);
+    const performance = performanceService.getPerformanceByUser();
+    return users.map((user) => ({ ...user, performance: performance[user.id] }));
   }
 
   function getEditableAdmin(id) {
@@ -57,7 +62,7 @@ function createAdminService(db) {
     throw error;
   }
 
-  function createAdmin({ username, password, display_name }) {
+  function createAdmin({ username, password, display_name, phone }) {
     const normalizedUsername = String(username || '').trim();
     const normalizedDisplayName = String(display_name || '').trim();
     const passwordHash = bcrypt.hashSync(password, 10);
@@ -65,10 +70,10 @@ function createAdminService(db) {
     try {
       const result = db.prepare(`
         INSERT INTO users (
-          username, password, display_name, role, is_active, updated_at
+          username, password, display_name, phone, role, is_active, updated_at
         )
-        VALUES (?, ?, ?, 'ADMIN', 1, CURRENT_TIMESTAMP)
-      `).run(normalizedUsername, passwordHash, normalizedDisplayName || normalizedUsername);
+        VALUES (?, ?, ?, ?, 'ADMIN', 1, CURRENT_TIMESTAMP)
+      `).run(normalizedUsername, passwordHash, normalizedDisplayName || normalizedUsername, String(phone || '').trim() || null);
 
       return serializeInternalUser(db.prepare(`
         ${selectPublicColumns}
@@ -90,8 +95,9 @@ function createAdminService(db) {
     const isActive = updates.is_active === undefined
       ? current.is_active
       : Number(Boolean(updates.is_active));
+    const phone = updates.phone === undefined ? current.phone : (String(updates.phone || '').trim() || null);
 
-    const values = [username, displayName || username, isActive];
+    const values = [username, displayName || username, phone, isActive];
     let passwordAssignment = '';
     if (updates.password) {
       passwordAssignment = ', password = ?';
@@ -102,7 +108,7 @@ function createAdminService(db) {
     try {
       db.prepare(`
         UPDATE users
-        SET username = ?, display_name = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+        SET username = ?, display_name = ?, phone = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
           ${passwordAssignment}
         WHERE id = ? AND role = 'ADMIN' AND deleted_at IS NULL
       `).run(...values);

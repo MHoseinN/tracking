@@ -110,6 +110,7 @@ function getCustomersOverview(req, res) {
             AND i.deleted_at IS NULL
         ) AS total_invoices_amount
       FROM customers c
+      WHERE c.deleted_at IS NULL
       ORDER BY total_invoices_amount DESC, invoice_count DESC, c.created_at DESC
     `).all();
 
@@ -132,7 +133,7 @@ function getCustomerWorkflow(req, res) {
   const { id } = req.params;
 
   try {
-    const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+    const customer = db.prepare('SELECT * FROM customers WHERE id = ? AND deleted_at IS NULL').get(id);
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
     const lists = db.prepare(`

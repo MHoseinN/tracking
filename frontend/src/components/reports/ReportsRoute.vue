@@ -29,7 +29,7 @@
           </div>
         </div>
 
-        <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <AppStatCard v-for="card in reportSummaryCards" :key="card.label" :label="card.label" :value="card.value"
             :value-class="card.valueClass" container-class="bg-white/90 shadow-md" />
         </div>
@@ -44,106 +44,41 @@
               fill-color="rgba(59, 130, 246, 0.12)" />
           </div>
 
-          <div class="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-              <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                <div>
-                  <h3 class="text-base font-bold text-slate-800">جدول تحلیل دوره‌ای</h3>
-                  <p class="mt-1 text-xs text-slate-500">نمای ریزتر از روند تعداد فاکتورها و درآمد</p>
-                </div>
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  {{ activeRows.length.toLocaleString('fa-IR') }} ردیف
-                </span>
+          <div class="grid gap-6 xl:grid-cols-2">
+            <section class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div class="mb-4 flex items-center justify-between"><div><h3 class="font-black text-slate-800">وضعیت عملیاتی</h3><p class="mt-1 text-xs text-slate-500">ارسال فاکتور و تسویه حساب</p></div><span class="rounded-full bg-white px-3 py-1 text-xs text-slate-500">{{ formatNumber(operationalStatusRows.length) }} شاخص</span></div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <article v-for="item in operationalStatusRows" :key="item.label" class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-center justify-between gap-3"><p class="text-sm font-bold text-slate-700">{{ item.label }}</p><p class="font-black" :class="item.valueClass">{{ item.value }}</p></div>
+                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }" /></div>
+                  <p class="mt-2 text-left text-xs text-slate-400">{{ item.percent }}</p>
+                </article>
               </div>
-              <div>
-                <table class="w-full">
-                  <thead class="border-b border-slate-100 bg-slate-50">
-                    <tr>
-                      <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">{{ periodHeader }}</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">تعداد فاکتورها</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">مبلغ فاکتورها</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="stat in activeRows" :key="stat.period" class="border-b border-slate-100 hover:bg-slate-50">
-                      <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period, displayMode) }}</td>
-                      <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.invoice_count) }}</td>
-                      <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ formatCurrency(stat.total_invoiced_toman) }}</td>
-                    </tr>
-                    <tr v-if="!activeRows.length">
-                      <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود ندارد</td>
-                    </tr>
-                  </tbody>
-                </table>
+            </section>
+
+            <section class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div class="mb-4 flex items-center justify-between"><div><h3 class="font-black text-slate-800">وضعیت لیست‌ها</h3><p class="mt-1 text-xs text-slate-500">چرخه تحویل، برگشت و تکمیل</p></div><span class="rounded-full bg-white px-3 py-1 text-xs text-slate-500">{{ formatNumber(listStatusRows.length) }} وضعیت</span></div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <article v-for="item in listStatusRows" :key="item.label" class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-center justify-between gap-3"><p class="text-sm font-bold text-slate-700">{{ item.label }}</p><p class="font-black" :class="item.valueClass">{{ item.value }}</p></div>
+                  <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }" /></div>
+                  <p class="mt-2 text-left text-xs text-slate-400">{{ item.percent }}</p>
+                </article>
               </div>
-            </div>
+            </section>
+          </div>
+
+          <div class="grid items-start gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
+            <section class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4"><div><h3 class="font-black text-slate-800">تحلیل دوره‌ای</h3><p class="mt-1 text-xs text-slate-500">تعداد و مبلغ فاکتورها در هر دوره</p></div><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ formatNumber(activeRows.length) }} ردیف</span></div>
+              <table class="w-full table-fixed"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-right text-xs text-slate-600">{{ periodHeader }}</th><th class="px-4 py-3 text-center text-xs text-slate-600">تعداد فاکتور</th><th class="px-4 py-3 text-center text-xs text-slate-600">مبلغ فاکتورها</th></tr></thead>
+                <tbody><tr v-for="stat in activeRows" :key="stat.period" class="border-t border-slate-100 hover:bg-slate-50"><td class="px-4 py-4 text-sm font-bold text-slate-700">{{ formatPeriodLabel(stat.period, displayMode) }}</td><td class="px-4 py-4 text-center text-sm">{{ formatNumber(stat.invoice_count) }}</td><td class="px-4 py-4 text-center text-sm font-black">{{ formatCurrency(stat.total_invoiced_toman) }}</td></tr><tr v-if="!activeRows.length"><td colspan="3" class="px-4 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود ندارد</td></tr></tbody>
+              </table>
+            </section>
 
             <div class="grid gap-6">
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div class="mb-4 flex items-center justify-between">
-                  <h3 class="text-base font-bold text-slate-800">وضعیت عملیاتی</h3>
-                  <span class="text-xs text-slate-500">ارسال و تسویه</span>
-                </div>
-                <div class="space-y-3">
-                  <div v-for="item in operationalStatusRows" :key="item.label" class="rounded-lg bg-white px-4 py-3">
-                    <div class="mb-2 flex items-center justify-between">
-                      <p class="font-semibold text-slate-700">{{ item.label }}</p>
-                      <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div class="mb-4 flex items-center justify-between">
-                  <h3 class="text-base font-bold text-slate-800">برترین مشتری‌ها</h3>
-                  <span class="text-xs text-slate-500">بر اساس مبلغ فاکتور</span>
-                </div>
-                <div v-if="topCustomers.length" class="space-y-3">
-                  <div v-for="customer in topCustomers" :key="customer.name" class="flex items-center justify-between rounded-lg bg-white px-4 py-3">
-                    <div>
-                      <p class="font-semibold text-slate-800">{{ customer.name }}</p>
-                      <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
-                    </div>
-                    <p class="font-bold text-emerald-700">{{ formatCurrency(customer.total) }}</p>
-                  </div>
-                </div>
-                <p v-else class="rounded-lg bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای نمایش نیست</p>
-              </div>
-
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div class="mb-4 flex items-center justify-between">
-                  <h3 class="text-base font-bold text-slate-800">وضعیت لیست‌ها</h3>
-                  <span class="text-xs text-slate-500">چرخه تحویل و برگشت</span>
-                </div>
-                <div class="space-y-3">
-                  <div v-for="item in listStatusRows" :key="item.label" class="rounded-lg bg-white px-4 py-3">
-                    <div class="mb-2 flex items-center justify-between">
-                      <p class="font-semibold text-slate-700">{{ item.label }}</p>
-                      <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div class="mb-4 flex items-center justify-between">
-                  <h3 class="text-base font-bold text-slate-800">مرور سریع</h3>
-                  <span class="text-xs text-slate-500">خلاصه کاربردی</span>
-                </div>
-                <div class="space-y-4">
-                  <div v-for="item in reportHighlights" :key="item.label" class="rounded-lg bg-white px-4 py-4">
-                    <p class="text-xs text-slate-500">{{ item.label }}</p>
-                    <p class="mt-2 text-lg font-bold" :class="item.valueClass">{{ item.value }}</p>
-                  </div>
-                </div>
-              </div>
+              <section class="rounded-lg border border-slate-200 bg-slate-50 p-5"><div class="mb-4"><h3 class="font-black text-slate-800">برترین مشتری‌ها</h3><p class="mt-1 text-xs text-slate-500">بر اساس مبلغ فاکتور در بازه انتخاب‌شده</p></div><div v-if="topCustomers.length" class="space-y-2"><div v-for="(customer, index) in topCustomers" :key="customer.name" class="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3"><div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-xs font-black text-indigo-700">{{ formatNumber(index + 1) }}</span><div><p class="font-bold text-slate-800">{{ customer.name }}</p><p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p></div></div><p class="font-black text-emerald-700">{{ formatCurrency(customer.total) }}</p></div></div><p v-else class="rounded-lg bg-white p-8 text-center text-sm text-slate-400">داده کافی وجود ندارد</p></section>
+              <section class="rounded-lg border border-slate-200 bg-slate-50 p-5"><h3 class="font-black text-slate-800">مرور سریع</h3><div class="mt-4 grid gap-3 sm:grid-cols-2"><article v-for="item in reportHighlights" :key="item.label" class="rounded-lg border border-slate-200 bg-white p-4"><p class="text-xs text-slate-500">{{ item.label }}</p><p class="mt-2 font-black" :class="item.valueClass">{{ item.value }}</p></article></div></section>
             </div>
           </div>
         </div>

@@ -12,6 +12,7 @@ const { createDeliverySettlementService } = require('../src/services/deliverySet
 const { getPersianYear } = require('../src/services/workflowNumberingService');
 const { createInvoicePdfService } = require('../src/services/invoicePdfService');
 const { createReportService } = require('../src/services/reportService');
+const { createInternalUserPerformanceService, periodKeys } = require('../src/services/internalUserPerformanceService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -808,6 +809,39 @@ test('builds reports from workflow lists, issued invoices and active payments', 
     assert.deepEqual(allYears.available_years, [reportYear]);
     assert.equal(selectedYear.period_rows.length, 1);
     assert.equal(selectedYear.period_rows[0].invoice_count, 2);
+  } finally {
+    db.close();
+  }
+});
+
+test('counts delivered and received lists for Jalali day, week, month and year', () => {
+  const db = createDatabase();
+  try {
+    const listService = createDeliveryListDraftService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-27T10:00:00+03:30',
+      expected_return_at: '2026-08-27T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 100000, delivered_quantity: 1 }]
+    });
+    const delivered = listService.finalizeDraft(draft.id, saved.version, 1);
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-27T11:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }]
+    }, 1);
+
+    const keys = periodKeys('2026-08-27T12:00:00+03:30');
+    assert.equal(keys.year, '1405');
+    assert.equal(keys.month, '1405-06');
+    assert.equal(keys.week, '2026-08-22');
+    const performance = createInternalUserPerformanceService(db)
+      .getUserPerformance(1, new Date('2026-08-27T12:00:00+03:30'));
+    ['day', 'week', 'month', 'year'].forEach((period) => {
+      assert.equal(performance[period].delivered, 1);
+      assert.equal(performance[period].received, 1);
+    });
   } finally {
     db.close();
   }

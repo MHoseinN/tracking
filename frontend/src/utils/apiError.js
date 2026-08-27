@@ -1,6 +1,8 @@
 const CUSTOMER_MESSAGES = {
   'Customer with this phone already exists': 'کاربری با این شماره تماس قبلا ثبت شده است',
-  'Customer with this name already exists': 'کاربری با این نام قبلا ثبت شده است'
+  'Customer with this name already exists': 'کاربری با این نام قبلا ثبت شده است',
+  'Current password is incorrect': 'رمز عبور فعلی صحیح نیست',
+  'Username already exists': 'این نام کاربری قبلاً استفاده شده است'
 };
 
 export function getApiErrorMessage(error, fallback = 'خطایی در ارتباط با سرور رخ داد') {
