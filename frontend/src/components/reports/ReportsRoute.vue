@@ -55,20 +55,20 @@
                   {{ activeRows.length.toLocaleString('fa-IR') }} ردیف
                 </span>
               </div>
-              <div class="overflow-x-auto">
+              <div>
                 <table class="w-full">
                   <thead class="border-b border-slate-100 bg-slate-50">
                     <tr>
                       <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">{{ periodHeader }}</th>
                       <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">تعداد فاکتورها</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">درآمد</th>
+                      <th class="px-6 py-3 text-right text-xs font-medium uppercase text-slate-600">مبلغ فاکتورها</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="stat in activeRows" :key="stat.period" class="border-b border-slate-100 hover:bg-slate-50">
                       <td class="px-6 py-4 text-sm font-medium text-slate-700">{{ formatPeriodLabel(stat.period, displayMode) }}</td>
                       <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.invoice_count) }}</td>
-                      <td class="px-6 py-4 text-sm text-slate-600">{{ formatNumber(stat.total_income) }}</td>
+                      <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ formatCurrency(stat.total_invoiced_toman) }}</td>
                     </tr>
                     <tr v-if="!activeRows.length">
                       <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-400">داده‌ای برای نمایش وجود ندارد</td>
@@ -108,10 +108,28 @@
                       <p class="font-semibold text-slate-800">{{ customer.name }}</p>
                       <p class="text-xs text-slate-500">{{ formatNumber(customer.invoiceCount) }} فاکتور</p>
                     </div>
-                    <p class="font-bold text-emerald-700">{{ formatNumber(customer.total) }}</p>
+                    <p class="font-bold text-emerald-700">{{ formatCurrency(customer.total) }}</p>
                   </div>
                 </div>
                 <p v-else class="rounded-lg bg-white px-4 py-8 text-center text-sm text-slate-400">داده کافی برای نمایش نیست</p>
+              </div>
+
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <div class="mb-4 flex items-center justify-between">
+                  <h3 class="text-base font-bold text-slate-800">وضعیت لیست‌ها</h3>
+                  <span class="text-xs text-slate-500">چرخه تحویل و برگشت</span>
+                </div>
+                <div class="space-y-3">
+                  <div v-for="item in listStatusRows" :key="item.label" class="rounded-lg bg-white px-4 py-3">
+                    <div class="mb-2 flex items-center justify-between">
+                      <p class="font-semibold text-slate-700">{{ item.label }}</p>
+                      <p class="text-sm font-bold" :class="item.valueClass">{{ item.value }}</p>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div class="h-full rounded-full" :class="item.barClass" :style="{ width: item.percent }"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
@@ -157,8 +175,10 @@ const {
   reportSummaryCards,
   topCustomers,
   operationalStatusRows,
+  listStatusRows,
   reportHighlights,
   formatNumber,
+  formatCurrency,
   formatPeriodLabel
 } = useReportsData();
 
@@ -166,7 +186,7 @@ const chartSeries = computed(() => {
   const rows = [...activeRows.value].sort((left, right) => String(left.period).localeCompare(String(right.period)));
   return {
     labels: rows.map((row) => formatPeriodLabel(row.period, displayMode.value)),
-    income: rows.map((row) => Math.round(Number(row.total_income) || 0)),
+    income: rows.map((row) => Math.round(Number(row.total_invoiced_toman) || 0)),
     counts: rows.map((row) => Number(row.invoice_count) || 0)
   };
 });
@@ -175,11 +195,11 @@ function exportReports() {
   exportRowsToExcel({
     fileName: selectedYear.value === 'all' ? 'reports-all-years' : `reports-${selectedYear.value}`,
     sheetTitle: sectionTitle.value,
-    headers: [periodHeader.value, 'تعداد فاکتور', 'درآمد (تومان)'],
+    headers: [periodHeader.value, 'تعداد فاکتور', 'مبلغ فاکتورها (تومان)'],
     rows: activeRows.value.map((row) => [
       formatPeriodLabel(row.period, displayMode.value),
       formatNumber(row.invoice_count),
-      formatNumber(row.total_income)
+      formatNumber(row.total_invoiced_toman)
     ])
   });
 }

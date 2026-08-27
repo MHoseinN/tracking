@@ -11,6 +11,7 @@ const { createDeliveryInvoiceService } = require('../src/services/deliveryInvoic
 const { createDeliverySettlementService } = require('../src/services/deliverySettlementService');
 const { getPersianYear } = require('../src/services/workflowNumberingService');
 const { createInvoicePdfService } = require('../src/services/invoicePdfService');
+const { createReportService } = require('../src/services/reportService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -727,6 +728,74 @@ test('generates a downloadable Persian PDF for an issued workflow invoice', asyn
     assert.equal(result.data.lines.length, 1);
     assert.equal(result.data.adjustments.length, 3);
     assert.equal(result.data.invoice.parent_invoice_number, null);
+  } finally {
+    db.close();
+  }
+});
+
+test('builds reports from workflow lists, issued invoices and active payments', () => {
+  const db = createDatabase();
+  try {
+    db.prepare("INSERT INTO customers (id, name) VALUES (2, 'مریم محمدی')").run();
+    const insertList = db.prepare(`
+      INSERT INTO delivery_lists (
+        list_number, customer_id, customer_name_snapshot, status,
+        invoice_status, invoice_send_status, settlement_status,
+        delivered_at, completed_at, created_by_user_id, delivered_by_user_id
+      ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, 1, 1)
+    `);
+    const firstList = Number(insertList.run(
+      '051000', 1, 'علی حیدری', 'COMPLETED', 'SENT', 'PARTIAL',
+      '2026-08-01T10:00:00+03:30', '2026-08-02T10:00:00+03:30'
+    ).lastInsertRowid);
+    const secondList = Number(insertList.run(
+      '051001', 2, 'مریم محمدی', 'REMAINING', 'NOT_SENT', 'PAID',
+      '2026-08-03T10:00:00+03:30', null
+    ).lastInsertRowid);
+    const insertInvoice = db.prepare(`
+      INSERT INTO invoices (
+        customer_id, date, price, delivery_list_id, invoice_number,
+        invoice_type, status, settlement_status, send_status,
+        subtotal_toman, final_amount_toman, issued_at, issued_by_user_id
+      ) VALUES (?, ?, ?, ?, ?, 'PRIMARY', 'ISSUED', ?, ?, ?, ?, ?, 1)
+    `);
+    const firstInvoice = Number(insertInvoice.run(
+      1, '2026-08-02', 1500000, firstList, '4051000', 'PARTIAL', 'SENT',
+      1500000, 1500000, '2026-08-02T12:00:00+03:30'
+    ).lastInsertRowid);
+    const secondInvoice = Number(insertInvoice.run(
+      2, '2026-08-04', 2000000, secondList, '4051001', 'PAID', 'NOT_SENT',
+      2000000, 2000000, '2026-08-04T12:00:00+03:30'
+    ).lastInsertRowid);
+    const insertPayment = db.prepare(`
+      INSERT INTO payments (
+        delivery_list_id, invoice_id, amount_toman, payment_method,
+        paid_at, received_by_user_id
+      ) VALUES (?, ?, ?, 'OTHER', ?, 1)
+    `);
+    insertPayment.run(firstList, firstInvoice, 500000, '2026-08-02T13:00:00+03:30');
+    insertPayment.run(secondList, secondInvoice, 2000000, '2026-08-04T13:00:00+03:30');
+
+    const service = createReportService(db);
+    const allYears = service.getOverview();
+    const reportYear = getPersianYear('2026-08-02T12:00:00+03:30');
+    const selectedYear = service.getOverview({ persianYear: reportYear });
+
+    assert.equal(allYears.summary.total_invoiced_toman, 3500000);
+    assert.equal(allYears.summary.total_paid_toman, 2500000);
+    assert.equal(allYears.summary.outstanding_toman, 1000000);
+    assert.equal(allYears.summary.invoice_count, 2);
+    assert.equal(allYears.summary.list_count, 2);
+    assert.equal(allYears.operational.invoice_send.SENT, 1);
+    assert.equal(allYears.operational.invoice_send.NOT_SENT, 1);
+    assert.equal(allYears.operational.settlement.PARTIAL, 1);
+    assert.equal(allYears.operational.settlement.PAID, 1);
+    assert.equal(allYears.operational.list_status.COMPLETED, 1);
+    assert.equal(allYears.operational.list_status.REMAINING, 1);
+    assert.equal(allYears.top_customers[0].customer_name, 'مریم محمدی');
+    assert.deepEqual(allYears.available_years, [reportYear]);
+    assert.equal(selectedYear.period_rows.length, 1);
+    assert.equal(selectedYear.period_rows[0].invoice_count, 2);
   } finally {
     db.close();
   }
