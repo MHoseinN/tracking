@@ -270,8 +270,12 @@ async function hydrateDraft(draft) {
   const now = new Date();
   const today = getCurrentPersianDate();
   const defaultDate = `${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`;
-  form.customerId = draft.customer_id || null;
-  form.customerName = draft.customer_name || draft.customer_name_snapshot || '';
+  const requestedCustomerId = Number(route.query.customer_id);
+  const requestedCustomer = !draft.customer_id && requestedCustomerId
+    ? invoiceStore.customers.find((item) => Number(item.id) === requestedCustomerId)
+    : null;
+  form.customerId = draft.customer_id || requestedCustomer?.id || null;
+  form.customerName = draft.customer_name || draft.customer_name_snapshot || requestedCustomer?.name || '';
   form.deliveryDate = draft.delivered_at ? toPersianDate(String(draft.delivered_at).slice(0, 10)) : defaultDate;
   form.deliveryTime = draft.delivered_at ? String(draft.delivered_at).slice(11, 16) : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   form.expectedReturnDate = draft.expected_return_at ? toPersianDate(String(draft.expected_return_at).slice(0, 10)) : '';

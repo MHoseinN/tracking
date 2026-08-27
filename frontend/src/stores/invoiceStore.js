@@ -107,8 +107,15 @@ export const useInvoiceStore = defineStore('invoice', {
         this.customersOverview = (await invoiceService.getCustomersOverview()).data;
         return this.customersOverview;
       } catch (error) {
-        this.error = getApiErrorMessage(error, 'خطا در دریافت لیست کاربران'); throw error;
+        this.error = getApiErrorMessage(error, 'خطا در دریافت فهرست مشتریان'); throw error;
       } finally { this.loading = false; }
+    },
+
+    async fetchCustomerWorkflow(customerId) {
+      this.loading = true; this.error = null;
+      try { return (await invoiceService.getCustomerWorkflow(customerId)).data; }
+      catch (error) { this.error = getApiErrorMessage(error, 'خطا در دریافت لیست‌های مشتری'); throw error; }
+      finally { this.loading = false; }
     },
 
     async addCustomer(customerData, { allowExisting = true } = {}) {

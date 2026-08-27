@@ -10,6 +10,7 @@ export const invoiceService = {
   updateStatus(id, field, value) { return api.patch(`/invoices/${id}/status`, { field, value }); },
   getCustomers() { return api.get('/customers'); },
   getCustomersOverview() { return api.get('/customers/overview'); },
+  getCustomerWorkflow(id) { return api.get(`/customers/${id}/workflow`); },
   createCustomer(payload) { return api.post('/customers', payload); },
   updateCustomer(id, payload) { return api.put(`/customers/${id}`, payload); },
   updateCustomerProfile(id, payload) { return api.patch(`/customers/${id}/profile`, payload); },

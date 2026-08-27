@@ -91,16 +91,31 @@ function getCustomersOverview(req, res) {
         c.referrer,
         c.account_status,
         c.created_at,
-        COUNT(i.id) AS invoice_count,
-        COALESCE(SUM(i.price), 0) AS total_invoices_amount
+        (SELECT COUNT(*)
+           FROM delivery_lists dl
+          WHERE dl.customer_id = c.id AND dl.archived_at IS NULL
+        ) AS list_count,
+        (SELECT COUNT(*)
+           FROM invoices i
+          WHERE i.customer_id = c.id
+            AND i.delivery_list_id IS NOT NULL
+            AND i.status = 'ISSUED'
+            AND i.deleted_at IS NULL
+        ) AS invoice_count,
+        (SELECT COALESCE(SUM(i.final_amount_toman), 0)
+           FROM invoices i
+          WHERE i.customer_id = c.id
+            AND i.delivery_list_id IS NOT NULL
+            AND i.status = 'ISSUED'
+            AND i.deleted_at IS NULL
+        ) AS total_invoices_amount
       FROM customers c
-      LEFT JOIN invoices i ON i.customer_id = c.id
-      GROUP BY c.id
       ORDER BY total_invoices_amount DESC, invoice_count DESC, c.created_at DESC
     `).all();
 
     const normalized = rows.map((row) => ({
       ...mapCustomerRow(row),
+      list_count: Number(row.list_count) || 0,
       invoice_count: Number(row.invoice_count) || 0,
       total_invoices_amount: Number(row.total_invoices_amount) || 0
     }));
@@ -108,6 +123,69 @@ function getCustomersOverview(req, res) {
     res.json(normalized);
   } catch (err) {
     console.error('Get customers overview error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// GET /api/customers/:id/workflow
+function getCustomerWorkflow(req, res) {
+  const { id } = req.params;
+
+  try {
+    const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+
+    const lists = db.prepare(`
+      SELECT
+        dl.id, dl.list_number, dl.status, dl.invoice_status,
+        dl.invoice_send_status, dl.settlement_status, dl.delivered_at,
+        dl.expected_return_at, dl.completed_at, dl.created_at,
+        (SELECT MAX(re.returned_at)
+           FROM return_events re
+          WHERE re.delivery_list_id = dl.id AND re.deleted_at IS NULL
+        ) AS last_returned_at,
+        (SELECT COALESCE(SUM(i.final_amount_toman), 0)
+           FROM invoices i
+          WHERE i.delivery_list_id = dl.id
+            AND i.status = 'ISSUED' AND i.deleted_at IS NULL
+        ) AS invoice_total_toman,
+        (SELECT COALESCE(SUM(p.amount_toman), 0)
+           FROM payments p
+          WHERE p.delivery_list_id = dl.id AND p.voided_at IS NULL
+        ) AS paid_total_toman
+      FROM delivery_lists dl
+      WHERE dl.customer_id = ? AND dl.archived_at IS NULL
+      ORDER BY COALESCE(dl.delivered_at, dl.created_at) DESC, dl.id DESC
+    `).all(id).map((list) => ({
+      ...list,
+      invoice_total_toman: Number(list.invoice_total_toman) || 0,
+      paid_total_toman: Number(list.paid_total_toman) || 0,
+      balance_toman: Math.max(
+        0,
+        (Number(list.invoice_total_toman) || 0) - (Number(list.paid_total_toman) || 0)
+      )
+    }));
+
+    const summary = lists.reduce((result, list) => {
+      result.list_count += 1;
+      if (list.invoice_status === 'ISSUED' || list.invoice_status === 'PARTIALLY_ISSUED') {
+        result.invoice_count += 1;
+      }
+      result.invoiced_total_toman += list.invoice_total_toman;
+      result.paid_total_toman += list.paid_total_toman;
+      result.balance_toman += list.balance_toman;
+      return result;
+    }, {
+      list_count: 0,
+      invoice_count: 0,
+      invoiced_total_toman: 0,
+      paid_total_toman: 0,
+      balance_toman: 0
+    });
+
+    res.json({ customer: mapCustomerRow(customer), lists, summary });
+  } catch (err) {
+    console.error('Get customer workflow error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
@@ -290,6 +368,17 @@ function deleteCustomer(req, res) {
       return res.status(404).json({ message: 'Customer not found' });
     }
 
+    const linkedList = db.prepare(`
+      SELECT id FROM delivery_lists
+      WHERE customer_id = ?
+      LIMIT 1
+    `).get(id);
+    if (linkedList) {
+      return res.status(409).json({
+        message: 'این مشتری دارای لیست ثبت‌شده است و برای حفظ سابقه قابل حذف نیست'
+      });
+    }
+
     db.prepare('DELETE FROM customers WHERE id = ?').run(id);
     res.json({ message: 'Customer deleted successfully' });
   } catch (err) {
@@ -301,6 +390,7 @@ function deleteCustomer(req, res) {
 module.exports = {
   getAllCustomers,
   getCustomersOverview,
+  getCustomerWorkflow,
   createCustomer,
   updateCustomer,
   updateCustomerProfile,

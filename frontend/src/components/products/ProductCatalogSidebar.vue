@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="rounded-lg border border-slate-200 bg-white p-4 shadow-md sticky top-4 max-h-[calc(100vh-8.5rem)] overflow-hidden">
+    class="overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100vh-8.5rem)]">
     <div class="flex h-full min-h-0 flex-col space-y-4">
       <div class="min-h-0 flex-1 space-y-2">
         <button type="button" class="w-full rounded-lg px-3 py-2 text-right text-sm font-semibold transition"

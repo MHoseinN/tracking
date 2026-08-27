@@ -11,9 +11,9 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
 
   const deleteConfirmMessage = computed(() => {
     const customer = deleteTargetCustomer.value;
-    if (!customer) return 'آیا از حذف این کاربر اطمینان دارید؟ این عملیات قابل بازگشت نیست.';
+    if (!customer) return 'آیا از حذف این مشتری اطمینان دارید؟ این عملیات قابل بازگشت نیست.';
 
-    return `آیا از حذف کاربر ${customer.first_name} ${customer.last_name} مطمئن هستید؟ این عملیات قابل بازگشت نیست.`;
+    return `آیا از حذف مشتری ${customer.first_name} ${customer.last_name} مطمئن هستید؟ این عملیات قابل بازگشت نیست.`;
   });
 
   const refreshCustomers = () => Promise.all([
@@ -108,7 +108,7 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
     }, { allowExisting: false });
 
     if (!restoredCustomer.success || !restoredCustomer.data?.id) {
-      throw new Error(restoredCustomer.message || 'بازگردانی کاربر ممکن نشد');
+      throw new Error(restoredCustomer.message || 'بازگردانی مشتری ممکن نشد');
     }
 
     for (const invoice of invoiceSnapshots) {
@@ -129,7 +129,7 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
       invoiceStore.fetchCustomers(),
       invoiceStore.fetchAllInvoices()
     ]);
-    toast.success('کاربر و فاکتورهایش بازگردانی شدند');
+    toast.success('مشتری و فاکتورهایش بازگردانی شدند');
   }
 
   async function confirmDeleteCustomer() {
@@ -146,15 +146,15 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
       deletingCustomer.value = false;
 
       if (!result.success) {
-        toast.error(result.message || 'حذف کاربر با خطا مواجه شد');
+        toast.error(result.message || 'حذف مشتری با خطا مواجه شد');
         return;
       }
 
-      toast.success('کاربر با موفقیت حذف شد');
+      toast.success('مشتری با موفقیت حذف شد');
       closeDeleteModal();
       if (customerSnapshot) {
         showUndo({
-          title: 'کاربر حذف شد',
+          title: 'مشتری حذف شد',
           message: 'در 5 ثانیه آینده می‌توانی او را برگردانی.',
           handler: () => restoreCustomer(customerSnapshot, invoiceSnapshots)
         });
@@ -162,7 +162,7 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
       await refreshCustomers();
     } catch (error) {
       deletingCustomer.value = false;
-      toast.error(getApiErrorMessage(error, 'حذف کاربر با خطا مواجه شد'));
+      toast.error(getApiErrorMessage(error, 'حذف مشتری با خطا مواجه شد'));
     }
   }
 

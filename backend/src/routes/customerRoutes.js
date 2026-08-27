@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const {
   getAllCustomers,
   getCustomersOverview,
+  getCustomerWorkflow,
   createCustomer,
   updateCustomer,
   updateCustomerProfile,
@@ -21,6 +22,9 @@ router.get('/', getAllCustomers);
 
 // GET /api/customers/overview
 router.get('/overview', getCustomersOverview);
+
+// GET /api/customers/:id/workflow
+router.get('/:id/workflow', getCustomerWorkflow);
 
 // POST /api/customers
 router.post('/', [

@@ -1,258 +1,228 @@
-﻿<template>
-  <div>
+<template>
+  <div ref="tableSectionRef" class="space-y-5">
     <Teleport to="#app-shell-actions">
-      <button @click="openAddModal" class="app-button-primary w-full justify-between">
-        <span>افزودن حساب</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
-      <button @click="exportCustomerInvoices"
-        class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
-        <span>گزارش‌گیری</span>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-      </button>
-      <button @click="goBack" class="app-button-secondary w-full justify-between">
-        <span>بازگشت</span>
-        <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+      <AppButton variant="primary" block :loading="creatingList" @click="createListForCustomer">ایجاد لیست برای مشتری</AppButton>
+      <AppButton variant="info" block @click="exportCustomerLists">گزارش‌گیری</AppButton>
+      <AppButton variant="secondary" block @click="router.push('/users')">بازگشت به مشتریان</AppButton>
     </Teleport>
 
-    <CustomerSummaryPanel :customer="customer" :settled-amount="settledAmountFormatted"
-      :remaining-amount="remainingAmountFormatted" :open="isCustomerInfoOpen" :draft="customerProfileDraft"
-      :notes="customerNotesDraft" :account-status-select-options="accountStatusSelectOptions"
-      :phone-duplicate-error="phoneDuplicateError" :changed="customerFormChanged" :saving="customerFormSaving"
+    <CustomerSummaryPanel :customer="customer" :settled-amount="formatCurrency(summary.paid_total_toman)"
+      :remaining-amount="formatCurrency(summary.balance_toman)" :open="isCustomerInfoOpen"
+      :draft="customerProfileDraft" :notes="customerNotesDraft"
+      :account-status-select-options="accountStatusSelectOptions" :phone-duplicate-error="phoneDuplicateError"
+      :changed="customerFormChanged" :saving="customerFormSaving"
       @toggle="isCustomerInfoOpen = !isCustomerInfoOpen" @update-field="updateProfileField"
       @update:notes="customerNotesDraft = $event" @save="saveCustomerForm" />
 
-    <section ref="tableSectionRef" class="overflow-hidden rounded-lg bg-white shadow">
-      <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-4">
-        <InvoiceSearchBar :date-model-value="searchDate" :filter-model-value="statusFilter" :show-text-input="false"
-          :show-icon-input="false" :searchIcon="false" @update:date-model-value="searchDate = $event"
-          @update:filter-model-value="statusFilter = $event" @clear="clearSearch" />
-      </div>
+    <AppTablePanel title="لیست‌های این مشتری"
+      description="وضعیت تحویل، فاکتور، ارسال و تسویه این مشتری بر اساس مدل جدید نمایش داده می‌شود."
+      :count="loading ? null : filteredLists.length">
+      <AppDataTable class="customer-lists-table" :column-count="9" :loading="loading"
+        :empty="!filteredLists.length" min-width="100%" loading-message="در حال دریافت لیست‌های مشتری..."
+        empty-message="برای این مشتری لیستی با فیلتر فعلی پیدا نشد.">
+        <template #head>
+          <tr>
+            <th>ردیف</th><th>شماره لیست</th><th>تاریخ تحویل</th><th>وضعیت لیست</th><th>فاکتور</th>
+            <th>ارسال</th><th>تسویه</th><th>مبلغ فاکتور</th><th>عملیات</th>
+          </tr>
+          <tr class="customer-lists-filter-row">
+            <th />
+            <th><input v-model.trim="searchQuery" class="customer-list-filter" type="search" placeholder="شماره لیست" /></th>
+            <th />
+            <th><CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="customer-list-filter" /></th>
+            <th><CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="customer-list-filter" /></th>
+            <th><CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="customer-list-filter" /></th>
+            <th><CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="customer-list-filter" /></th>
+            <th />
+            <th>
+              <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="clearFilters">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" /></svg>
+              </AppIconButton>
+            </th>
+          </tr>
+        </template>
 
-      <AppContentState v-if="invoiceStore.loading" loading message="در حال بارگذاری..."
-        surface-class="border-0 bg-transparent py-16 shadow-none" text-class="text-gray-500" />
-
-      <InvoiceTable v-else :invoices="paginatedInvoices" :show-customer-column="false" :show-actions="true"
-        :row-clickable="true" :sort-key="sortKey" :sort-direction="sortDirection" @toggle-sort="toggleSort"
-        @edit="openEditModal" @delete="openDeleteModal" @status-change="handleStatusChange" />
-
-      <AppPagination v-if="!invoiceStore.loading" :total-rows="totalRows" :row-start-index="rowStartIndex"
-        :page-size="pageSize" :page-size-options="pageSizeSelectOptions" :current-page="currentPage"
-        :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event"
-        @go-to-page="goToPage" />
-    </section>
+        <tr v-for="(list, index) in paginatedLists" :key="list.id" class="app-table-row">
+          <td class="text-center font-bold text-slate-500">{{ formatNumber(rowStartIndex + index + 1) }}</td>
+          <td class="font-black text-slate-800">{{ displayListNumber(list) }}</td>
+          <td>{{ formatDate(list.delivered_at) }}</td>
+          <td><AppStatusBadge group="list" :status="list.status" /></td>
+          <td><AppStatusBadge group="invoice" :status="list.invoice_status" /></td>
+          <td><AppStatusBadge group="send" :status="list.invoice_send_status" /></td>
+          <td><AppStatusBadge group="settlement" :status="list.settlement_status" /></td>
+          <td class="font-black text-slate-800">{{ hasInvoice(list) ? formatCurrency(list.invoice_total_toman) : '—' }}</td>
+          <td>
+            <AppIconButton label="مشاهده جزئیات" size="sm" @click="router.push(`/lists/${list.id}`)">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
+            </AppIconButton>
+          </td>
+        </tr>
+      </AppDataTable>
+      <template #footer>
+        <AppPagination :total-rows="totalRows" :row-start-index="rowStartIndex" :page-size="pageSize"
+          :page-size-options="pageSizeOptions" :current-page="currentPage" :total-pages="totalPages"
+          :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event" @go-to-page="goToPage" />
+      </template>
+    </AppTablePanel>
   </div>
-
-  <InvoiceForm :is-open="showInvoiceForm" :customer-id="customerId" :invoice-data="selectedInvoice"
-    :customers-list="allCustomers" :allow-customer-selection="true" @save="handleSaveInvoice"
-    @close="closeInvoiceForm" />
-
-  <ConfirmModal :is-open="showConfirmDelete" title="حذف فاکتور"
-    message="آیا از حذف این فاکتور مطمئن هستید؟ این عملیات قابل بازگشت نیست." :loading="deleting"
-    @confirm="handleDeleteInvoice" @cancel="showConfirmDelete = false" />
-  <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
-    @close="clearUndo" />
 </template>
+
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import { useInvoiceStore } from '../../stores/invoiceStore';
-
-import AppContentState from '../AppContentState.vue';
 import AppPagination from '../AppPagination.vue';
+import CustomSelect from '../CustomSelect.vue';
 import CustomerSummaryPanel from './CustomerSummaryPanel.vue';
-import InvoiceTable from '../InvoiceTable.vue';
-import InvoiceForm from '../InvoiceForm.vue';
-import ConfirmModal from '../ConfirmModal.vue';
-import InvoiceSearchBar from '../InvoiceSearchBar.vue';
-import UndoBar from '../UndoBar.vue';
+import AppButton from '../ui/AppButton.vue';
+import AppDataTable from '../ui/AppDataTable.vue';
+import AppIconButton from '../ui/AppIconButton.vue';
+import AppStatusBadge from '../ui/AppStatusBadge.vue';
+import AppTablePanel from '../ui/AppTablePanel.vue';
+import { useDeliveryListStore } from '../../stores/deliveryListStore';
+import { useInvoiceStore } from '../../stores/invoiceStore';
+import { usePaginatedList } from '../../composables/usePaginatedList';
+import { useCustomerProfileForm } from '../../composables/useCustomerProfileForm';
 import { exportRowsToExcel } from '../../utils/exportToExcel';
 import { toPersianDate } from '../../utils/dateConverter';
-import { usePaginatedList } from '../../composables/usePaginatedList';
-import { useCustomerInvoiceList } from '../../composables/useCustomerInvoiceList';
-import { useCustomerInvoiceActions } from '../../composables/useCustomerInvoiceActions';
-import { useCustomerProfileForm } from '../../composables/useCustomerProfileForm';
-import { useUndoAction } from '../../composables/useUndoAction';
 
-const props = defineProps({
-  id: { type: [String, Number], required: true }
-});
-
+const props = defineProps({ id: { type: [String, Number], required: true } });
 const router = useRouter();
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
-
-
-const customerId = computed(() => parseInt(props.id));
-const tableSectionRef = ref(null);
+const deliveryListStore = useDeliveryListStore();
+const customerId = computed(() => Number(props.id));
 const customer = ref(null);
-const searchDate = ref('');
-const statusFilter = ref('all');
-const sortKey = ref('date');
-const sortDirection = ref('desc');
-const allCustomerInvoices = ref([]);
-const isCustomerInfoOpen = ref(false);
+const lists = ref([]);
 const allCustomers = ref([]);
-const pageSizeOptions = [10, 15, 20, 50, 100];
-const {
-  customerProfileDraft,
-  customerNotesDraft,
-  accountStatusSelectOptions,
-  customerFormSaving,
-  customerFormChanged,
-  phoneDuplicateError,
-  resetFromCustomer,
-  updateProfileField,
-  saveCustomerForm
-} = useCustomerProfileForm({
-  customer,
-  allCustomers,
-  customerId,
-  invoiceStore,
-  toast,
-  reloadCustomers: loadCustomers
-});
+const loading = ref(false);
+const creatingList = ref(false);
+const isCustomerInfoOpen = ref(false);
+const tableSectionRef = ref(null);
+const summary = ref({ list_count: 0, invoice_count: 0, invoiced_total_toman: 0, paid_total_toman: 0, balance_toman: 0 });
+const searchQuery = ref('');
+const listStatusFilter = ref('all');
+const invoiceStatusFilter = ref('all');
+const sendStatusFilter = ref('all');
+const settlementStatusFilter = ref('all');
 
-const { filteredInvoices, sortedInvoices } = useCustomerInvoiceList({
-  invoices: allCustomerInvoices,
-  searchDate,
-  statusFilter,
-  sortKey,
-  sortDirection
-});
+const makeOptions = (items) => [{ label: 'همه', value: 'all' }, ...items];
+const listStatusOptions = makeOptions([
+  { label: 'پیش‌نویس', value: 'DRAFT' }, { label: 'تحویل‌شده', value: 'DELIVERED' },
+  { label: 'مانده', value: 'REMAINING' }, { label: 'نیاز به پیگیری', value: 'NEEDS_FOLLOW_UP' },
+  { label: 'تکمیل', value: 'COMPLETED' }
+]);
+const invoiceStatusOptions = makeOptions([
+  { label: 'بدون فاکتور', value: 'NONE' }, { label: 'پیش‌فاکتور', value: 'PROFORMA' },
+  { label: 'صدور جزئی', value: 'PARTIALLY_ISSUED' }, { label: 'صادرشده', value: 'ISSUED' }
+]);
+const sendStatusOptions = makeOptions([
+  { label: 'ارسال‌نشده', value: 'NOT_SENT' }, { label: 'ارسال جزئی', value: 'PARTIALLY_SENT' },
+  { label: 'ارسال‌شده', value: 'SENT' }
+]);
+const settlementStatusOptions = makeOptions([
+  { label: 'تسویه‌نشده', value: 'UNPAID' }, { label: 'تسویه جزئی', value: 'PARTIAL' },
+  { label: 'تسویه کامل', value: 'PAID' }
+]);
 
-const {
-  currentPage,
-  pageSize,
-  pageSizeOptions: pageSizeSelectOptions,
-  totalRows,
-  totalPages,
-  rowStartIndex,
-  paginatedItems: paginatedInvoices,
-  visiblePageNumbers,
-  goToPage
-} = usePaginatedList(sortedInvoices, {
-  initialPageSize: 15,
-  pageSizeOptions,
-  resetSources: [searchDate, statusFilter],
+const filteredLists = computed(() => lists.value.filter((list) => (
+  (!searchQuery.value || String(list.list_number || list.id).includes(searchQuery.value))
+  && (listStatusFilter.value === 'all' || list.status === listStatusFilter.value)
+  && (invoiceStatusFilter.value === 'all' || list.invoice_status === invoiceStatusFilter.value)
+  && (sendStatusFilter.value === 'all' || list.invoice_send_status === sendStatusFilter.value)
+  && (settlementStatusFilter.value === 'all' || list.settlement_status === settlementStatusFilter.value)
+)));
+
+const { currentPage, pageSize, pageSizeOptions, totalRows, totalPages, rowStartIndex,
+  paginatedItems: paginatedLists, visiblePageNumbers, goToPage } = usePaginatedList(filteredLists, {
+  initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
+  resetSources: [searchQuery, listStatusFilter, invoiceStatusFilter, sendStatusFilter, settlementStatusFilter],
   scrollTarget: tableSectionRef
 });
 
-const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({
-  onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد')
-});
-const {
-  showInvoiceForm,
-  selectedInvoice,
-  showConfirmDelete,
-  deleting,
-  openAddModal,
-  openEditModal,
-  closeInvoiceForm,
-  openDeleteModal,
-  handleSaveInvoice,
-  handleDeleteInvoice,
-  handleStatusChange
-} = useCustomerInvoiceActions({
-  invoiceStore,
-  customerId,
-  reloadInvoices: loadCustomerInvoices,
-  toast,
-  showUndo
+const { customerProfileDraft, customerNotesDraft, accountStatusSelectOptions, customerFormSaving,
+  customerFormChanged, phoneDuplicateError, resetFromCustomer, updateProfileField, saveCustomerForm } = useCustomerProfileForm({
+  customer, allCustomers, customerId, invoiceStore, toast, reloadCustomers: loadCustomers
 });
 
-// Computed stats
-const settledAmount = computed(() => {
-  return allCustomerInvoices.value
-    .filter(i => i.is_settled)
-    .reduce((sum, i) => sum + (Number(i.price) || 0), 0);
-});
+onMounted(async () => { await Promise.all([loadWorkflow(), loadCustomers()]); });
 
-const settledAmountFormatted = computed(() => {
-  return settledAmount.value.toLocaleString('fa-IR') + ' تومان';
-});
-
-const remainingAmount = computed(() =>
-  allCustomerInvoices.value
-    .filter(i => !i.is_settled)
-    .reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-);
-const remainingAmountFormatted = computed(() =>
-  remainingAmount.value.toLocaleString('fa-IR') + ' تومان'
-);
-
-// Load customer invoices on mount
-onMounted(async () => {
-  await Promise.all([loadCustomerInvoices(), loadCustomers()]);
-});
-
-async function loadCustomerInvoices() {
+async function loadWorkflow() {
+  loading.value = true;
   try {
-    currentPage.value = 1;
-    customer.value = await invoiceStore.fetchCustomerInvoices(customerId.value);
-    allCustomerInvoices.value = [...invoiceStore.currentInvoices];
+    const data = await invoiceStore.fetchCustomerWorkflow(customerId.value);
+    customer.value = data.customer;
+    lists.value = data.lists || [];
+    summary.value = data.summary || summary.value;
     resetFromCustomer();
-  } catch (err) {
-    toast.error('خطا در بارگذاری فاکتورهای مشتری');
-    if (err.response?.status === 404) {
-      router.push('/accounts');
-    }
-  }
-}
-
-function clearSearch() {
-  currentPage.value = 1;
-  searchDate.value = '';
-  statusFilter.value = 'all';
-}
-
-function toggleSort(column) {
-  if (sortKey.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortKey.value = column;
-    sortDirection.value = column === 'price' ? 'asc' : 'desc';
-  }
-
-  currentPage.value = 1;
+  } catch (error) {
+    toast.error(invoiceStore.error || 'دریافت اطلاعات مشتری با خطا مواجه شد');
+    if (error.response?.status === 404) router.replace('/users');
+  } finally { loading.value = false; }
 }
 
 async function loadCustomers() {
-  try {
-    await invoiceStore.fetchCustomers();
-    allCustomers.value = [...invoiceStore.customers];
-  } catch (error) {
-    allCustomers.value = [];
-  }
+  try { await invoiceStore.fetchCustomers(); allCustomers.value = [...invoiceStore.customers]; }
+  catch { allCustomers.value = []; }
 }
 
-// Navigate back
-function goBack() {
-  router.back();
+async function createListForCustomer() {
+  if (creatingList.value) return;
+  creatingList.value = true;
+  const result = await deliveryListStore.createDraft();
+  creatingList.value = false;
+  if (!result.success) return toast.error(result.message);
+  router.push({ path: `/lists/${result.data.id}/edit`, query: { customer_id: customerId.value } });
 }
 
-function exportCustomerInvoices() {
+function clearFilters() {
+  searchQuery.value = ''; listStatusFilter.value = 'all'; invoiceStatusFilter.value = 'all';
+  sendStatusFilter.value = 'all'; settlementStatusFilter.value = 'all';
+}
+function hasInvoice(list) { return ['PARTIALLY_ISSUED', 'ISSUED'].includes(list.invoice_status); }
+function displayListNumber(list) {
+  if (list.list_number) return list.list_number;
+  return list.status === 'DRAFT' ? `پیش‌نویس ${formatNumber(list.id)}` : `سابقه ${formatNumber(list.id)}`;
+}
+function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleString('fa-IR'); }
+function formatCurrency(value) { return `${formatNumber(value)} تومان`; }
+function formatDate(value) { return value ? toPersianDate(String(value).slice(0, 10)) : '—'; }
+
+function exportCustomerLists() {
   exportRowsToExcel({
-    fileName: `customer-${customerId.value}-invoices`,
-    sheetTitle: `فاکتورهای ${customer.value?.name || 'مشتری'}`,
-    headers: ['تاریخ شمسی', 'مبلغ', 'وضعیت ارسال', 'وضعیت تسویه', 'یادداشت'],
-    rows: filteredInvoices.value.map((invoice) => [
-      toPersianDate(invoice.date),
-      Number(invoice.price || 0).toLocaleString('fa-IR'),
-      invoice.is_shipped ? 'ارسال شده' : 'ارسال نشده',
-      invoice.is_settled ? 'تسویه شده' : 'تسویه نشده',
-      invoice.notes || invoice.description || ''
-    ])
+    fileName: `customer-${customerId.value}-lists`, sheetTitle: `لیست‌های ${customer.value?.name || 'مشتری'}`,
+    headers: ['شماره لیست', 'تاریخ تحویل', 'وضعیت لیست', 'فاکتور', 'ارسال', 'تسویه', 'مبلغ فاکتور'],
+    rows: filteredLists.value.map((list) => [list.list_number || list.id, formatDate(list.delivered_at),
+      list.status, list.invoice_status, list.invoice_send_status, list.settlement_status, list.invoice_total_toman])
   });
 }
-
 </script>
+
+<style scoped>
+.customer-lists-table :deep(.app-table) { width: 100%; table-layout: fixed; }
+.customer-lists-table :deep(.app-table-wrapper) { overflow-x: hidden; }
+.customer-lists-table :deep(th), .customer-lists-table :deep(td) { padding: .65rem .4rem; text-align: center; vertical-align: middle; }
+.customer-lists-table :deep(th:nth-child(1)) { width: 4%; }
+.customer-lists-table :deep(th:nth-child(2)) { width: 13%; }
+.customer-lists-table :deep(th:nth-child(3)) { width: 12%; }
+.customer-lists-table :deep(th:nth-child(4)) { width: 12%; }
+.customer-lists-table :deep(th:nth-child(5)) { width: 11%; }
+.customer-lists-table :deep(th:nth-child(6)) { width: 11%; }
+.customer-lists-table :deep(th:nth-child(7)) { width: 14%; }
+.customer-lists-table :deep(th:nth-child(8)) { width: 15%; }
+.customer-lists-table :deep(th:nth-child(9)) { width: 8%; }
+.customer-lists-filter-row th { padding: .35rem; background: #f8fafc; }
+.customer-list-filter { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; padding: 0 .4rem; font-size: .68rem; }
+.customer-lists-table :deep(.app-status-badge) { max-width: 100%; padding-inline: .35rem; white-space: normal; justify-content: center; }
+@media (max-width: 1023px) {
+  .customer-lists-table :deep(th:nth-child(3)), .customer-lists-table :deep(td:nth-child(3)),
+  .customer-lists-table :deep(th:nth-child(6)), .customer-lists-table :deep(td:nth-child(6)),
+  .customer-lists-table :deep(th:nth-child(8)), .customer-lists-table :deep(td:nth-child(8)) { display: none; }
+  .customer-lists-table :deep(th:nth-child(1)) { width: 8%; }
+  .customer-lists-table :deep(th:nth-child(2)) { width: 18%; }
+  .customer-lists-table :deep(th:nth-child(4)) { width: 18%; }
+  .customer-lists-table :deep(th:nth-child(5)) { width: 18%; }
+  .customer-lists-table :deep(th:nth-child(7)) { width: 25%; }
+  .customer-lists-table :deep(th:nth-child(9)) { width: 13%; }
+}
+</style>

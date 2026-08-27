@@ -1,127 +1,90 @@
 <template>
-  <div>
+  <div ref="tableSectionRef">
     <Teleport to="#app-shell-actions">
-      <button type="button" class="app-button-primary w-full justify-between" @click="openAddModal">
-        <span>افزودن ادمین</span>
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
-      <button type="button" class="app-button-secondary w-full justify-between" @click="router.back()">
-        <span>بازگشت</span>
-        <svg class="h-5 w-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+      <AppButton variant="primary" block @click="openAddModal">افزودن ادمین</AppButton>
     </Teleport>
 
-    <div class="rounded-lg border border-gray-200 bg-white">
-      <div class="grid gap-4 border-b border-gray-100 p-4 md:grid-cols-3">
-        <div class="relative md:col-span-2">
-          <svg class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-4.35-4.35m1.1-5.4a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z" />
-          </svg>
-          <input v-model="searchQuery" type="search" placeholder="جستجو در نام یا نام کاربری"
-            class="h-12 w-full rounded-lg border border-gray-200 bg-white p-4 pr-10 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100" />
-        </div>
-        <select v-model="statusFilter"
-          class="h-12 rounded-lg border border-gray-200 bg-white px-4 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100">
-          <option value="all">همه وضعیت‌ها</option>
-          <option value="active">فعال</option>
-          <option value="inactive">غیرفعال</option>
-        </select>
-      </div>
+    <AppTablePanel title="مدیریت ادمین‌ها"
+      description="مدیر اصلی می‌تواند حساب‌های ادمین را ایجاد، ویرایش، فعال یا غیرفعال کند."
+      :count="loading ? null : filteredUsers.length">
+      <AppDataTable class="admins-table" :column-count="6" :loading="loading" :empty="!filteredUsers.length"
+        min-width="100%" loading-message="در حال دریافت حساب‌های داخلی..."
+        empty-message="حسابی با این مشخصات پیدا نشد.">
+        <template #head>
+          <tr><th>ردیف</th><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>عملیات</th></tr>
+          <tr class="admins-filter-row">
+            <th />
+            <th><input v-model.trim="nameFilter" class="admins-filter" type="search" placeholder="نام ادمین" /></th>
+            <th><input v-model.trim="usernameFilter" class="admins-filter" type="search" placeholder="نام کاربری" dir="ltr" /></th>
+            <th />
+            <th><CustomSelect v-model="statusFilter" :options="statusFilterOptions" trigger-class="admins-filter" /></th>
+            <th>
+              <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="clearFilters">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" /></svg>
+              </AppIconButton>
+            </th>
+          </tr>
+        </template>
 
-      <AppContentState v-if="loading" loading message="در حال دریافت حساب‌های داخلی..."
-        surface-class="border-0 bg-transparent py-16 shadow-none" />
-
-      <div v-else class="table-container">
-        <table class="w-full bg-white text-sm">
-          <thead class="bg-blue-50">
-            <tr>
-              <th class="border border-gray-200 p-3 text-center font-semibold">ردیف</th>
-              <th class="border border-gray-200 p-3 text-right font-semibold">نام</th>
-              <th class="border border-gray-200 p-3 text-right font-semibold">نام کاربری</th>
-              <th class="border border-gray-200 p-3 text-center font-semibold">نقش</th>
-              <th class="border border-gray-200 p-3 text-center font-semibold">وضعیت</th>
-              <th class="border border-gray-200 p-3 text-center font-semibold">عملیات</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(user, index) in filteredUsers" :key="user.id" class="transition hover:bg-blue-50">
-              <td class="border border-gray-100 px-4 py-3 text-center">{{ (index + 1).toLocaleString('fa-IR') }}</td>
-              <td class="border border-gray-100 px-4 py-3 font-medium">{{ user.display_name }}</td>
-              <td class="border border-gray-100 px-4 py-3 text-left" dir="ltr">{{ user.username }}</td>
-              <td class="border border-gray-100 px-4 py-3 text-center">
-                <span class="rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="user.role === 'MANAGER' ? 'bg-violet-100 text-violet-700' : 'bg-sky-100 text-sky-700'">
-                  {{ user.role === 'MANAGER' ? 'مدیر' : 'ادمین' }}
-                </span>
-              </td>
-              <td class="border border-gray-100 px-4 py-3 text-center">
-                <span class="rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
-                  {{ user.is_active ? 'فعال' : 'غیرفعال' }}
-                </span>
-              </td>
-              <td class="border border-gray-100 px-4 py-3">
-                <div v-if="user.role === 'ADMIN'" class="flex items-center justify-center gap-2">
-                  <button type="button" class="rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-200"
-                    @click="openEditModal(user)">ویرایش</button>
-                  <button type="button" class="rounded-lg px-3 py-2 text-xs font-semibold"
-                    :class="user.is_active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'"
-                    :disabled="statusSavingId === user.id" @click="requestStatusChange(user)">
-                    {{ user.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن' }}
-                  </button>
-                  <button type="button" class="rounded-lg bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-200"
-                    @click="openDeleteConfirm(user)">حذف</button>
-                </div>
-                <p v-else class="text-center text-xs text-slate-400">حساب مدیر اصلی</p>
-              </td>
-            </tr>
-            <tr v-if="!filteredUsers.length">
-              <td colspan="6" class="px-4 py-12 text-center text-slate-500">حسابی با این مشخصات پیدا نشد.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+        <tr v-for="(user, index) in paginatedUsers" :key="user.id" class="app-table-row">
+          <td class="text-center font-bold text-slate-500">{{ (rowStartIndex + index + 1).toLocaleString('fa-IR') }}</td>
+          <td class="font-black text-slate-900">{{ user.display_name }}</td>
+          <td class="text-center" dir="ltr">{{ user.username }}</td>
+          <td class="text-center"><AppStatusBadge :label="user.role === 'MANAGER' ? 'مدیر' : 'ادمین'"
+            :tone="user.role === 'MANAGER' ? 'violet' : 'info'" /></td>
+          <td class="text-center"><AppStatusBadge group="active" :status="Boolean(user.is_active)" /></td>
+          <td>
+            <div v-if="user.role === 'ADMIN'" class="flex items-center justify-center gap-1">
+              <AppIconButton label="ویرایش ادمین" size="sm" variant="primary" @click="openEditModal(user)">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" /></svg>
+              </AppIconButton>
+              <AppIconButton :label="user.is_active ? 'غیرفعال‌کردن ادمین' : 'فعال‌کردن ادمین'" size="sm"
+                :variant="user.is_active ? 'warning' : 'success'" :loading="statusSavingId === user.id"
+                @click="requestStatusChange(user)">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 3v9m6.4-5.4a9 9 0 1 1-12.8 0" /></svg>
+              </AppIconButton>
+              <AppIconButton label="حذف ادمین" size="sm" variant="danger" @click="openDeleteConfirm(user)">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 7h12m-9 0V5h6v2m-8 0 1 13h8l1-13" /></svg>
+              </AppIconButton>
+            </div>
+            <p v-else class="text-center text-xs text-slate-400">مدیر اصلی</p>
+          </td>
+        </tr>
+      </AppDataTable>
+      <template #footer>
+        <AppPagination :total-rows="totalRows" :row-start-index="rowStartIndex" :page-size="pageSize"
+          :page-size-options="pageSizeOptions" :current-page="currentPage" :total-pages="totalPages"
+          :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event" @go-to-page="goToPage" />
+      </template>
+    </AppTablePanel>
   </div>
 
   <AdminFormModal :is-open="formOpen" :admin="editingAdmin" :saving="saving" @close="closeForm" @save="saveAdmin" />
-  <ConfirmModal :is-open="statusConfirmOpen"
-    :title="pendingStatusAdmin?.is_active ? 'غیرفعال‌سازی ادمین' : 'فعال‌سازی ادمین'"
-    :message="pendingStatusAdmin?.is_active
-      ? `با غیرفعال‌کردن ${pendingStatusAdmin?.display_name || 'این ادمین'}، دسترسی او بلافاصله قطع می‌شود. ادامه می‌دهید؟`
-      : `آیا دسترسی ${pendingStatusAdmin?.display_name || 'این ادمین'} دوباره فعال شود؟`"
-    :loading="statusSavingId === pendingStatusAdmin?.id"
-    :confirm-text="pendingStatusAdmin?.is_active ? 'بله، غیرفعال شود' : 'بله، فعال شود'"
+  <ConfirmModal :is-open="statusConfirmOpen" :title="pendingStatusAdmin?.is_active ? 'غیرفعال‌سازی ادمین' : 'فعال‌سازی ادمین'"
+    :message="pendingStatusAdmin?.is_active ? `با غیرفعال‌کردن ${pendingStatusAdmin?.display_name || 'این ادمین'}، دسترسی او بلافاصله قطع می‌شود. ادامه می‌دهید؟` : `آیا دسترسی ${pendingStatusAdmin?.display_name || 'این ادمین'} دوباره فعال شود؟`"
+    :loading="statusSavingId === pendingStatusAdmin?.id" :confirm-text="pendingStatusAdmin?.is_active ? 'بله، غیرفعال شود' : 'بله، فعال شود'"
     loading-text="در حال تغییر وضعیت..." @confirm="confirmStatusChange" @cancel="closeStatusConfirm" />
   <ConfirmModal :is-open="deleteConfirmOpen" title="حذف ادمین"
-    :message="`آیا از حذف حساب ${deletingAdmin?.display_name || ''} مطمئن هستید؟`"
-    :loading="deleting" confirm-text="بله، حذف شود" loading-text="در حال حذف..."
-    @confirm="confirmDelete" @cancel="closeDeleteConfirm" />
+    :message="`آیا از حذف حساب ${deletingAdmin?.display_name || ''} مطمئن هستید؟`" :loading="deleting"
+    confirm-text="بله، حذف شود" loading-text="در حال حذف..." @confirm="confirmDelete" @cancel="closeDeleteConfirm" />
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import AppContentState from '../AppContentState.vue';
+import AppPagination from '../AppPagination.vue';
 import ConfirmModal from '../ConfirmModal.vue';
+import CustomSelect from '../CustomSelect.vue';
 import AdminFormModal from './AdminFormModal.vue';
+import AppButton from '../ui/AppButton.vue';
+import AppDataTable from '../ui/AppDataTable.vue';
+import AppIconButton from '../ui/AppIconButton.vue';
+import AppStatusBadge from '../ui/AppStatusBadge.vue';
+import AppTablePanel from '../ui/AppTablePanel.vue';
+import { usePaginatedList } from '../../composables/usePaginatedList';
 import { getApiErrorMessage } from '../../utils/apiError';
-import {
-  createAdmin,
-  deleteAdmin,
-  getAdmins,
-  updateAdmin,
-  updateAdminStatus
-} from '../../modules/admins/api/admin.service';
+import { createAdmin, deleteAdmin, getAdmins, updateAdmin, updateAdminStatus } from '../../modules/admins/api/admin.service';
 
-const router = useRouter();
 const toast = useToast();
 const users = ref([]);
 const loading = ref(false);
@@ -129,131 +92,82 @@ const saving = ref(false);
 const statusSavingId = ref(null);
 const statusConfirmOpen = ref(false);
 const pendingStatusAdmin = ref(null);
-const searchQuery = ref('');
+const nameFilter = ref('');
+const usernameFilter = ref('');
 const statusFilter = ref('all');
+const tableSectionRef = ref(null);
 const formOpen = ref(false);
 const editingAdmin = ref(null);
 const deleteConfirmOpen = ref(false);
 const deletingAdmin = ref(null);
 const deleting = ref(false);
-
-function normalize(value) {
-  return String(value || '').trim().toLowerCase().replace(/ي/g, 'ی').replace(/ك/g, 'ک');
-}
-
-const filteredUsers = computed(() => {
-  const query = normalize(searchQuery.value);
-  return users.value.filter((user) => {
-    const matchesStatus = statusFilter.value === 'all'
-      || (statusFilter.value === 'active' && user.is_active)
-      || (statusFilter.value === 'inactive' && !user.is_active);
-    const matchesQuery = !query
-      || normalize(user.display_name).includes(query)
-      || normalize(user.username).includes(query);
-    return matchesStatus && matchesQuery;
-  });
+const statusFilterOptions = [{ label: 'همه وضعیت‌ها', value: 'all' }, { label: 'فعال', value: 'active' }, { label: 'غیرفعال', value: 'inactive' }];
+function normalize(value) { return String(value || '').trim().toLowerCase().replace(/ي/g, 'ی').replace(/ك/g, 'ک'); }
+const filteredUsers = computed(() => users.value.filter((user) => (
+  (!nameFilter.value || normalize(user.display_name).includes(normalize(nameFilter.value)))
+  && (!usernameFilter.value || normalize(user.username).includes(normalize(usernameFilter.value)))
+  && (statusFilter.value === 'all' || (statusFilter.value === 'active' ? user.is_active : !user.is_active))
+)));
+const { currentPage, pageSize, pageSizeOptions, totalRows, totalPages, rowStartIndex,
+  paginatedItems: paginatedUsers, visiblePageNumbers, goToPage } = usePaginatedList(filteredUsers, {
+  initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50],
+  resetSources: [nameFilter, usernameFilter, statusFilter], scrollTarget: tableSectionRef
 });
+function clearFilters() { nameFilter.value = ''; usernameFilter.value = ''; statusFilter.value = 'all'; }
 
 async function loadAdmins() {
   loading.value = true;
-  try {
-    const response = await getAdmins();
-    users.value = response.data.users || [];
-  } catch (error) {
-    toast.error(getApiErrorMessage(error, 'دریافت حساب‌های ادمین با خطا مواجه شد'));
-  } finally {
-    loading.value = false;
-  }
+  try { const response = await getAdmins(); users.value = response.data.users || []; }
+  catch (error) { toast.error(getApiErrorMessage(error, 'دریافت حساب‌های ادمین با خطا مواجه شد')); }
+  finally { loading.value = false; }
 }
-
-function openAddModal() {
-  editingAdmin.value = null;
-  formOpen.value = true;
-}
-
-function openEditModal(admin) {
-  editingAdmin.value = { ...admin };
-  formOpen.value = true;
-}
-
-function closeForm() {
-  if (saving.value) return;
-  formOpen.value = false;
-  editingAdmin.value = null;
-}
-
+function openAddModal() { editingAdmin.value = null; formOpen.value = true; }
+function openEditModal(admin) { editingAdmin.value = { ...admin }; formOpen.value = true; }
+function closeForm() { if (saving.value) return; formOpen.value = false; editingAdmin.value = null; }
 async function saveAdmin(payload) {
   saving.value = true;
   try {
-    if (editingAdmin.value) {
-      await updateAdmin(editingAdmin.value.id, payload);
-      toast.success('اطلاعات ادمین ویرایش شد');
-    } else {
-      await createAdmin(payload);
-      toast.success('ادمین جدید ساخته شد');
-    }
-    saving.value = false;
-    closeForm();
-    await loadAdmins();
-  } catch (error) {
-    saving.value = false;
-    toast.error(getApiErrorMessage(error, 'ذخیره حساب ادمین با خطا مواجه شد'));
-  }
+    if (editingAdmin.value) { await updateAdmin(editingAdmin.value.id, payload); toast.success('اطلاعات ادمین ویرایش شد'); }
+    else { await createAdmin(payload); toast.success('ادمین جدید ساخته شد'); }
+    saving.value = false; closeForm(); await loadAdmins();
+  } catch (error) { saving.value = false; toast.error(getApiErrorMessage(error, 'ذخیره حساب ادمین با خطا مواجه شد')); }
 }
-
-function requestStatusChange(admin) {
-  pendingStatusAdmin.value = admin;
-  statusConfirmOpen.value = true;
-}
-
-function closeStatusConfirm() {
-  if (statusSavingId.value) return;
-  statusConfirmOpen.value = false;
-  pendingStatusAdmin.value = null;
-}
-
+function requestStatusChange(admin) { pendingStatusAdmin.value = admin; statusConfirmOpen.value = true; }
+function closeStatusConfirm() { if (statusSavingId.value) return; statusConfirmOpen.value = false; pendingStatusAdmin.value = null; }
 async function confirmStatusChange() {
-  const admin = pendingStatusAdmin.value;
-  if (!admin || statusSavingId.value) return;
-  statusSavingId.value = admin.id;
-  try {
-    await updateAdminStatus(admin.id, !admin.is_active);
-    toast.success(admin.is_active ? 'دسترسی ادمین غیرفعال شد' : 'دسترسی ادمین فعال شد');
-    await loadAdmins();
-    statusSavingId.value = null;
-    closeStatusConfirm();
-  } catch (error) {
-    toast.error(getApiErrorMessage(error, 'تغییر وضعیت ادمین با خطا مواجه شد'));
-  } finally {
-    statusSavingId.value = null;
-  }
+  const admin = pendingStatusAdmin.value; if (!admin || statusSavingId.value) return; statusSavingId.value = admin.id;
+  try { await updateAdminStatus(admin.id, !admin.is_active); toast.success(admin.is_active ? 'دسترسی ادمین غیرفعال شد' : 'دسترسی ادمین فعال شد'); await loadAdmins(); closeStatusConfirm(); }
+  catch (error) { toast.error(getApiErrorMessage(error, 'تغییر وضعیت ادمین با خطا مواجه شد')); }
+  finally { statusSavingId.value = null; statusConfirmOpen.value = false; pendingStatusAdmin.value = null; }
 }
-
-function openDeleteConfirm(admin) {
-  deletingAdmin.value = admin;
-  deleteConfirmOpen.value = true;
-}
-
-function closeDeleteConfirm() {
-  if (deleting.value) return;
-  deleteConfirmOpen.value = false;
-  deletingAdmin.value = null;
-}
-
+function openDeleteConfirm(admin) { deletingAdmin.value = admin; deleteConfirmOpen.value = true; }
+function closeDeleteConfirm() { if (deleting.value) return; deleteConfirmOpen.value = false; deletingAdmin.value = null; }
 async function confirmDelete() {
-  if (!deletingAdmin.value || deleting.value) return;
-  deleting.value = true;
-  try {
-    await deleteAdmin(deletingAdmin.value.id);
-    toast.success('ادمین حذف شد');
-    deleting.value = false;
-    closeDeleteConfirm();
-    await loadAdmins();
-  } catch (error) {
-    deleting.value = false;
-    toast.error(getApiErrorMessage(error, 'حذف ادمین با خطا مواجه شد'));
-  }
+  if (!deletingAdmin.value || deleting.value) return; deleting.value = true;
+  try { await deleteAdmin(deletingAdmin.value.id); toast.success('ادمین حذف شد'); deleting.value = false; closeDeleteConfirm(); await loadAdmins(); }
+  catch (error) { deleting.value = false; toast.error(getApiErrorMessage(error, 'حذف ادمین با خطا مواجه شد')); }
 }
-
 onMounted(loadAdmins);
 </script>
+
+<style scoped>
+.admins-table :deep(.app-table) { width: 100%; table-layout: fixed; }
+.admins-table :deep(.app-table-wrapper) { overflow-x: hidden; }
+.admins-table :deep(th), .admins-table :deep(td) { padding: .7rem .5rem; vertical-align: middle; }
+.admins-table :deep(th:nth-child(1)) { width: 7%; }
+.admins-table :deep(th:nth-child(2)) { width: 24%; }
+.admins-table :deep(th:nth-child(3)) { width: 22%; }
+.admins-table :deep(th:nth-child(4)) { width: 13%; }
+.admins-table :deep(th:nth-child(5)) { width: 14%; }
+.admins-table :deep(th:nth-child(6)) { width: 20%; }
+.admins-filter-row th { padding: .4rem; background: #f8fafc; }
+.admins-filter { width: 100%; min-width: 0; height: 2.3rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; padding: 0 .55rem; font-size: .72rem; }
+@media (max-width: 767px) {
+  .admins-table :deep(th:nth-child(4)), .admins-table :deep(td:nth-child(4)) { display: none; }
+  .admins-table :deep(th:nth-child(1)) { width: 10%; }
+  .admins-table :deep(th:nth-child(2)) { width: 25%; }
+  .admins-table :deep(th:nth-child(3)) { width: 25%; }
+  .admins-table :deep(th:nth-child(5)) { width: 17%; }
+  .admins-table :deep(th:nth-child(6)) { width: 23%; }
+}
+</style>

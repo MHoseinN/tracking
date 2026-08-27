@@ -1,32 +1,25 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <button type="button" @click="openProductModal()" class="app-button-primary w-full">افزودن محصول</button>
-      <button type="button" @click="openCategoryModal()" class="app-button-primary w-full">افزودن دسته‌بندی</button>
-      <button type="button" :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)"
-        class="app-button-secondary w-full disabled:opacity-50">ویرایش ‌دسته‌بندی</button>
-      <button type="button" :disabled="!selectedCategoryObject"
-        @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })"
-        class="app-button-secondary w-full disabled:opacity-50">افزودن زیرشاخه</button>
-      <button type="button" :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true"
-        class="app-button-secondary w-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100 disabled:opacity-50">حذف
-        دسته</button>
-      <CustomSelect :model-value="statusFilter" :options="statusFilterOptions"
-        trigger-class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm shadow-sm"
-        @update:model-value="statusFilter = $event" />
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت به خانه</button>
+      <AppButton variant="primary" block @click="openProductModal()">افزودن محصول</AppButton>
+      <AppButton variant="primary" block @click="openCategoryModal()">افزودن دسته‌بندی</AppButton>
+      <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)">ویرایش دسته‌بندی</AppButton>
+      <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">افزودن زیرشاخه</AppButton>
+      <AppButton variant="danger" block :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true">حذف دسته</AppButton>
     </Teleport>
 
-    <div class="grid items-start gap-2 grid-cols-[250px_minmax(0,1fr)]">
+    <div class="grid items-start gap-4 xl:grid-cols-[230px_minmax(0,1fr)]">
       <ProductCatalogSidebar :category-tree="categoryTree" :selected-category-id="selectedCategoryId"
         @select="selectedCategoryId = $event" />
 
       <section ref="tableSectionRef" class="space-y-6">
         <ProductCatalogList :category-name="selectedCategoryObject?.name" :search-query="productSearch"
+          :status-filter="statusFilter" :status-filter-options="statusFilterOptions"
           :products="paginatedItems" :loading="catalogStore.loading" :total-rows="totalRows"
           :row-start-index="rowStartIndex" :page-size="pageSize" :page-size-options="pageSizeOptions"
           :current-page="currentPage" :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers"
-          @update:search-query="productSearch = $event" @update:page-size="pageSize = $event"
+          @update:search-query="productSearch = $event" @update:status-filter="statusFilter = $event"
+          @clear-filters="clearProductFilters" @update:page-size="pageSize = $event"
           @go-to-page="goToPage" @edit="openProductModal" @delete="openDeleteProduct" />
       </section>
     </div>
@@ -58,10 +51,9 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '../ConfirmModal.vue';
-import CustomSelect from '../CustomSelect.vue';
+import AppButton from '../ui/AppButton.vue';
 import ProductCategoryModal from './ProductCategoryModal.vue';
 import ProductFormModal from './ProductFormModal.vue';
 import UndoBar from '../UndoBar.vue';
@@ -72,7 +64,6 @@ import { usePaginatedList } from '../../composables/usePaginatedList';
 import { useUndoAction } from '../../composables/useUndoAction';
 import { useProductCatalogActions } from '../../composables/useProductCatalogActions';
 
-const router = useRouter();
 const toast = useToast();
 const catalogStore = useProductCatalogStore();
 
@@ -199,6 +190,12 @@ function isCategoryDescendant(categoryId, selectedId) {
     current = categories.find((item) => String(item.id) === String(current.parent_id));
   }
   return false;
+}
+
+function clearProductFilters() {
+  productSearch.value = '';
+  statusFilter.value = 'all';
+  selectedCategoryId.value = null;
 }
 
 </script>
