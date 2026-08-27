@@ -14,11 +14,10 @@
 
       <section ref="tableSectionRef" class="space-y-6">
         <ProductCatalogList :category-name="selectedCategoryObject?.name" :search-query="productSearch"
-          :status-filter="statusFilter" :status-filter-options="statusFilterOptions"
           :products="paginatedItems" :loading="catalogStore.loading" :total-rows="totalRows"
           :row-start-index="rowStartIndex" :page-size="pageSize" :page-size-options="pageSizeOptions"
           :current-page="currentPage" :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers"
-          @update:search-query="productSearch = $event" @update:status-filter="statusFilter = $event"
+          @update:search-query="productSearch = $event"
           @clear-filters="clearProductFilters" @update:page-size="pageSize = $event"
           @go-to-page="goToPage" @edit="openProductModal" @delete="openDeleteProduct" />
       </section>
@@ -38,11 +37,6 @@
 
     <ConfirmModal :is-open="showDeleteProductModal" title="حذف محصول" :message="deleteProductMessage"
       :loading="deleting" @confirm="handleDeleteProduct" @cancel="showDeleteProductModal = false" />
-
-    <ConfirmModal :is-open="showDeactivateProductConfirm" title="غیرفعال‌سازی محصول"
-      :message="`با غیرفعال‌کردن «${selectedProduct?.name || 'این محصول'}»، در لیست‌های جدید قابل انتخاب نخواهد بود. ادامه می‌دهید؟`"
-      :loading="savingProduct" confirm-text="بله، غیرفعال شود" loading-text="در حال ذخیره..."
-      @confirm="confirmDeactivateProduct" @cancel="cancelDeactivateProduct" />
 
     <UndoBar :visible="undoState.visible" :title="undoState.title" :message="undoState.message" @undo="handleUndo"
       @close="clearUndo" />
@@ -69,15 +63,7 @@ const catalogStore = useProductCatalogStore();
 
 const productSearch = ref('');
 const selectedCategoryId = ref(null);
-const statusFilter = ref('all');
-const showDeactivateProductConfirm = ref(false);
-const pendingProductPayload = ref(null);
 const tableSectionRef = ref(null);
-const statusFilterOptions = [
-  { label: 'همه وضعیت‌ها', value: 'all' },
-  { label: 'محصولات فعال', value: 'active' },
-  { label: 'محصولات غیرفعال', value: 'inactive' }
-];
 
 onMounted(async () => {
   await loadData();
@@ -107,17 +93,12 @@ const visibleProducts = computed(() => {
   return catalogStore.products.filter((product) => {
     const matchesSearch = !query
       || String(product.name || '').toLowerCase().includes(query)
-      || String(product.category_name || '').toLowerCase().includes(query)
-      || String(product.notes || '').toLowerCase().includes(query);
+      || String(product.category_name || '').toLowerCase().includes(query);
 
     const matchesCategory = !selectedCategoryId.value || String(product.category_id) === String(selectedCategoryId.value)
       || isCategoryDescendant(product.category_id, selectedCategoryId.value);
 
-    const matchesStatus = statusFilter.value === 'all'
-      || (statusFilter.value === 'active' && product.is_active)
-      || (statusFilter.value === 'inactive' && !product.is_active);
-
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesCategory;
   });
 });
 
@@ -134,7 +115,7 @@ const {
 } = usePaginatedList(visibleProducts, {
   initialPageSize: 15,
   pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [productSearch, selectedCategoryId, statusFilter],
+  resetSources: [productSearch, selectedCategoryId],
   scrollTarget: tableSectionRef
 });
 
@@ -146,33 +127,9 @@ const {
   showCategoryModal, showProductModal, showDeleteCategoryModal, showDeleteProductModal,
   savingCategory, savingProduct, deleting, selectedCategoryForModal, selectedProduct,
   deleteProductMessage, openCategoryModal, closeCategoryModal, openProductModal,
-  closeProductModal, openDeleteProduct, handleSaveCategory, handleSaveProduct: persistProduct,
+  closeProductModal, openDeleteProduct, handleSaveCategory, handleSaveProduct,
   handleDeleteCategory, handleDeleteProduct
 } = useProductCatalogActions({ catalogStore, toast, reloadData: loadData, selectedCategoryId, showUndo });
-
-function handleSaveProduct(payload) {
-  if (selectedProduct.value?.is_active && payload.is_active === false) {
-    pendingProductPayload.value = payload;
-    showDeactivateProductConfirm.value = true;
-    return;
-  }
-
-  persistProduct(payload);
-}
-
-async function confirmDeactivateProduct() {
-  if (!pendingProductPayload.value || savingProduct.value) return;
-  const payload = pendingProductPayload.value;
-  await persistProduct(payload);
-  showDeactivateProductConfirm.value = false;
-  pendingProductPayload.value = null;
-}
-
-function cancelDeactivateProduct() {
-  if (savingProduct.value) return;
-  showDeactivateProductConfirm.value = false;
-  pendingProductPayload.value = null;
-}
 
 async function loadData() {
   try {
@@ -194,7 +151,6 @@ function isCategoryDescendant(categoryId, selectedId) {
 
 function clearProductFilters() {
   productSearch.value = '';
-  statusFilter.value = 'all';
   selectedCategoryId.value = null;
 }
 

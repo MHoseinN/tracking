@@ -16,19 +16,11 @@
       <AppFormField label="دسته‌بندی محصول">
         <CustomSelect v-model="selectedCategoryId" :options="categoryOptions" placeholder="بدون دسته‌بندی" trigger-class="app-input h-12" />
       </AppFormField>
-      <AppFormField for-id="product-notes" label="توضیحات">
-        <template #default="{ controlId }"><textarea :id="controlId" v-model.trim="form.notes" rows="3"
-          maxlength="5000" class="app-input min-h-24 py-3"></textarea></template>
-      </AppFormField>
       <AppFormField v-if="isEdit && priceChanged" for-id="product-price-reason" label="دلیل تغییر قیمت"
         hint="اختیاری؛ برای ثبت تاریخچه تغییر قیمت استفاده می‌شود.">
         <template #default="{ controlId, describedBy }"><input :id="controlId" v-model.trim="form.price_change_reason"
           type="text" maxlength="500" class="app-input h-12" :aria-describedby="describedBy" /></template>
       </AppFormField>
-      <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-300 bg-slate-50 p-4">
-        <input v-model="form.is_active" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600" />
-        <span class="text-sm font-medium text-slate-700">محصول فعال و قابل انتخاب باشد</span>
-      </label>
     </form>
     <template #footer>
       <AppButton type="submit" form="product-form" variant="primary" size="lg" :loading="saving">
@@ -54,7 +46,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save']);
 const selectedCategoryId = ref('');
 const { form, errors, setValues, submit } = useFormState({
-  name: '', daily_price_toman: 0, notes: '', is_active: true, price_change_reason: ''
+  name: '', daily_price_toman: 0, price_change_reason: ''
 }, { validate: (values) => {
   if (!String(values.name || '').trim()) return { form: 'نام محصول را وارد کنید' };
   if (!Number.isInteger(Number(values.daily_price_toman)) || Number(values.daily_price_toman) < 0) return { form: 'قیمت روزانه باید عدد صحیح صفر یا بیشتر باشد' };
@@ -66,14 +58,13 @@ const categoryOptions = computed(() => [{ label: 'بدون دسته‌بندی',
   ...props.categories.map((category) => ({ label: category.label || category.name, value: category.id }))]);
 function resetForm() {
   setValues({ name: props.product?.name || '', daily_price_toman: props.product?.daily_price_toman ?? 0,
-    notes: props.product?.notes || '', is_active: props.product?.is_active ?? true, price_change_reason: '' });
+    price_change_reason: '' });
   selectedCategoryId.value = props.product?.category_id || '';
 }
 async function handleSubmit() {
   await submit(async (values) => {
     emit('save', { name: values.name.trim(), daily_price_toman: Number(values.daily_price_toman),
-      category_id: selectedCategoryId.value || null, notes: values.notes.trim() || null,
-      is_active: Boolean(values.is_active), price_change_reason: values.price_change_reason.trim() || null });
+      category_id: selectedCategoryId.value || null, price_change_reason: values.price_change_reason.trim() || null });
     return { success: true };
   });
 }

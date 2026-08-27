@@ -17,6 +17,21 @@
     <AppTablePanel title="لیست‌های این مشتری"
       description="وضعیت تحویل، فاکتور، ارسال و تسویه این مشتری بر اساس مدل جدید نمایش داده می‌شود."
       :count="loading ? null : filteredLists.length">
+      <template #filters>
+        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-5">
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">شماره لیست</span>
+            <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی شماره لیست" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
+            <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت فاکتور</span>
+            <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="app-filter-control" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت ارسال</span>
+            <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="app-filter-control" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت تسویه</span>
+            <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="app-filter-control" /></label>
+          <template #actions><AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
+        </AppFilterBar>
+      </template>
       <AppDataTable class="customer-lists-table" :column-count="9" :loading="loading"
         :empty="!filteredLists.length" min-width="100%" loading-message="در حال دریافت لیست‌های مشتری..."
         empty-message="برای این مشتری لیستی با فیلتر فعلی پیدا نشد.">
@@ -24,21 +39,6 @@
           <tr>
             <th>ردیف</th><th>شماره لیست</th><th>تاریخ تحویل</th><th>وضعیت لیست</th><th>فاکتور</th>
             <th>ارسال</th><th>تسویه</th><th>مبلغ فاکتور</th><th>عملیات</th>
-          </tr>
-          <tr class="customer-lists-filter-row">
-            <th />
-            <th><input v-model.trim="searchQuery" class="customer-list-filter" type="search" placeholder="شماره لیست" /></th>
-            <th />
-            <th><CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="customer-list-filter" /></th>
-            <th><CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="customer-list-filter" /></th>
-            <th><CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="customer-list-filter" /></th>
-            <th><CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="customer-list-filter" /></th>
-            <th />
-            <th>
-              <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="clearFilters">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" /></svg>
-              </AppIconButton>
-            </th>
           </tr>
         </template>
 
@@ -76,6 +76,7 @@ import CustomSelect from '../CustomSelect.vue';
 import CustomerSummaryPanel from './CustomerSummaryPanel.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
+import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
 import AppStatusBadge from '../ui/AppStatusBadge.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
@@ -211,8 +212,6 @@ function exportCustomerLists() {
 .customer-lists-table :deep(th:nth-child(7)) { width: 14%; }
 .customer-lists-table :deep(th:nth-child(8)) { width: 15%; }
 .customer-lists-table :deep(th:nth-child(9)) { width: 8%; }
-.customer-lists-filter-row th { padding: .35rem; background: #f8fafc; }
-.customer-list-filter { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; padding: 0 .4rem; font-size: .68rem; }
 .customer-lists-table :deep(.app-status-badge) { max-width: 100%; padding-inline: .35rem; white-space: normal; justify-content: center; }
 @media (max-width: 1023px) {
   .customer-lists-table :deep(th:nth-child(3)), .customer-lists-table :deep(td:nth-child(3)),

@@ -11,6 +11,40 @@
       description="وضعیت تحویل، فاکتور، ارسال و تسویه هر لیست را از همین جدول مشاهده و مدیریت کنید."
       :count="draftStore.loading ? null : filteredDrafts.length"
     >
+      <template #filters>
+        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-5">
+          <label class="space-y-1">
+            <span class="text-xs font-bold text-slate-600">مشتری یا شماره لیست</span>
+            <input
+              v-model.trim="searchQuery"
+              type="search"
+              placeholder="جست‌وجوی مشتری یا شماره لیست"
+              class="app-filter-control"
+            />
+          </label>
+          <label class="space-y-1">
+            <span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
+            <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" />
+          </label>
+          <label class="space-y-1">
+            <span class="text-xs font-bold text-slate-600">وضعیت فاکتور</span>
+            <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="app-filter-control" />
+          </label>
+          <label class="space-y-1">
+            <span class="text-xs font-bold text-slate-600">وضعیت ارسال</span>
+            <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="app-filter-control" />
+          </label>
+          <label class="space-y-1">
+            <span class="text-xs font-bold text-slate-600">وضعیت تسویه</span>
+            <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="app-filter-control" />
+          </label>
+          <template #actions>
+            <AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton>
+            <AppButton variant="info" @click="loadLists">به‌روزرسانی</AppButton>
+          </template>
+        </AppFilterBar>
+      </template>
+
       <AppDataTable
         class="delivery-lists-table"
         :column-count="9"
@@ -32,40 +66,6 @@
             <th>تسویه</th>
             <th>مبلغ فاکتور</th>
             <th>عملیات</th>
-          </tr>
-          <tr class="delivery-lists-filter-row">
-            <th />
-            <th>
-              <input v-model.trim="searchQuery" type="search" placeholder="جست‌وجوی مشتری" class="delivery-list-filter-input" />
-            </th>
-            <th />
-            <th>
-              <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="delivery-list-filter-control" />
-            </th>
-            <th>
-              <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="delivery-list-filter-control" />
-            </th>
-            <th>
-              <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="delivery-list-filter-control" />
-            </th>
-            <th>
-              <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="delivery-list-filter-control" />
-            </th>
-            <th />
-            <th>
-              <div class="flex items-center justify-center gap-1">
-                <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="clearFilters">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </AppIconButton>
-                <AppIconButton label="به‌روزرسانی جدول" size="sm" variant="primary" @click="loadLists">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 6v5h-5M4 18v-5h5m10.2-2A8 8 0 0 0 5.4 7M4.8 14A8 8 0 0 0 18.6 17" />
-                  </svg>
-                </AppIconButton>
-              </div>
-            </th>
           </tr>
         </template>
 
@@ -218,6 +218,7 @@ import CustomSelect from '../CustomSelect.vue';
 import AppPagination from '../AppPagination.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
+import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
 import AppStatusBadge from '../ui/AppStatusBadge.vue';
 import AppStatusButton from '../ui/AppStatusButton.vue';
@@ -550,29 +551,4 @@ function formatDate(value) {
   line-height: 1.35;
 }
 
-.delivery-lists-table :deep(.delivery-lists-filter-row th) {
-  padding: 0.4rem;
-  background: rgb(248 250 252);
-}
-
-.delivery-list-filter-input,
-.delivery-lists-table :deep(.delivery-list-filter-control) {
-  width: 100%;
-  min-width: 0;
-  height: 2.25rem;
-  border: 1px solid rgb(203 213 225);
-  border-radius: 0.5rem;
-  background: white;
-  padding-right: 0.5rem;
-  padding-left: 0.5rem;
-  color: rgb(51 65 85);
-  font-size: 0.7rem;
-  outline: none;
-}
-
-.delivery-list-filter-input:focus,
-.delivery-lists-table :deep(.delivery-list-filter-control:focus) {
-  border-color: rgb(129 140 248);
-  box-shadow: 0 0 0 3px rgb(224 231 255);
-}
 </style>

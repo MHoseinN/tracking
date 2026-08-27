@@ -1,25 +1,21 @@
 <template>
   <AppTablePanel :title="`محصولات ${categoryName || 'همه دسته‌ها'}`"
-    description="قیمت روزانه، دسته‌بندی و وضعیت فعال‌بودن محصولات را از همین جدول مدیریت کنید."
+    description="نام، دسته‌بندی و قیمت روزانه محصولات را از همین جدول مدیریت کنید."
     :count="loading ? null : totalRows">
-    <AppDataTable class="products-table" :column-count="6" :loading="loading" :empty="!products.length"
+    <template #filters>
+      <AppFilterBar columns-class="md:grid-cols-2">
+        <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام یا دسته‌بندی محصول</span>
+          <input :value="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی محصول یا دسته‌بندی"
+            @input="$emit('update:search-query', $event.target.value)" /></label>
+        <div class="space-y-1"><span class="text-xs font-bold text-slate-600">دسته‌بندی انتخاب‌شده</span>
+          <span class="app-filter-control flex items-center">{{ categoryName || 'همه دسته‌ها' }}</span></div>
+        <template #actions><AppButton variant="secondary" @click="$emit('clear-filters')">پاک‌کردن فیلترها</AppButton></template>
+      </AppFilterBar>
+    </template>
+    <AppDataTable class="products-table" :column-count="5" :loading="loading" :empty="!products.length"
       min-width="100%" loading-message="در حال بارگذاری محصولات..." empty-message="محصولی با این فیلتر پیدا نشد.">
       <template #head>
-        <tr><th>ردیف</th><th>نام محصول</th><th>دسته‌بندی</th><th>قیمت یک روز</th><th>وضعیت</th><th>عملیات</th></tr>
-        <tr class="products-filter-row">
-          <th />
-          <th><input :value="searchQuery" class="products-filter" type="search" placeholder="نام محصول"
-            @input="$emit('update:search-query', $event.target.value)" /></th>
-          <th><span class="products-filter-label">{{ categoryName || 'همه دسته‌ها' }}</span></th>
-          <th />
-          <th><CustomSelect :model-value="statusFilter" :options="statusFilterOptions" trigger-class="products-filter"
-            @update:model-value="$emit('update:status-filter', $event)" /></th>
-          <th>
-            <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="$emit('clear-filters')">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" /></svg>
-            </AppIconButton>
-          </th>
-        </tr>
+        <tr><th>ردیف</th><th>نام محصول</th><th>دسته‌بندی</th><th>قیمت یک روز</th><th>عملیات</th></tr>
       </template>
 
       <tr v-for="(product, index) in products" :key="product.id" class="app-table-row">
@@ -27,7 +23,6 @@
         <td class="font-black text-slate-900">{{ product.name }}</td>
         <td>{{ product.category_name || 'بدون دسته‌بندی' }}</td>
         <td class="text-center font-black text-emerald-700">{{ formatPrice(product.daily_price_toman) }}</td>
-        <td class="text-center"><AppStatusBadge group="active" :status="Boolean(product.is_active)" /></td>
         <td>
           <div class="flex items-center justify-center gap-1">
             <AppIconButton label="ویرایش محصول" size="sm" variant="primary" @click="$emit('edit', product)">
@@ -51,22 +46,21 @@
 
 <script setup>
 import AppPagination from '../AppPagination.vue';
-import CustomSelect from '../CustomSelect.vue';
+import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
+import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
-import AppStatusBadge from '../ui/AppStatusBadge.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
 
 defineProps({
   categoryName: { type: String, default: '' }, searchQuery: { type: String, default: '' },
-  statusFilter: { type: String, default: 'all' }, statusFilterOptions: { type: Array, default: () => [] },
   products: { type: Array, default: () => [] }, loading: { type: Boolean, default: false },
   totalRows: { type: Number, default: 0 }, rowStartIndex: { type: Number, default: 0 },
   pageSize: { type: Number, required: true }, pageSizeOptions: { type: Array, default: () => [] },
   currentPage: { type: Number, required: true }, totalPages: { type: Number, required: true },
   visiblePageNumbers: { type: Array, default: () => [] }
 });
-defineEmits(['update:search-query', 'update:status-filter', 'clear-filters', 'update:page-size', 'go-to-page', 'edit', 'delete']);
+defineEmits(['update:search-query', 'clear-filters', 'update:page-size', 'go-to-page', 'edit', 'delete']);
 function formatPrice(value) { return `${Math.round(Number(value) || 0).toLocaleString('fa-IR')} تومان`; }
 </script>
 
@@ -74,20 +68,16 @@ function formatPrice(value) { return `${Math.round(Number(value) || 0).toLocaleS
 .products-table :deep(.app-table) { width: 100%; table-layout: fixed; }
 .products-table :deep(.app-table-wrapper) { overflow-x: hidden; }
 .products-table :deep(th), .products-table :deep(td) { padding: .7rem .5rem; vertical-align: middle; }
-.products-table :deep(th:nth-child(1)) { width: 7%; }
-.products-table :deep(th:nth-child(2)) { width: 25%; }
-.products-table :deep(th:nth-child(3)) { width: 21%; }
-.products-table :deep(th:nth-child(4)) { width: 20%; }
-.products-table :deep(th:nth-child(5)) { width: 14%; }
-.products-table :deep(th:nth-child(6)) { width: 13%; }
-.products-filter-row th { padding: .4rem; background: #f8fafc; }
-.products-filter, .products-filter-label { display: flex; width: 100%; min-width: 0; height: 2.3rem; align-items: center; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; padding: 0 .55rem; font-size: .72rem; color: #475569; }
+.products-table :deep(th:nth-child(1)) { width: 8%; }
+.products-table :deep(th:nth-child(2)) { width: 30%; }
+.products-table :deep(th:nth-child(3)) { width: 24%; }
+.products-table :deep(th:nth-child(4)) { width: 23%; }
+.products-table :deep(th:nth-child(5)) { width: 15%; }
 @media (max-width: 767px) {
   .products-table :deep(th:nth-child(3)), .products-table :deep(td:nth-child(3)) { display: none; }
   .products-table :deep(th:nth-child(1)) { width: 10%; }
-  .products-table :deep(th:nth-child(2)) { width: 30%; }
-  .products-table :deep(th:nth-child(4)) { width: 27%; }
-  .products-table :deep(th:nth-child(5)) { width: 18%; }
-  .products-table :deep(th:nth-child(6)) { width: 15%; }
+  .products-table :deep(th:nth-child(2)) { width: 40%; }
+  .products-table :deep(th:nth-child(4)) { width: 30%; }
+  .products-table :deep(th:nth-child(5)) { width: 20%; }
 }
 </style>

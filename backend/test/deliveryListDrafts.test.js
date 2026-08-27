@@ -39,6 +39,11 @@ function createDatabase() {
       updated_by_user_id INTEGER,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE product_categories (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      deleted_at TEXT
+    );
     CREATE TABLE products (
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
@@ -793,6 +798,13 @@ test('builds reports from workflow lists, issued invoices and active payments', 
     assert.equal(allYears.operational.list_status.COMPLETED, 1);
     assert.equal(allYears.operational.list_status.REMAINING, 1);
     assert.equal(allYears.top_customers[0].customer_name, 'مریم محمدی');
+    assert.equal(allYears.dashboard.customer_count, 2);
+    assert.equal(allYears.dashboard.product_count, 2);
+    assert.equal(allYears.dashboard.category_count, 0);
+    assert.equal(allYears.dashboard.recent_lists.length, 2);
+    assert.equal(allYears.dashboard.recent_lists[0].list_number, '051001');
+    assert.equal(allYears.dashboard.recent_payments.length, 2);
+    assert.equal(allYears.dashboard.recent_payments[0].delivery_list_id, secondList);
     assert.deepEqual(allYears.available_years, [reportYear]);
     assert.equal(selectedYear.period_rows.length, 1);
     assert.equal(selectedYear.period_rows[0].invoice_count, 2);

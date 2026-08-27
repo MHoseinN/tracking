@@ -7,23 +7,22 @@
     <AppTablePanel title="مدیریت ادمین‌ها"
       description="مدیر اصلی می‌تواند حساب‌های ادمین را ایجاد، ویرایش، فعال یا غیرفعال کند."
       :count="loading ? null : filteredUsers.length">
+      <template #filters>
+        <AppFilterBar columns-class="md:grid-cols-3">
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام ادمین</span>
+            <input v-model.trim="nameFilter" class="app-filter-control" type="search" placeholder="جست‌وجوی نام ادمین" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام کاربری</span>
+            <input v-model.trim="usernameFilter" class="app-filter-control" type="search" placeholder="جست‌وجوی نام کاربری" dir="ltr" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت دسترسی</span>
+            <CustomSelect v-model="statusFilter" :options="statusFilterOptions" trigger-class="app-filter-control" /></label>
+          <template #actions><AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
+        </AppFilterBar>
+      </template>
       <AppDataTable class="admins-table" :column-count="6" :loading="loading" :empty="!filteredUsers.length"
         min-width="100%" loading-message="در حال دریافت حساب‌های داخلی..."
         empty-message="حسابی با این مشخصات پیدا نشد.">
         <template #head>
           <tr><th>ردیف</th><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>عملیات</th></tr>
-          <tr class="admins-filter-row">
-            <th />
-            <th><input v-model.trim="nameFilter" class="admins-filter" type="search" placeholder="نام ادمین" /></th>
-            <th><input v-model.trim="usernameFilter" class="admins-filter" type="search" placeholder="نام کاربری" dir="ltr" /></th>
-            <th />
-            <th><CustomSelect v-model="statusFilter" :options="statusFilterOptions" trigger-class="admins-filter" /></th>
-            <th>
-              <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="clearFilters">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" /></svg>
-              </AppIconButton>
-            </th>
-          </tr>
         </template>
 
         <tr v-for="(user, index) in paginatedUsers" :key="user.id" class="app-table-row">
@@ -78,6 +77,7 @@ import CustomSelect from '../CustomSelect.vue';
 import AdminFormModal from './AdminFormModal.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
+import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
 import AppStatusBadge from '../ui/AppStatusBadge.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
@@ -160,8 +160,6 @@ onMounted(loadAdmins);
 .admins-table :deep(th:nth-child(4)) { width: 13%; }
 .admins-table :deep(th:nth-child(5)) { width: 14%; }
 .admins-table :deep(th:nth-child(6)) { width: 20%; }
-.admins-filter-row th { padding: .4rem; background: #f8fafc; }
-.admins-filter { width: 100%; min-width: 0; height: 2.3rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; padding: 0 .55rem; font-size: .72rem; }
 @media (max-width: 767px) {
   .admins-table :deep(th:nth-child(4)), .admins-table :deep(td:nth-child(4)) { display: none; }
   .admins-table :deep(th:nth-child(1)) { width: 10%; }

@@ -10,24 +10,23 @@
     <AppTablePanel title="مدیریت مشتریان"
       description="مشخصات مشتری و خلاصه لیست‌ها و فاکتورهای مدل جدید را از این جدول مدیریت کنید."
       :count="loading ? null : filteredRows.length">
+      <template #filters>
+        <AppFilterBar columns-class="md:grid-cols-3">
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نام مشتری</span>
+            <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی نام مشتری" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت حساب</span>
+            <CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="app-filter-control" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">شماره تماس</span>
+            <input v-model.trim="phoneFilter" class="app-filter-control" type="search" placeholder="جست‌وجوی شماره تماس" dir="ltr" /></label>
+          <template #actions><AppButton size="md" variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
+        </AppFilterBar>
+      </template>
       <AppDataTable class="customers-table" :column-count="8" :loading="loading" :empty="!filteredRows.length"
         min-width="100%" loading-message="در حال دریافت مشتریان..." empty-message="مشتری‌ای با این فیلتر پیدا نشد.">
         <template #head>
           <tr>
             <th>ردیف</th><th>نام مشتری</th><th>وضعیت حساب</th><th>تعداد لیست</th>
             <th>تعداد فاکتور</th><th>مبلغ فاکتورها</th><th>شماره تماس</th><th>عملیات</th>
-          </tr>
-          <tr class="customers-filter-row">
-            <th />
-            <th><input v-model.trim="searchQuery" class="customers-filter" type="search" placeholder="نام مشتری" /></th>
-            <th><CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="customers-filter" /></th>
-            <th /><th /><th />
-            <th><input v-model.trim="phoneFilter" class="customers-filter" type="search" placeholder="شماره تماس" dir="ltr" /></th>
-            <th>
-              <AppIconButton label="پاک‌کردن فیلترها" size="sm" @click="clearFilters">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" /></svg>
-              </AppIconButton>
-            </th>
           </tr>
         </template>
 
@@ -87,6 +86,7 @@ import CustomerFormModal from '../CustomerFormModal.vue';
 import UndoBar from '../UndoBar.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
+import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
 import { useInvoiceStore } from '../../stores/invoiceStore';
@@ -163,8 +163,7 @@ onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCus
 .customers-table :deep(th:nth-child(6)) { width: 15%; }
 .customers-table :deep(th:nth-child(7)) { width: 13%; }
 .customers-table :deep(th:nth-child(8)) { width: 15%; }
-.customers-filter-row th { padding: .35rem; background: #f8fafc; }
-.customers-filter, .customers-table :deep(.customers-status-control) { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: 0 .5rem; font-size: .72rem; }
+.customers-table :deep(.customers-status-control) { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: 0 .5rem; font-size: .72rem; }
 @media (max-width: 1023px) {
   .customers-table :deep(th:nth-child(4)), .customers-table :deep(td:nth-child(4)),
   .customers-table :deep(th:nth-child(5)), .customers-table :deep(td:nth-child(5)),

@@ -209,7 +209,7 @@ const form = reactive({
 const availableProductOptions = computed(() => {
   const selectedIds = new Set(form.items.map((item) => Number(item.product_id)));
   return productStore.products
-    .filter((product) => product.is_active && !selectedIds.has(Number(product.id)))
+    .filter((product) => !selectedIds.has(Number(product.id)))
     .map((product) => ({
       value: product.id,
       label: `${product.name} — ${formatCurrency(product.daily_price_toman)}`

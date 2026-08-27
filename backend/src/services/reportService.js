@@ -131,6 +131,53 @@ function createReportService(db) {
       ['DRAFT', 'DELIVERED', 'REMAINING', 'NEEDS_FOLLOW_UP', 'COMPLETED']
     );
 
+    const dashboardCounts = db.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM customers WHERE deleted_at IS NULL) AS customer_count,
+        (SELECT COUNT(*) FROM products WHERE deleted_at IS NULL) AS product_count,
+        (SELECT COUNT(*) FROM product_categories WHERE deleted_at IS NULL) AS category_count
+    `).get();
+
+    const recentLists = db.prepare(`
+      SELECT delivery_lists.id, delivery_lists.list_number, delivery_lists.status,
+             delivery_lists.invoice_status, delivery_lists.invoice_send_status,
+             delivery_lists.settlement_status, delivery_lists.delivered_at,
+             delivery_lists.created_at,
+             COALESCE(customers.name, delivery_lists.customer_name_snapshot, 'بدون نام') AS customer_name,
+             (SELECT COALESCE(SUM(invoices.final_amount_toman), 0)
+                FROM invoices
+               WHERE invoices.delivery_list_id = delivery_lists.id
+                 AND invoices.status = 'ISSUED' AND invoices.deleted_at IS NULL
+             ) AS invoice_total_toman
+      FROM delivery_lists
+      LEFT JOIN customers ON customers.id = delivery_lists.customer_id
+      WHERE delivery_lists.archived_at IS NULL
+      ORDER BY COALESCE(delivery_lists.delivered_at, delivery_lists.created_at) DESC,
+               delivery_lists.id DESC
+      LIMIT 8
+    `).all().map((list) => ({
+      ...list,
+      invoice_total_toman: Number(list.invoice_total_toman) || 0
+    }));
+
+    const recentPayments = db.prepare(`
+      SELECT payments.id, payments.delivery_list_id, payments.amount_toman,
+             payments.payment_method, payments.paid_at, payments.reference_number,
+             delivery_lists.list_number, delivery_lists.settlement_status,
+             COALESCE(customers.name, delivery_lists.customer_name_snapshot, 'بدون نام') AS customer_name,
+             COALESCE(users.display_name, users.username) AS received_by_name
+      FROM payments
+      JOIN delivery_lists ON delivery_lists.id = payments.delivery_list_id
+      LEFT JOIN customers ON customers.id = delivery_lists.customer_id
+      LEFT JOIN users ON users.id = payments.received_by_user_id
+      WHERE payments.voided_at IS NULL AND delivery_lists.archived_at IS NULL
+      ORDER BY payments.paid_at DESC, payments.id DESC
+      LIMIT 8
+    `).all().map((payment) => ({
+      ...payment,
+      amount_toman: Number(payment.amount_toman) || 0
+    }));
+
     return {
       scope: { persian_year: requestedYear },
       available_years: availableYears,
@@ -148,6 +195,13 @@ function createReportService(db) {
         invoice_send: sendCounts,
         settlement: settlementCounts,
         list_status: listStatusCounts
+      },
+      dashboard: {
+        customer_count: Number(dashboardCounts.customer_count) || 0,
+        product_count: Number(dashboardCounts.product_count) || 0,
+        category_count: Number(dashboardCounts.category_count) || 0,
+        recent_lists: recentLists,
+        recent_payments: recentPayments
       },
       top_customers: [...customerMap.values()]
         .sort((left, right) => right.total_invoiced_toman - left.total_invoiced_toman)
