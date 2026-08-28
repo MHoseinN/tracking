@@ -799,6 +799,9 @@ test('builds reports from workflow lists, issued invoices and active payments', 
     assert.equal(allYears.operational.list_status.COMPLETED, 1);
     assert.equal(allYears.operational.list_status.REMAINING, 1);
     assert.equal(allYears.top_customers[0].customer_name, 'مریم محمدی');
+    assert.equal(allYears.top_customers[0].average_invoice_toman, 2000000);
+    assert.equal(allYears.top_customers[0].outstanding_toman, 0);
+    assert.equal(allYears.top_customers.find((customer) => customer.customer_id === 1).outstanding_toman, 1000000);
     assert.equal(allYears.dashboard.customer_count, 2);
     assert.equal(allYears.dashboard.product_count, 2);
     assert.equal(allYears.dashboard.category_count, 0);

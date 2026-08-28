@@ -18,7 +18,7 @@
       <div class="flex items-center justify-between">
         <button type="button" @click="prevMonth"
           class="rounded-full flex items-center text-3xl w-8 h-8 justify-center hover:bg-gray-200 font-extrabold transition">‹</button>
-        <div class="text-md font-medium">{{ monthLabel }} {{ currentYear }}</div>
+        <div class="text-md font-medium">{{ monthLabel }} {{ formatYear(currentYear) }}</div>
         <button type="button" @click="nextMonth"
           class="rounded-full flex items-center text-3xl w-8 h-8 justify-center hover:bg-gray-200 font-extrabold transition">›</button>
       </div>
@@ -48,7 +48,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import PersianDate from 'persian-date';
-import { PERSIAN_MONTHS } from '../utils/dateConverter';
+import { formatYear, PERSIAN_MONTHS } from '../utils/dateConverter';
 
 const props = defineProps({
   modelValue: { type: String, default: '' },

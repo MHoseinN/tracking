@@ -141,7 +141,7 @@ import { reportService } from '../../modules/reports/api/report.service';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import { getApiErrorMessage } from '../../utils/apiError';
-import { toPersianDate } from '../../utils/dateConverter';
+import { formatYear, toPersianDate } from '../../utils/dateConverter';
 
 const router = useRouter();
 const toast = useToast();
@@ -162,7 +162,7 @@ const yearOptions = computed(() => {
   const years = new Set((report.value.available_years || []).map(String));
   years.add(String(selectedYear.value));
   return [{ label: 'همه سال‌ها', value: 'all' }, ...[...years].sort((a, b) => Number(b) - Number(a))
-    .map((year) => ({ label: `سال ${Number(year).toLocaleString('fa-IR')}`, value: year }))];
+    .map((year) => ({ label: `سال ${formatYear(year)}`, value: year }))];
 });
 const openListCount = computed(() => Number(report.value.operational?.list_status?.REMAINING || 0)
   + Number(report.value.operational?.list_status?.NEEDS_FOLLOW_UP || 0));

@@ -30,8 +30,8 @@
         <tr v-for="(user, index) in paginatedUsers" :key="user.id" class="app-table-row">
           <td class="text-center font-bold text-slate-500">{{ (rowStartIndex + index + 1).toLocaleString('fa-IR') }}
           </td>
-          <td class="font-black text-slate-900">{{ user.first_name || user.display_name }}</td>
-          <td class="font-bold text-slate-700">{{ user.last_name || '—' }}</td>
+          <td class="text-center font-black text-slate-900">{{ user.first_name || user.display_name }}</td>
+          <td class="text-center font-bold text-slate-700">{{ user.last_name || '—' }}</td>
           <td class="text-center" dir="ltr">{{ user.username }}</td>
           <td class="text-center" dir="ltr">{{ user.phone || '—' }}</td>
           <td class="text-center">

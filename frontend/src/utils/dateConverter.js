@@ -13,6 +13,15 @@ export const PERSIAN_MONTHS = [
   'دی', 'بهمن', 'اسفند'
 ];
 
+/** Format a year without thousands grouping (for example ۱۴۰۵, never ۱٬۴۰۵). */
+export function formatYear(value) {
+  if (value === null || value === undefined || value === '') return '';
+  const normalized = String(value).trim().replace(/[٬,]/g, '');
+  const numericValue = Number(normalized);
+  if (!Number.isFinite(numericValue)) return normalized;
+  return Math.trunc(numericValue).toLocaleString('fa-IR', { useGrouping: false });
+}
+
 /**
  * Convert Gregorian date string (YYYY-MM-DD) to Persian date string
  * @param {string} gregorianDate - Date in YYYY-MM-DD format

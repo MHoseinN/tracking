@@ -110,17 +110,30 @@ function createReportService(db) {
     });
 
     const customerMap = new Map();
+    const invoiceCustomerKeys = new Map();
+    const listCustomerKeys = new Map();
     scopedInvoices.forEach((invoice) => {
       const key = Number(invoice.customer_id) || invoice.customer_name;
       const current = customerMap.get(key) || {
         customer_id: Number(invoice.customer_id) || null,
         customer_name: invoice.customer_name,
         invoice_count: 0,
-        total_invoiced_toman: 0
+        total_invoiced_toman: 0,
+        total_paid_toman: 0
       };
       current.invoice_count += 1;
       current.total_invoiced_toman += Number(invoice.final_amount_toman) || 0;
       customerMap.set(key, current);
+      invoiceCustomerKeys.set(Number(invoice.id), key);
+      listCustomerKeys.set(Number(invoice.delivery_list_id), key);
+    });
+
+    scopedPayments.forEach((payment) => {
+      const key = payment.invoice_id !== null && payment.invoice_id !== undefined
+        ? invoiceCustomerKeys.get(Number(payment.invoice_id))
+        : listCustomerKeys.get(Number(payment.delivery_list_id));
+      if (key === undefined || !customerMap.has(key)) return;
+      customerMap.get(key).total_paid_toman += Number(payment.amount_toman) || 0;
     });
 
     const sendCounts = countBy(scopedInvoices, 'send_status', ['NOT_SENT', 'SENT']);
@@ -204,8 +217,15 @@ function createReportService(db) {
         recent_payments: recentPayments
       },
       top_customers: [...customerMap.values()]
+        .map((customer) => ({
+          ...customer,
+          average_invoice_toman: customer.invoice_count
+            ? Math.round(customer.total_invoiced_toman / customer.invoice_count)
+            : 0,
+          outstanding_toman: Math.max(0, customer.total_invoiced_toman - customer.total_paid_toman)
+        }))
         .sort((left, right) => right.total_invoiced_toman - left.total_invoiced_toman)
-        .slice(0, 5)
+        .slice(0, 100)
     };
   }
 

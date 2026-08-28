@@ -65,7 +65,7 @@ import { useToast } from 'vue-toastification';
 import CustomSelect from '../CustomSelect.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
-import { getCurrentPersianDate, PERSIAN_MONTHS } from '../../utils/dateConverter';
+import { formatYear, getCurrentPersianDate, PERSIAN_MONTHS } from '../../utils/dateConverter';
 import { getApiErrorMessage } from '../../utils/apiError';
 
 const props = defineProps({ fetchPerformance: { type: Function, required: true } });
@@ -91,7 +91,7 @@ const monthOptions = PERSIAN_MONTHS.map((label, index) => ({ value: index + 1, l
 const yearOptions = computed(() => {
   const years = new Set(availableYears.value.map(String));
   for (let year = today.year; year >= today.year - 15; year -= 1) years.add(String(year));
-  return [...years].sort((a, b) => Number(b) - Number(a)).map((year) => ({ value: Number(year), label: year }));
+  return [...years].sort((a, b) => Number(b) - Number(a)).map((year) => ({ value: Number(year), label: formatYear(year) }));
 });
 const yearFilterOptions = computed(() => [{ value: 'all', label: 'همه سال‌ها' }, ...yearOptions.value]);
 const rangeError = computed(() => {
@@ -113,8 +113,8 @@ const activeRequest = computed(() => viewMode.value === 'overview'
   : customRequestParams.value);
 const customLabel = computed(() => {
   if (filters.mode === 'day') return filters.day === todayText ? 'امروز' : filters.day;
-  if (filters.mode === 'month') return `${PERSIAN_MONTHS[Number(filters.month) - 1]} ${filters.monthYear}`;
-  if (filters.mode === 'year') return filters.year === 'all' ? 'همه سال‌ها' : `سال ${filters.year}`;
+  if (filters.mode === 'month') return `${PERSIAN_MONTHS[Number(filters.month) - 1]} ${formatYear(filters.monthYear)}`;
+  if (filters.mode === 'year') return filters.year === 'all' ? 'همه سال‌ها' : `سال ${formatYear(filters.year)}`;
   return `${filters.from || '—'} تا ${filters.to || '—'}`;
 });
 const tableRows = computed(() => viewMode.value === 'overview'
@@ -126,8 +126,8 @@ function rowLabel(row) {
   if (row.key === 'today') return 'امروز';
   if (row.key === 'yesterday') return 'دیروز';
   if (row.key === 'last_7_days') return '۷ روز اخیر';
-  if (row.type === 'month') return `${PERSIAN_MONTHS[Number(row.month) - 1]} ${row.year}`;
-  if (row.type === 'year') return `جمع سال ${row.year}`;
+  if (row.type === 'month') return `${PERSIAN_MONTHS[Number(row.month) - 1]} ${formatYear(row.year)}`;
+  if (row.type === 'year') return `جمع سال ${formatYear(row.year)}`;
   return `${row.from} تا ${row.to}`;
 }
 async function loadPerformance() {

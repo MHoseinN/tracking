@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { reportService } from '../modules/reports/api/report.service';
-import { PERSIAN_MONTHS } from '../utils/dateConverter';
+import { formatYear, PERSIAN_MONTHS } from '../utils/dateConverter';
 
 const emptyReport = () => ({
   available_years: [],
@@ -34,11 +34,11 @@ export function useReportsData(options = {}) {
   const availableYears = computed(() => (report.value.available_years || []).map(String));
   const yearSelectOptions = computed(() => ([
     { label: 'همه سال‌ها', value: 'all' },
-    ...availableYears.value.map((year) => ({ label: year, value: year }))
+    ...availableYears.value.map((year) => ({ label: formatYear(year), value: year }))
   ]));
   const displayMode = computed(() => (selectedYear.value === 'all' ? 'year' : 'month'));
   const activeRows = computed(() => report.value.period_rows || []);
-  const sectionTitle = computed(() => selectedYear.value === 'all' ? 'آمار سالانه' : `آمار سال ${selectedYear.value}`);
+  const sectionTitle = computed(() => selectedYear.value === 'all' ? 'آمار سالانه' : `آمار سال ${formatYear(selectedYear.value)}`);
   const incomeChartTitle = computed(() => selectedYear.value === 'all'
     ? 'مبلغ فاکتورهای صادرشده در هر سال'
     : 'مبلغ فاکتورهای صادرشده در هر ماه');
@@ -63,7 +63,9 @@ export function useReportsData(options = {}) {
     id: customer.customer_id,
     name: customer.customer_name,
     invoiceCount: customer.invoice_count,
-    total: customer.total_invoiced_toman
+    average: customer.average_invoice_toman,
+    total: customer.total_invoiced_toman,
+    outstanding: customer.outstanding_toman
   })));
 
   const operationalStatusRows = computed(() => {
@@ -102,7 +104,7 @@ export function useReportsData(options = {}) {
       { label: 'نرخ ارسال فاکتور', value: formatPercent(send.SENT, invoiceTotal), valueClass: 'text-cyan-700' },
       { label: 'نرخ تسویه کامل', value: formatPercent(settlement.PAID, listTotal), valueClass: 'text-emerald-700' },
       { label: 'میانگین مبلغ فاکتور', value: formatCurrency(summary.average_invoice_toman), valueClass: 'text-indigo-700' },
-      { label: 'بازه فعال', value: selectedYear.value === 'all' ? 'همه سال‌ها' : `سال ${selectedYear.value}`, valueClass: 'text-slate-700' }
+      { label: 'بازه فعال', value: selectedYear.value === 'all' ? 'همه سال‌ها' : `سال ${formatYear(selectedYear.value)}`, valueClass: 'text-slate-700' }
     ];
   });
 
@@ -183,7 +185,7 @@ function formatCurrency(value) {
 }
 
 function formatPeriodLabel(period, mode) {
-  if (mode === 'year') return `سال ${Number(period).toLocaleString('fa-IR')}`;
+  if (mode === 'year') return `سال ${formatYear(period)}`;
   const [year, month] = String(period).split('-');
-  return `${PERSIAN_MONTHS[Number(month) - 1] || month} ${Number(year).toLocaleString('fa-IR')}`;
+  return `${PERSIAN_MONTHS[Number(month) - 1] || month} ${formatYear(year)}`;
 }

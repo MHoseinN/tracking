@@ -8,9 +8,8 @@
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال دریافت تنظیمات..." />
-    <section v-else class="app-panel max-w-3xl p-6">
+    <section v-else class="app-panel p-6">
       <h2 class="text-xl font-black text-slate-900">تنظیمات مجموعه و محاسبه فاکتور</h2>
-      <p class="mt-2 text-sm leading-7 text-slate-500">نام مجموعه در سربرگ PDF فاکتور نمایش داده می‌شود.</p>
 
       <div class="mt-6 space-y-6 rounded-lg border border-indigo-200 bg-indigo-50 p-5">
         <label class="block max-w-xl space-y-2">
@@ -24,9 +23,6 @@
           <input v-model="billingCutoffTime" type="time"
             class="h-12 w-full rounded-lg border border-indigo-200 bg-white px-4 text-lg font-bold text-indigo-900" />
         </label>
-        <p class="mt-4 text-xs leading-6 text-indigo-700">
-          این مقدار فقط هنگام ایجاد لیست جدید در آن لیست ذخیره می‌شود. لیست‌های قبلی با ساعت مرزی زمان ایجاد خودشان محاسبه می‌شوند.
-        </p>
       </div>
     </section>
 
