@@ -178,6 +178,56 @@ function createInternalUserPerformanceService(db) {
     return [...years].sort((a, b) => Number(b) - Number(a));
   }
 
+  function getUserPerformanceOverview(userId, selectedYear = null, referenceDate = new Date()) {
+    const currentKeys = periodKeys(referenceDate);
+    const requestedYear = /^\d{4}$/.test(String(selectedYear || ''))
+      ? String(selectedYear)
+      : currentKeys.year;
+    const rows = [];
+    const addRow = (row) => rows.push({
+      ...row,
+      ...getUserPerformanceRange(userId, { from: row.from, to: row.to })
+    });
+
+    if (requestedYear === currentKeys.year) {
+      const today = currentKeys.day.replaceAll('-', '/');
+      const yesterday = periodKeys(new Date(referenceDate.getTime() - (24 * 60 * 60 * 1000))).day.replaceAll('-', '/');
+      const sevenDaysAgo = periodKeys(new Date(referenceDate.getTime() - (6 * 24 * 60 * 60 * 1000))).day.replaceAll('-', '/');
+      addRow({ key: 'today', type: 'relative', from: today, to: today });
+      addRow({ key: 'yesterday', type: 'relative', from: yesterday, to: yesterday });
+      addRow({ key: 'last_7_days', type: 'relative', from: sevenDaysAgo, to: today });
+    }
+
+    const currentMonth = Number(currentKeys.month.split('-')[1]);
+    const monthLimit = requestedYear < currentKeys.year ? 12 : (requestedYear === currentKeys.year ? currentMonth : 0);
+    for (let month = 1; month <= monthLimit; month += 1) {
+      const monthText = String(month).padStart(2, '0');
+      addRow({
+        key: `month_${monthText}`,
+        type: 'month',
+        year: requestedYear,
+        month,
+        from: `${requestedYear}/${monthText}/01`,
+        to: `${requestedYear}/${monthText}/31`
+      });
+    }
+
+    addRow({
+      key: 'year_total',
+      type: 'year',
+      year: requestedYear,
+      from: `${requestedYear}/01/01`,
+      to: `${requestedYear}/12/31`
+    });
+
+    return {
+      selected_year: requestedYear,
+      current_year: currentKeys.year,
+      available_years: getAvailableYears(userId),
+      rows
+    };
+  }
+
   function getUserPerformance(userId, referenceDate = new Date()) {
     return getPerformanceByUser(referenceDate)[Number(userId)] || emptyPerformance();
   }
@@ -187,6 +237,7 @@ function createInternalUserPerformanceService(db) {
     getUserPerformance,
     getPerformanceByUserRange,
     getUserPerformanceRange,
+    getUserPerformanceOverview,
     getAvailableYears
   };
 }

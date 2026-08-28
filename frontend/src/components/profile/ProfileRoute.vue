@@ -8,12 +8,11 @@
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 class="text-lg font-black text-slate-900">مشخصات حساب</h2>
-            <p class="mt-1 text-xs leading-6 text-slate-500">نام نمایشی شما به‌صورت خودکار از نام و نام خانوادگی ساخته می‌شود.</p>
           </div>
           <AppButton variant="secondary" @click="passwordModalOpen = true">تغییر رمز عبور</AppButton>
         </div>
 
-        <form class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3" @submit.prevent="saveProfile">
+        <form class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5" @submit.prevent="saveProfile">
           <AppFormField for-id="profile-first-name" label="نام" required>
             <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.first_name" maxlength="50" class="app-input h-12" /></template>
           </AppFormField>
@@ -28,7 +27,6 @@
             <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.phone" maxlength="50"
               autocomplete="tel" dir="ltr" class="app-input h-12 text-left" /></template>
           </AppFormField>
-          <AppFormField label="نام نمایشی"><input :value="displayName" disabled class="app-input h-12 bg-slate-100" /></AppFormField>
           <AppFormField label="نقش"><input :value="profile.role === 'MANAGER' ? 'مدیر' : 'ادمین'" disabled class="app-input h-12 bg-slate-100" /></AppFormField>
           <div class="flex items-end md:col-span-2 xl:col-span-3">
             <AppButton type="submit" variant="primary" size="lg" :loading="saving">ذخیره مشخصات</AppButton>
@@ -38,7 +36,7 @@
 
       <section class="app-panel p-6">
         <h2 class="text-lg font-black text-slate-900">آمار تحویل و دریافت من</h2>
-        <p class="mb-5 mt-1 text-xs leading-6 text-slate-500">آمار را برای یک روز، ماه، سال یا بازه دلخواه مشاهده کنید.</p>
+       
         <UserPerformancePanel :fetch-performance="getProfilePerformance" />
       </section>
     </template>
@@ -49,7 +47,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import AppButton from '../ui/AppButton.vue';
@@ -68,7 +66,6 @@ const passwordSaving = ref(false);
 const passwordModalOpen = ref(false);
 const profile = ref({});
 const form = reactive({ first_name: '', last_name: '', username: '', phone: '' });
-const displayName = computed(() => [form.first_name, form.last_name].filter(Boolean).join(' '));
 
 function hydrate(data) {
   profile.value = data.user || {};

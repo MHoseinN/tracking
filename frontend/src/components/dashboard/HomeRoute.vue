@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-6">
     <Teleport to="#app-shell-actions">
+      <div class="w-full sm:w-42">
+        <CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" />
+      </div>
       <AppButton variant="primary" block :loading="creatingList" @click="createNewList">ایجاد لیست جدید</AppButton>
       <AppButton variant="secondary" block @click="showCustomerForm = true">افزودن مشتری</AppButton>
     </Teleport>
@@ -9,65 +12,110 @@
       surface-class="border-0 bg-transparent py-24 shadow-none" />
 
     <template v-else>
-      <p v-if="errorMessage" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ errorMessage }}</p>
-
-      <section class="app-panel flex flex-wrap items-center justify-between gap-4 p-4">
-        <div><h2 class="text-lg font-black text-slate-900">نمای کلی مجموعه</h2>
-          <p class="mt-1 text-xs text-slate-500">خلاصه مالی و عملیاتی بازه انتخاب‌شده</p></div>
-        <div class="w-full sm:w-52"><CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" /></div>
-      </section>
+      <p v-if="errorMessage" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{
+        errorMessage }}</p>
 
       <section class="grid gap-3 md:grid-cols-3">
-        <AppStatCard label="جمع فاکتورها" :value="formatCurrency(summary.total_invoiced_toman)" value-class="text-slate-800" />
-        <AppStatCard label="مانده قابل دریافت" :value="formatCurrency(summary.outstanding_toman)" value-class="text-rose-600" />
-        <AppStatCard label="مبلغ دریافت‌شده" :value="formatCurrency(summary.total_paid_toman)" value-class="text-emerald-600" />
+        <AppStatCard label="جمع فاکتورها" :value="formatCurrency(summary.total_invoiced_toman)"
+          value-class="text-slate-800" />
+        <AppStatCard label="مانده قابل دریافت" :value="formatCurrency(summary.outstanding_toman)"
+          value-class="text-rose-600" />
+        <AppStatCard label="مبلغ دریافت‌شده" :value="formatCurrency(summary.total_paid_toman)"
+          value-class="text-emerald-600" />
       </section>
       <section class="grid gap-3 md:grid-cols-3">
-        <AppStatCard label="تعداد فاکتورها" :value="formatNumber(summary.invoice_count)" value-class="text-violet-600" />
+        <AppStatCard label="تعداد فاکتورها" :value="formatNumber(summary.invoice_count)"
+          value-class="text-violet-600" />
         <AppStatCard label="بهترین مشتری" :value="bestCustomer?.customer_name || '—'" value-class="text-sky-700" />
         <AppStatCard label="مانده / پیگیری" :value="formatNumber(openListCount)" value-class="text-amber-600" />
       </section>
 
       <section class="grid gap-6 2xl:grid-cols-2">
-        <AppTablePanel title="آخرین لیست‌ها" description="آخرین پیش‌نویس‌ها و تحویل‌های ثبت‌شده در سیستم" :count="recentLists.length">
+        <AppTablePanel>
+          <template #header>
+            <div class="flex w-full flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg font-black text-slate-900">آخرین لیست‌ها</h2>
+                <span class="app-table-panel__count">{{ formatNumber(recentLists.length) }} ردیف</span>
+              </div>
+              <AppButton size="sm" variant="secondary" @click="router.push('/lists')">مشاهده همه لیست‌ها</AppButton>
+            </div>
+          </template>
+
           <AppDataTable class="home-table" :column-count="6" :empty="!recentLists.length" min-width="100%"
             empty-message="هنوز لیستی ثبت نشده است.">
-            <template #head><tr><th>شماره لیست</th><th>مشتری</th><th>تاریخ تحویل</th><th>وضعیت لیست</th><th>مبلغ فاکتور</th><th>جزئیات</th></tr></template>
+            <template #head>
+              <tr>
+                <th>شماره لیست</th>
+                <th>مشتری</th>
+                <th>تاریخ تحویل</th>
+                <th>وضعیت لیست</th>
+                <th>مبلغ فاکتور</th>
+                <th>جزئیات</th>
+              </tr>
+            </template>
             <tr v-for="list in recentLists" :key="list.id" class="app-table-row">
               <td class="font-black">{{ displayListNumber(list) }}</td>
               <td class="font-bold text-slate-900">{{ list.customer_name }}</td>
               <td>{{ formatDate(list.delivered_at || list.created_at) }}</td>
-              <td><AppStatusBadge group="list" :status="list.status" /></td>
+              <td>
+                <AppStatusBadge group="list" :status="list.status" />
+              </td>
               <td class="font-black">{{ hasInvoice(list) ? formatCurrency(list.invoice_total_toman) : '—' }}</td>
-              <td><AppIconButton label="مشاهده جزئیات لیست" size="sm" @click="router.push(`/lists/${list.id}`)">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
-              </AppIconButton></td>
+              <td>
+                <AppIconButton label="مشاهده جزئیات لیست" size="sm" @click="router.push(`/lists/${list.id}`)">
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.7" />
+                    <circle cx="12" cy="12" r="1.7" />
+                    <circle cx="19" cy="12" r="1.7" />
+                  </svg>
+                </AppIconButton>
+              </td>
             </tr>
           </AppDataTable>
-          <template #footer><div class="flex justify-end p-4"><AppButton size="sm" variant="secondary" @click="router.push('/lists')">مشاهده همه لیست‌ها</AppButton></div></template>
         </AppTablePanel>
 
-        <AppTablePanel title="آخرین تسویه‌ها و پرداخت‌ها" description="آخرین پرداخت‌های معتبر ثبت‌شده برای لیست‌ها" :count="recentPayments.length">
+        <AppTablePanel>
+          <template #header>
+            <div class="flex w-full flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg font-black text-slate-900">آخرین تسویه‌ها و پرداخت‌ها</h2>
+                <span class="app-table-panel__count">{{ formatNumber(recentPayments.length) }} ردیف</span>
+              </div>
+              <AppButton size="sm" variant="secondary" @click="router.push('/lists')">پیگیری در مدیریت لیست‌ها</AppButton>
+            </div>
+          </template>
           <AppDataTable class="home-table" :column-count="5" :empty="!recentPayments.length" min-width="100%"
             empty-message="هنوز پرداختی ثبت نشده است.">
-            <template #head><tr><th>مشتری</th><th>شماره لیست</th><th>تاریخ پرداخت</th><th>مبلغ</th><th>وضعیت تسویه</th></tr></template>
+            <template #head>
+              <tr>
+                <th>مشتری</th>
+                <th>شماره لیست</th>
+                <th>تاریخ پرداخت</th>
+                <th>مبلغ</th>
+                <th>وضعیت تسویه</th>
+              </tr>
+            </template>
             <tr v-for="payment in recentPayments" :key="payment.id" class="app-table-row cursor-pointer"
               @click="router.push(`/lists/${payment.delivery_list_id}`)">
               <td class="font-bold text-slate-900">{{ payment.customer_name }}</td>
               <td class="font-black">{{ payment.list_number || `سابقه ${formatNumber(payment.delivery_list_id)}` }}</td>
               <td>{{ formatDateTime(payment.paid_at) }}</td>
               <td class="font-black text-emerald-700">{{ formatCurrency(payment.amount_toman) }}</td>
-              <td><AppStatusBadge group="settlement" :status="payment.settlement_status" /></td>
+              <td>
+                <AppStatusBadge group="settlement" :status="payment.settlement_status" />
+              </td>
             </tr>
           </AppDataTable>
-          <template #footer><div class="flex justify-end p-4"><AppButton size="sm" variant="secondary" @click="router.push('/lists')">پیگیری در مدیریت لیست‌ها</AppButton></div></template>
         </AppTablePanel>
       </section>
 
       <section class="grid gap-4 md:grid-cols-3">
         <AppStatCard label="تعداد مشتریان" :value="formatNumber(dashboard.customer_count)" value-class="text-sky-600" />
-        <AppStatCard label="تعداد محصولات" :value="formatNumber(dashboard.product_count)" value-class="text-amber-600" />
-        <AppStatCard label="تعداد دسته‌بندی‌ها" :value="formatNumber(dashboard.category_count)" value-class="text-indigo-600" />
+        <AppStatCard label="تعداد محصولات" :value="formatNumber(dashboard.product_count)"
+          value-class="text-amber-600" />
+        <AppStatCard label="تعداد دسته‌بندی‌ها" :value="formatNumber(dashboard.category_count)"
+          value-class="text-indigo-600" />
       </section>
     </template>
   </div>
@@ -155,10 +203,28 @@ watch(selectedYear, loadDashboard);
 </script>
 
 <style scoped>
-.home-table :deep(.app-table) { width: 100%; table-layout: fixed; }
-.home-table :deep(th), .home-table :deep(td) { padding: .7rem .5rem; text-align: center; vertical-align: middle; }
-.home-table :deep(.app-status-badge) { white-space: normal; justify-content: center; }
+.home-table :deep(.app-table) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.home-table :deep(th),
+.home-table :deep(td) {
+  padding: .7rem .5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.home-table :deep(.app-status-badge) {
+  white-space: normal;
+  justify-content: center;
+}
+
 @media (max-width: 767px) {
-  .home-table :deep(th:nth-child(3)), .home-table :deep(td:nth-child(3)) { display: none; }
+
+  .home-table :deep(th:nth-child(3)),
+  .home-table :deep(td:nth-child(3)) {
+    display: none;
+  }
 }
 </style>

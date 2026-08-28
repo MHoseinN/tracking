@@ -851,6 +851,17 @@ test('counts delivered and received lists for Jalali day, week, month and year',
       delivered: 0,
       received: 0
     });
+    const overview = performanceService.getUserPerformanceOverview(
+      1,
+      '1405',
+      new Date('2026-08-27T12:00:00+03:30')
+    );
+    assert.equal(overview.rows.find((row) => row.key === 'today').delivered, 1);
+    assert.equal(overview.rows.find((row) => row.key === 'yesterday').delivered, 0);
+    assert.equal(overview.rows.find((row) => row.key === 'last_7_days').received, 1);
+    assert.equal(overview.rows.find((row) => row.key === 'month_06').delivered, 1);
+    assert.equal(overview.rows.find((row) => row.key === 'year_total').received, 1);
+    assert.equal(overview.rows.filter((row) => row.type === 'month').length, 6);
   } finally {
     db.close();
   }

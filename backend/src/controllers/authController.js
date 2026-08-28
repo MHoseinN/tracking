@@ -55,6 +55,9 @@ function getProfile(req, res) {
 }
 
 function getProfilePerformance(req, res) {
+  if (req.query.view === 'overview') {
+    return res.json(performanceService.getUserPerformanceOverview(req.user.id, req.query.year));
+  }
   return res.json({
     performance: performanceService.getUserPerformanceRange(req.user.id, req.query),
     available_years: performanceService.getAvailableYears(req.user.id)

@@ -139,6 +139,12 @@ function createAdminService(db) {
   function getUserPerformance(id, range = {}) {
     const user = db.prepare(`${selectPublicColumns} WHERE id = ? AND deleted_at IS NULL`).get(id);
     if (!user) throw new AdminServiceError('Admin not found', 404);
+    if (range.view === 'overview') {
+      return {
+        user: serializeInternalUser(user),
+        ...performanceService.getUserPerformanceOverview(id, range.year)
+      };
+    }
     return {
       user: serializeInternalUser(user),
       performance: performanceService.getUserPerformanceRange(id, range),

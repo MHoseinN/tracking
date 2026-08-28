@@ -13,7 +13,7 @@
 
     <Teleport to="body">
       <div v-if="isOpen" class="fixed inset-0 z-[140]" @click="closeDropdown">
-        <div class="fixed z-[141] -mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+        <div ref="dropdownRef" class="fixed z-[141] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
           :style="dropdownStyle" @click.stop>
           <div class="overflow-y-auto p-1 flex flex-col gap-2" :style="{ maxHeight: dropdownStyle.maxHeight }">
             <button v-for="option in normalizedOptions" :key="String(option.value)" type="button"
@@ -53,6 +53,7 @@ const emit = defineEmits(['update:modelValue', 'change']);
 
 const rootRef = ref(null);
 const triggerRef = ref(null);
+const dropdownRef = ref(null);
 const isOpen = ref(false);
 const dropdownStyle = ref({});
 const dropdownDirection = ref('down');
@@ -95,6 +96,8 @@ async function openDropdown() {
   isOpen.value = true;
   await nextTick();
   updatePosition();
+  await nextTick();
+  updatePosition();
 }
 
 function toggleDropdown() {
@@ -123,10 +126,12 @@ function updatePosition() {
   const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
   const spaceAbove = rect.top - viewportPadding;
   const shouldOpenUp = spaceBelow < Math.min(estimatedHeight, 220) && spaceAbove > spaceBelow;
-  const maxHeight = Math.max(160, Math.min(estimatedHeight, shouldOpenUp ? spaceAbove - 10 : spaceBelow - 10));
+  const availableHeight = Math.max(80, shouldOpenUp ? spaceAbove - 10 : spaceBelow - 10);
+  const maxHeight = Math.min(estimatedHeight, availableHeight);
+  const renderedHeight = Math.min(dropdownRef.value?.scrollHeight || estimatedHeight, maxHeight);
   dropdownDirection.value = shouldOpenUp ? 'up' : 'down';
   const top = shouldOpenUp
-    ? Math.max(viewportPadding, rect.top - maxHeight - 10)
+    ? Math.max(viewportPadding, rect.top - renderedHeight - 10)
     : rect.bottom + 10;
   const left = props.align === 'left'
     ? rect.left

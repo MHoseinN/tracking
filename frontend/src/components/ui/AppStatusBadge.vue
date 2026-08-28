@@ -1,6 +1,5 @@
 <template>
   <span class="app-status-badge" :class="[toneClass, sizeClass]">
-    <span v-if="showDot" class="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
     <span><slot>{{ resolvedMeta.label }}</slot></span>
   </span>
 </template>

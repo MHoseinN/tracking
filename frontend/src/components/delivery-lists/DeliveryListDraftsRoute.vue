@@ -8,11 +8,9 @@
 
     <AppTablePanel
       title="مرکز مدیریت لیست‌ها"
-      description="وضعیت تحویل، فاکتور، ارسال و تسویه هر لیست را از همین جدول مشاهده و مدیریت کنید."
       :count="draftStore.loading ? null : filteredDrafts.length"
     >
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-5">
           <label class="space-y-1">
             <span class="text-xs font-bold text-slate-600">مشتری یا شماره لیست</span>
             <input
@@ -22,6 +20,7 @@
               class="app-filter-control"
             />
           </label>
+        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-4">
           <label class="space-y-1">
             <span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
             <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" />
