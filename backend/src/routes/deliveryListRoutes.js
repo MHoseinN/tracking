@@ -3,6 +3,7 @@ const { body, param } = require('express-validator');
 const authMiddleware = require('../middleware/authMiddleware');
 const {
   listDeliveryLists,
+  subscribeDeliveryListEvents,
   listDrafts,
   getList,
   createDraft,
@@ -28,6 +29,7 @@ const idValidation = param('id').isInt({ min: 1 });
 
 router.get('/drafts', listDrafts);
 router.post('/drafts', createDraft);
+router.get('/events', subscribeDeliveryListEvents);
 router.get('/', listDeliveryLists);
 router.get('/:id', [idValidation], getList);
 router.put('/:id/draft', [

@@ -2,6 +2,7 @@
   <div>
     <Teleport to="#app-shell-actions">
       <AppButton variant="primary" block @click="openProductModal()">افزودن محصول</AppButton>
+      <AppButton variant="info" block @click="showPriceVersionsModal = true">نسخه‌های قیمت</AppButton>
       <AppButton variant="primary" block @click="openCategoryModal()">افزودن دسته‌بندی</AppButton>
       <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)">ویرایش دسته‌بندی</AppButton>
       <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">افزودن زیرشاخه</AppButton>
@@ -32,6 +33,9 @@
     <ProductFormModal :is-open="showProductModal" :product="selectedProduct" :categories="flatCategoryOptions"
       :saving="savingProduct" @close="closeProductModal" @save="handleSaveProduct" />
 
+    <ProductPriceVersionsModal :is-open="showPriceVersionsModal" :products="catalogStore.products"
+      @close="showPriceVersionsModal = false" @catalog-changed="loadData" />
+
     <ConfirmModal :is-open="showDeleteCategoryModal" title="حذف دسته‌بندی"
       :message="selectedCategoryObject ? `آیا دسته‌بندی «${selectedCategoryObject.name}» حذف شود؟` : 'آیا این دسته‌بندی حذف شود؟'"
       :loading="deleting" @confirm="handleDeleteCategory(selectedCategoryObject)"
@@ -55,6 +59,7 @@ import ProductFormModal from './ProductFormModal.vue';
 import UndoBar from '../UndoBar.vue';
 import ProductCatalogList from './ProductCatalogList.vue';
 import ProductCatalogSidebar from './ProductCatalogSidebar.vue';
+import ProductPriceVersionsModal from './ProductPriceVersionsModal.vue';
 import { useProductCatalogStore } from '../../stores/productCatalogStore';
 import { usePaginatedList } from '../../composables/usePaginatedList';
 import { useUndoAction } from '../../composables/useUndoAction';
@@ -66,6 +71,7 @@ const catalogStore = useProductCatalogStore();
 const productSearch = ref('');
 const selectedCategoryId = ref(null);
 const tableSectionRef = ref(null);
+const showPriceVersionsModal = ref(false);
 
 onMounted(async () => {
   await loadData();

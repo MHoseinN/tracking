@@ -11,6 +11,7 @@ function replaceDraft(drafts, draft) {
 export const useDeliveryListStore = defineStore('deliveryLists', {
   state: () => ({
     lists: [],
+    listsEtag: '',
     drafts: [],
     currentDraft: null,
     loading: false,
@@ -19,18 +20,22 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
   }),
 
   actions: {
-    async fetchLists() {
-      this.loading = true;
+    async fetchLists(options = {}) {
+      const silent = Boolean(options.silent);
+      if (!silent) this.loading = true;
       this.error = null;
       try {
-        this.lists = (await deliveryListService.getLists()).data.lists || [];
+        const response = await deliveryListService.getLists(this.listsEtag);
+        if (response.status === 304) return this.lists;
+        this.listsEtag = response.headers?.etag || '';
+        this.lists = response.data.lists || [];
         this.drafts = this.lists.filter((list) => list.status === 'DRAFT');
         return this.lists;
       } catch (error) {
         this.error = getApiErrorMessage(error, 'خطا در دریافت لیست‌ها');
         throw error;
       } finally {
-        this.loading = false;
+        if (!silent) this.loading = false;
       }
     },
 

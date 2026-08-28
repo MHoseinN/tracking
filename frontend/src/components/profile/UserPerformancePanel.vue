@@ -1,61 +1,74 @@
 <template>
   <section class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-        <button v-for="option in viewOptions" :key="option.value" type="button"
-          class="rounded-md px-4 py-2 text-sm font-bold transition"
-          :class="viewMode === option.value ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800'"
-          @click="viewMode = option.value">{{ option.label }}</button>
+    <div class="performance-toolbar">
+      <h2 class="shrink-0 text-lg font-black text-slate-900">آمار تحویل و دریافت من</h2>
+
+      <div class="performance-controls">
+        <div class="inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-1">
+          <button v-for="option in viewOptions" :key="option.value" type="button"
+            class="rounded-md px-4 py-2 text-sm font-bold transition"
+            :class="viewMode === option.value ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800'"
+            @click="viewMode = option.value">{{ option.label }}</button>
+        </div>
+
+        <label v-if="viewMode === 'overview'" class="performance-filter-field">
+          <CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" />
+        </label>
+
+        <template v-else>
+          <label class="performance-filter-field performance-filter-field--wide"><span
+              class="text-xs font-bold text-slate-600">نوع بازه</span>
+            <CustomSelect v-model="filters.mode" :options="modeOptions" trigger-class="app-filter-control" />
+          </label>
+          <label v-if="filters.mode === 'day'" class="performance-filter-field">
+            <span class="text-xs font-bold text-slate-600">تاریخ</span>
+            <JalaliDatePicker v-model="filters.day" input-class="app-filter-control !h-11" />
+          </label>
+          <template v-if="filters.mode === 'month'">
+            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">ماه</span>
+              <CustomSelect v-model="filters.month" :options="monthOptions" trigger-class="app-filter-control" />
+            </label>
+            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">سال ماه</span>
+              <CustomSelect v-model="filters.monthYear" :options="yearOptions" trigger-class="app-filter-control" />
+            </label>
+          </template>
+          <label v-if="filters.mode === 'year'" class="performance-filter-field"><span
+              class="text-xs font-bold text-slate-600">سال</span>
+            <CustomSelect v-model="filters.year" :options="yearFilterOptions" trigger-class="app-filter-control" />
+          </label>
+          <template v-if="filters.mode === 'range'">
+            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">از تاریخ</span>
+              <JalaliDatePicker v-model="filters.from" input-class="app-filter-control !h-11" />
+            </label>
+            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">تا تاریخ</span>
+              <JalaliDatePicker v-model="filters.to" input-class="app-filter-control !h-11" />
+            </label>
+          </template>
+        </template>
       </div>
     </div>
 
-    <div v-if="viewMode === 'overview'" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <label class="space-y-1"><span class="text-xs font-bold text-slate-600">سال آماری</span>
-        <CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" />
-      </label>
-    </div>
-
-    <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <label class="space-y-1"><span class="text-xs font-bold text-slate-600">نوع بازه</span>
-        <CustomSelect v-model="filters.mode" :options="modeOptions" trigger-class="app-filter-control" />
-      </label>
-      <label v-if="filters.mode === 'day'" class="space-y-1">
-        <span class="text-xs font-bold text-slate-600">تاریخ</span>
-        <JalaliDatePicker v-model="filters.day" input-class="app-filter-control !h-11" />
-      </label>
-      <template v-if="filters.mode === 'month'">
-        <label class="space-y-1"><span class="text-xs font-bold text-slate-600">ماه</span>
-          <CustomSelect v-model="filters.month" :options="monthOptions" trigger-class="app-filter-control" />
-        </label>
-        <label class="space-y-1"><span class="text-xs font-bold text-slate-600">سال ماه</span>
-          <CustomSelect v-model="filters.monthYear" :options="yearOptions" trigger-class="app-filter-control" />
-        </label>
-      </template>
-      <label v-if="filters.mode === 'year'" class="space-y-1"><span class="text-xs font-bold text-slate-600">سال</span>
-        <CustomSelect v-model="filters.year" :options="yearFilterOptions" trigger-class="app-filter-control" />
-      </label>
-      <template v-if="filters.mode === 'range'">
-        <label class="space-y-1"><span class="text-xs font-bold text-slate-600">از تاریخ</span>
-          <JalaliDatePicker v-model="filters.from" input-class="app-filter-control !h-11" />
-        </label>
-        <label class="space-y-1"><span class="text-xs font-bold text-slate-600">تا تاریخ</span>
-          <JalaliDatePicker v-model="filters.to" input-class="app-filter-control !h-11" />
-        </label>
-      </template>
-    </div>
-
-    <p v-if="rangeError" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">{{ rangeError }}</p>
+    <p v-if="rangeError" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
+      {{
+        rangeError }}</p>
 
     <AppDataTable class="performance-table" :column-count="3" :loading="loading" :empty="!tableRows.length"
       min-width="100%" loading-message="در حال محاسبه عملکرد..." empty-message="آماری برای این بازه وجود ندارد.">
-      <template #head><tr><th>بازه نمایش</th><th>تعداد تحویل</th><th>تعداد دریافت</th></tr></template>
+      <template #head>
+        <tr>
+          <th>بازه نمایش</th>
+          <th>تعداد تحویل</th>
+          <th>تعداد دریافت</th>
+        </tr>
+      </template>
       <tr v-for="row in tableRows" :key="row.key" class="app-table-row">
         <td class="font-black text-slate-800">{{ rowLabel(row) }}</td>
         <td class="text-center font-black text-indigo-700">{{ formatNumber(row.delivered) }}</td>
         <td class="text-center font-black text-emerald-700">{{ formatNumber(row.received) }}</td>
       </tr>
     </AppDataTable>
-    <p v-if="viewMode === 'custom'" class="text-xs leading-6 text-slate-500">با تغییر هر فیلتر، آمار بدون نیاز به دکمه به‌روزرسانی می‌شود.</p>
+    <p v-if="viewMode === 'custom'" class="text-xs leading-6 text-slate-500">با تغییر هر فیلتر، آمار بدون نیاز به دکمه
+      به‌روزرسانی می‌شود.</p>
   </section>
 </template>
 
@@ -155,7 +168,57 @@ function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleStr
 </script>
 
 <style scoped>
-.performance-table :deep(.app-table) { width: 100%; table-layout: fixed; }
-.performance-table :deep(.app-table-wrapper) { overflow-x: hidden; }
-.performance-table :deep(th), .performance-table :deep(td) { width: 33.333%; }
+.performance-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.performance-controls {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: .75rem;
+}
+
+.performance-filter-field {
+  display: flex;
+  width: 11rem;
+  flex: 0 0 11rem;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.performance-filter-field--wide {
+  width: 14rem;
+  flex-basis: 14rem;
+}
+
+@media (min-width: 1280px) {
+
+  .performance-toolbar,
+  .performance-controls {
+    flex-wrap: nowrap;
+  }
+}
+
+.performance-table :deep(.app-table) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.performance-table :deep(.app-table-wrapper) {
+  overflow-x: hidden;
+}
+
+.performance-table :deep(th),
+.performance-table :deep(td) {
+  width: 33.333%;
+}
 </style>

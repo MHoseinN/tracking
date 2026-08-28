@@ -10,9 +10,10 @@
       title="مرکز مدیریت لیست‌ها"
       :count="draftStore.loading ? null : filteredDrafts.length"
     >
-      <template #filters>
-          <label class="space-y-1">
-            <span class="text-xs font-bold text-slate-600">مشتری یا شماره لیست</span>
+      <template #header>
+        <div class="lists-panel-heading">
+          <label class="lists-heading-search">
+            <span class="sr-only">جست‌وجوی مشتری یا شماره لیست</span>
             <input
               v-model.trim="searchQuery"
               type="search"
@@ -20,6 +21,9 @@
               class="app-filter-control"
             />
           </label>
+        </div>
+      </template>
+      <template #filters>
         <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-4">
           <label class="space-y-1">
             <span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
@@ -39,7 +43,6 @@
           </label>
           <template #actions>
             <AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton>
-            <AppButton variant="info" @click="loadLists">به‌روزرسانی</AppButton>
           </template>
         </AppFilterBar>
       </template>
@@ -209,7 +212,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '../ConfirmModal.vue';
@@ -226,6 +229,7 @@ import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryInvoiceSendModal from './DeliveryInvoiceSendModal.vue';
 import DeliveryReturnModal from './DeliveryReturnModal.vue';
 import DeliverySettlementModal from './DeliverySettlementModal.vue';
+import { deliveryListService } from '../../modules/delivery-lists/api/deliveryList.service';
 import { usePaginatedList } from '../../composables/usePaginatedList';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
@@ -258,6 +262,8 @@ const invoiceToResetSend = ref(null);
 const showSettlementModal = ref(false);
 const settlementSummary = ref(null);
 const settlementSaving = ref(false);
+let stopRealtime = null;
+let syncInFlight = false;
 
 function statusOptions(group, allLabel) {
   return [
@@ -305,11 +311,26 @@ const {
   scrollTarget: tableSectionRef
 });
 
-onMounted(loadLists);
+onMounted(async () => {
+  await loadLists();
+  stopRealtime = deliveryListService.subscribeToChanges(syncLists);
+});
 
-async function loadLists() {
-  try { await draftStore.fetchLists(); }
-  catch (_error) { toast.error(draftStore.error); }
+onBeforeUnmount(() => {
+  stopRealtime?.();
+  stopRealtime = null;
+});
+
+async function loadLists({ silent = false, notify = true } = {}) {
+  try { await draftStore.fetchLists({ silent }); }
+  catch (_error) { if (notify) toast.error(draftStore.error); }
+}
+
+async function syncLists() {
+  if (syncInFlight) return;
+  syncInFlight = true;
+  try { await loadLists({ silent: true, notify: false }); }
+  finally { syncInFlight = false; }
 }
 
 function clearFilters() {
@@ -508,6 +529,12 @@ function formatDate(value) {
 </script>
 
 <style scoped>
+.lists-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.lists-heading-search { width: min(32rem, 50%); min-width: 18rem; }
+@media (max-width: 767px) {
+  .lists-panel-heading { flex-wrap: wrap; }
+  .lists-heading-search { width: 100%; min-width: 0; }
+}
 .delivery-lists-table {
   overflow-x: hidden;
 }

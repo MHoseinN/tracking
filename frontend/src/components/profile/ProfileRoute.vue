@@ -35,8 +35,6 @@
       </section>
 
       <section class="app-panel p-6">
-        <h2 class="text-lg font-black text-slate-900">آمار تحویل و دریافت من</h2>
-       
         <UserPerformancePanel :fetch-performance="getProfilePerformance" />
       </section>
     </template>

@@ -8,23 +8,35 @@
     <p v-if="errorMessage" class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ errorMessage }}</p>
 
     <AppTablePanel title="مدیریت مشتریان"
-      description="مشخصات مشتری و خلاصه لیست‌های ثبت‌شده را از این جدول مدیریت کنید."
-      :count="loading ? null : filteredRows.length">
+      :count="loading ? null : sortedRows.length">
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-2">
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">جست‌وجوی مشتری</span>
+        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-4">
+          <label class="space-y-1 col-span-2"><span class="text-xs font-bold text-slate-600">جست‌وجوی مشتری</span>
             <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="نام مشتری یا شماره تماس" /></label>
           <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت حساب</span>
             <CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="app-filter-control" /></label>
-          <template #actions><AppButton size="md" variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت شماره تماس</span>
+            <CustomSelect v-model="phoneFilter" :options="phoneFilterOptions" trigger-class="app-filter-control" /></label>
         </AppFilterBar>
       </template>
-      <AppDataTable class="customers-table" :column-count="8" :loading="loading" :empty="!filteredRows.length"
+      <AppDataTable class="customers-table" :column-count="8" :loading="loading" :empty="!sortedRows.length"
         min-width="100%" loading-message="در حال دریافت مشتریان..." empty-message="مشتری‌ای با این فیلتر پیدا نشد.">
         <template #head>
           <tr>
-            <th>ردیف</th><th>نام مشتری</th><th>وضعیت حساب</th><th>تعداد لیست</th>
-            <th>مبلغ فاکتورها</th><th>شماره تماس</th><th>معرف</th><th>عملیات</th>
+            <th>ردیف</th><th>نام مشتری</th><th>وضعیت حساب</th>
+            <th :aria-sort="sortAriaValue('list_count')">
+              <button type="button" class="customer-sort-button" @click="toggleSort('list_count')">
+                تعداد لیست
+                <span aria-hidden="true" class="customer-sort-icon">{{ sortIcon('list_count') }}</span>
+              </button>
+            </th>
+            <th :aria-sort="sortAriaValue('total_invoices_amount')">
+              <button type="button" class="customer-sort-button" @click="toggleSort('total_invoices_amount')">
+                مبلغ فاکتورها
+                <span aria-hidden="true" class="customer-sort-icon">{{ sortIcon('total_invoices_amount') }}</span>
+              </button>
+            </th>
+            <th>شماره تماس</th><th>معرف</th><th>عملیات</th>
           </tr>
         </template>
 
@@ -102,26 +114,46 @@ const errorMessage = ref('');
 const tableSectionRef = ref(null);
 const searchQuery = ref('');
 const statusFilter = ref('all');
+const phoneFilter = ref('all');
+const sortKey = ref('total_invoices_amount');
+const sortDirection = ref('desc');
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
 const accountStatusSelectOptions = computed(() => [{ label: 'بدون وضعیت', value: '' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
 const accountStatusFilterOptions = computed(() => [{ label: 'همه وضعیت‌ها', value: 'all' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
+const phoneFilterOptions = [
+  { label: 'همه مشتریان', value: 'all' },
+  { label: 'دارای شماره تماس', value: 'with-phone' },
+  { label: 'بدون شماره تماس', value: 'without-phone' }
+];
 const rows = computed(() => invoiceStore.customersOverview);
 
 function normalize(value) {
   return String(value ?? '').replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
     .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0)).replace(/ي/g, 'ی').replace(/ك/g, 'ک').trim().toLowerCase();
 }
+function normalizePhone(value) { return normalize(value).replace(/[^\d+]/g, ''); }
 const filteredRows = computed(() => rows.value.filter((row) => {
   const name = normalize(`${row.first_name || ''} ${row.last_name || ''}`);
   const query = normalize(searchQuery.value);
-  return (!query || name.includes(query) || normalize(row.phone).includes(query))
-    && (statusFilter.value === 'all' || row.account_status === statusFilter.value);
+  const phoneQuery = normalizePhone(searchQuery.value);
+  const normalizedPhone = normalizePhone(row.phone);
+  const hasPhone = Boolean(normalizedPhone);
+  return (!query || name.includes(query) || (phoneQuery && normalizedPhone.includes(phoneQuery)))
+    && (statusFilter.value === 'all' || row.account_status === statusFilter.value)
+    && (phoneFilter.value === 'all'
+      || (phoneFilter.value === 'with-phone' && hasPhone)
+      || (phoneFilter.value === 'without-phone' && !hasPhone));
+}));
+const sortedRows = computed(() => [...filteredRows.value].sort((left, right) => {
+  const difference = (Number(left[sortKey.value]) || 0) - (Number(right[sortKey.value]) || 0);
+  if (difference !== 0) return sortDirection.value === 'asc' ? difference : -difference;
+  return String(left.name || '').localeCompare(String(right.name || ''), 'fa');
 }));
 
 const { currentPage, pageSize, pageSizeOptions: pageSizeSelectOptions, totalRows, totalPages, rowStartIndex,
-  paginatedItems: paginatedRows, visiblePageNumbers, goToPage } = usePaginatedList(filteredRows, {
+  paginatedItems: paginatedRows, visiblePageNumbers, goToPage } = usePaginatedList(sortedRows, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, statusFilter], scrollTarget: tableSectionRef
+  resetSources: [searchQuery, statusFilter, phoneFilter, sortKey, sortDirection], scrollTarget: tableSectionRef
 });
 const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({ onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد') });
 const { statusSavingId, showForm, selectedCustomer, showDeleteConfirm, deletingCustomer, deleteConfirmMessage,
@@ -132,7 +164,16 @@ function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleStr
 function formatCurrency(value) { return `${formatNumber(value)} تومان`; }
 function statusTriggerClass(status) { return ['customers-status-control', status ? getAccountStatusTone(status) : 'border-slate-300 bg-white text-slate-500']; }
 function navigateToCustomer(id) { router.push({ name: 'CustomerDetail', params: { id } }); }
-function clearFilters() { searchQuery.value = ''; statusFilter.value = 'all'; }
+function toggleSort(key) {
+  if (sortKey.value === key) sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  else { sortKey.value = key; sortDirection.value = 'asc'; }
+}
+function sortIcon(key) { return sortKey.value === key ? (sortDirection.value === 'asc' ? '↑' : '↓') : '↕'; }
+function sortAriaValue(key) {
+  if (sortKey.value !== key) return 'none';
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending';
+}
+function clearFilters() { searchQuery.value = ''; statusFilter.value = 'all'; phoneFilter.value = 'all'; }
 
 async function loadOverview() {
   loading.value = true; errorMessage.value = '';
@@ -143,7 +184,7 @@ async function loadOverview() {
 function exportCustomers() {
   exportRowsToExcel({ fileName: 'customers-export', sheetTitle: 'فهرست مشتریان',
     headers: ['نام', 'نام خانوادگی', 'وضعیت حساب', 'تعداد لیست', 'مبلغ کل', 'شماره تماس', 'معرف'],
-    rows: filteredRows.value.map((row) => [row.first_name || '', row.last_name || '', row.account_status || '',
+    rows: sortedRows.value.map((row) => [row.first_name || '', row.last_name || '', row.account_status || '',
       row.list_count, row.total_invoices_amount, row.phone || '', row.referrer || '']) });
 }
 onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]); });
@@ -161,6 +202,10 @@ onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCus
 .customers-table :deep(th:nth-child(6)) { width: 13%; }
 .customers-table :deep(th:nth-child(7)) { width: 12%; }
 .customers-table :deep(th:nth-child(8)) { width: 16%; }
+.customers-table :deep(.customer-sort-button) { display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: .35rem; font: inherit; color: inherit; }
+.customers-table :deep(.customer-sort-button:hover) { color: #4338ca; }
+.customers-table :deep(.customer-sort-button:focus-visible) { border-radius: .35rem; outline: 2px solid #818cf8; outline-offset: 2px; }
+.customers-table :deep(.customer-sort-icon) { min-width: 1rem; color: #6366f1; font-size: .85rem; }
 .customers-table :deep(.customers-status-control) { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: 0 .5rem; font-size: .72rem; }
 @media (max-width: 1023px) {
   .customers-table :deep(th:nth-child(4)), .customers-table :deep(td:nth-child(4)),

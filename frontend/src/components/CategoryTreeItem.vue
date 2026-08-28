@@ -24,6 +24,9 @@
         :key="child.id"
         :node="child"
         :selected-id="selectedId"
+        :expanded-by-parent="expandedByParent"
+        :parent-key="String(node.id)"
+        @toggle="$emit('toggle', $event)"
         @select="$emit('select', $event)"
       />
     </div>
@@ -31,20 +34,24 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   node: { type: Object, required: true },
-  selectedId: { type: [String, Number, null], default: null }
+  selectedId: { type: [String, Number, null], default: null },
+  expandedByParent: { type: Object, default: () => ({}) },
+  parentKey: { type: String, default: 'root' }
 });
 
-const emit = defineEmits(['select']);
-const expanded = ref(false);
+const emit = defineEmits(['select', 'toggle']);
+const expanded = computed(
+  () => String(props.expandedByParent[props.parentKey] || '') === String(props.node.id)
+);
 const isSelected = computed(() => String(props.selectedId || '') === String(props.node.id));
 
 function handleClick() {
   if (props.node.children?.length) {
-    expanded.value = !expanded.value;
+    emit('toggle', { id: props.node.id, parentKey: props.parentKey });
   }
   emit('select', props.node);
 }

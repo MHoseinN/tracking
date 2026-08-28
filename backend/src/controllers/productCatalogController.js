@@ -4,8 +4,10 @@ const {
   ProductCatalogError,
   createProductCatalogService
 } = require('../services/productCatalogService');
+const { createProductPriceVersionPdfService } = require('../services/productPriceVersionPdfService');
 
 const catalogService = createProductCatalogService(db);
+const priceVersionPdfService = createProductPriceVersionPdfService(db, catalogService);
 
 function hasValidationErrors(req, res) {
   const errors = validationResult(req);
@@ -93,6 +95,53 @@ function getPriceHistory(req, res) {
   }
 }
 
+function listPriceVersions(_req, res) {
+  try {
+    return res.json({ versions: catalogService.listPriceVersions() });
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
+function getPriceVersion(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    return res.json(catalogService.getPriceVersion(req.params.versionId));
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
+function createPriceVersion(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    return res.status(201).json(catalogService.createPriceVersion(req.body, req.user.id));
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
+async function downloadPriceVersionPdf(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const result = await priceVersionPdfService.generate(req.params.versionId);
+    if (req.query.transport === 'base64') {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({
+        filename: result.filename,
+        content_type: 'application/pdf',
+        data_base64: result.buffer.toString('base64')
+      });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader('Content-Length', result.buffer.length);
+    return res.send(result.buffer);
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
 module.exports = {
   getCatalog,
   createCategory,
@@ -101,5 +150,9 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-  getPriceHistory
+  getPriceHistory,
+  listPriceVersions,
+  getPriceVersion,
+  createPriceVersion,
+  downloadPriceVersionPdf
 };

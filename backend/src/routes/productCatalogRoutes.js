@@ -9,7 +9,11 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
-  getPriceHistory
+  getPriceHistory,
+  listPriceVersions,
+  getPriceVersion,
+  createPriceVersion,
+  downloadPriceVersionPdf
 } = require('../controllers/productCatalogController');
 
 const router = express.Router();
@@ -18,8 +22,20 @@ router.use(authMiddleware);
 const idValidation = param('id').isInt({ min: 1 }).withMessage('Invalid id');
 const optionalCategoryId = body('category_id').optional({ nullable: true }).isInt({ min: 1 });
 const optionalParentId = body('parent_id').optional({ nullable: true }).isInt({ min: 1 });
+const versionIdValidation = param('versionId').isInt({ min: 1 }).withMessage('Invalid version id');
 
 router.get('/', getCatalog);
+router.get('/price-versions', listPriceVersions);
+router.post('/price-versions', [
+  body('name').isString().trim().isLength({ min: 1, max: 255 }),
+  body('effective_from').optional({ nullable: true }).isISO8601(),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+  body('items').isArray({ min: 1 }),
+  body('items.*.product_id').isInt({ min: 1 }),
+  body('items.*.new_price_toman').isInt({ min: 0 })
+], createPriceVersion);
+router.get('/price-versions/:versionId', [versionIdValidation], getPriceVersion);
+router.get('/price-versions/:versionId/pdf', [versionIdValidation], downloadPriceVersionPdf);
 
 router.post('/categories', [
   body('name').isString().trim().isLength({ min: 1, max: 255 }),

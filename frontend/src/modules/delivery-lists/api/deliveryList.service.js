@@ -1,8 +1,69 @@
 import api from '../../../utils/api';
 
 export const deliveryListService = {
-  getLists() { return api.get('/delivery-lists'); },
+  getLists(etag = '') {
+    return api.get('/delivery-lists', {
+      headers: etag ? { 'If-None-Match': etag } : {},
+      validateStatus: (status) => (status >= 200 && status < 300) || status === 304
+    });
+  },
   getDrafts() { return api.get('/delivery-lists/drafts'); },
+  subscribeToChanges(onChange) {
+    const controller = new AbortController();
+    let stopped = false;
+    let connectedOnce = false;
+
+    const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+    const connect = async () => {
+      while (!stopped) {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) return;
+          const response = await fetch('/api/delivery-lists/events', {
+            method: 'GET',
+            cache: 'no-store',
+            signal: controller.signal,
+            headers: { Accept: 'text/event-stream', Authorization: `Bearer ${token}` }
+          });
+          if (response.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (window.location.pathname !== '/login') window.location.replace('/login');
+            return;
+          }
+          if (!response.ok || !response.body) throw new Error(`Live updates failed (${response.status})`);
+          if (connectedOnce) onChange({ action: 'RECONNECTED' });
+          connectedOnce = true;
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (!stopped) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+            let boundary = buffer.indexOf('\n\n');
+            while (boundary !== -1) {
+              const block = buffer.slice(0, boundary);
+              buffer = buffer.slice(boundary + 2);
+              const data = block.split('\n').filter((line) => line.startsWith('data:'))
+                .map((line) => line.slice(5).trim()).join('\n');
+              if (data) {
+                try { onChange(JSON.parse(data)); } catch { /* Ignore malformed live events. */ }
+              }
+              boundary = buffer.indexOf('\n\n');
+            }
+          }
+        } catch (error) {
+          if (stopped || error?.name === 'AbortError') return;
+        }
+        if (!stopped) await wait(3000);
+      }
+    };
+
+    void connect();
+    return () => { stopped = true; controller.abort(); };
+  },
   getDraft(id) { return api.get(`/delivery-lists/${id}`); },
   createDraft() { return api.post('/delivery-lists/drafts'); },
   saveDraft(id, payload) { return api.put(`/delivery-lists/${id}/draft`, payload); },

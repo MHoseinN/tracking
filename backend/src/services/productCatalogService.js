@@ -24,6 +24,15 @@ function serializeCategory(category) {
   };
 }
 
+function serializePriceVersion(version) {
+  return {
+    ...version,
+    version_number: Number(version.version_number),
+    product_count: Number(version.product_count || 0),
+    changed_product_count: Number(version.changed_product_count || 0)
+  };
+}
+
 function buildCategoryTree(categories) {
   const nodes = new Map(categories.map((category) => [category.id, { ...category, children: [] }]));
   const roots = [];
@@ -272,12 +281,136 @@ function createProductCatalogService(db) {
     return db.prepare(`
       SELECT history.id, history.product_id, history.daily_price_toman,
              history.effective_from, history.reason, history.changed_by_user_id,
+             history.price_version_id,
              users.display_name AS changed_by_name
       FROM product_price_history history
       LEFT JOIN users ON users.id = history.changed_by_user_id
       WHERE history.product_id = ?
       ORDER BY history.effective_from DESC, history.id DESC
     `).all(productId);
+  }
+
+  function listPriceVersions() {
+    return db.prepare(`
+      SELECT versions.id, versions.version_number, versions.name,
+             versions.effective_from, versions.notes, versions.created_at,
+             versions.created_by_user_id,
+             COALESCE(users.display_name, users.username) AS created_by_name,
+             COUNT(items.id) AS product_count,
+             COALESCE(SUM(CASE WHEN items.previous_price_toman <> items.new_price_toman THEN 1 ELSE 0 END), 0)
+               AS changed_product_count
+      FROM product_price_versions versions
+      LEFT JOIN product_price_version_items items ON items.price_version_id = versions.id
+      LEFT JOIN users ON users.id = versions.created_by_user_id
+      GROUP BY versions.id
+      ORDER BY versions.version_number DESC
+    `).all().map(serializePriceVersion);
+  }
+
+  function getPriceVersion(id) {
+    const version = db.prepare(`
+      SELECT versions.id, versions.version_number, versions.name,
+             versions.effective_from, versions.notes, versions.created_at,
+             versions.created_by_user_id,
+             COALESCE(users.display_name, users.username) AS created_by_name,
+             COUNT(items.id) AS product_count,
+             COALESCE(SUM(CASE WHEN items.previous_price_toman <> items.new_price_toman THEN 1 ELSE 0 END), 0)
+               AS changed_product_count
+      FROM product_price_versions versions
+      LEFT JOIN product_price_version_items items ON items.price_version_id = versions.id
+      LEFT JOIN users ON users.id = versions.created_by_user_id
+      WHERE versions.id = ?
+      GROUP BY versions.id
+    `).get(id);
+    if (!version) throw new ProductCatalogError('نسخه قیمت پیدا نشد', 404);
+
+    const items = db.prepare(`
+      SELECT id, price_version_id, product_id, product_name_snapshot,
+             category_name_snapshot, previous_price_toman, new_price_toman,
+             CASE WHEN previous_price_toman <> new_price_toman THEN 1 ELSE 0 END AS price_changed
+      FROM product_price_version_items
+      WHERE price_version_id = ?
+      ORDER BY product_name_snapshot COLLATE NOCASE, id
+    `).all(id).map((item) => ({ ...item, price_changed: Boolean(item.price_changed) }));
+
+    return { ...serializePriceVersion(version), items };
+  }
+
+  const createPriceVersionTransaction = db.transaction((payload, changedByUserId) => {
+    const products = listProducts();
+    if (!products.length) throw new ProductCatalogError('برای ساخت نسخه قیمت حداقل یک محصول لازم است');
+
+    const requestedItems = Array.isArray(payload.items) ? payload.items : [];
+    const priceByProductId = new Map();
+    requestedItems.forEach((item) => {
+      const productId = Number(item.product_id);
+      const newPrice = Number(item.new_price_toman);
+      if (!Number.isInteger(productId) || productId < 1 || !Number.isInteger(newPrice) || newPrice < 0) {
+        throw new ProductCatalogError('اطلاعات قیمت محصولات معتبر نیست');
+      }
+      if (priceByProductId.has(productId)) throw new ProductCatalogError('هر محصول فقط یک بار باید در نسخه قیمت باشد');
+      priceByProductId.set(productId, newPrice);
+    });
+
+    const validProductIds = new Set(products.map((product) => Number(product.id)));
+    for (const productId of priceByProductId.keys()) {
+      if (!validProductIds.has(productId)) throw new ProductCatalogError('یکی از محصولات نسخه قیمت پیدا نشد', 404);
+    }
+
+    const nextVersionNumber = Number(db.prepare(`
+      SELECT COALESCE(MAX(version_number), 0) + 1 AS value
+      FROM product_price_versions
+    `).get().value);
+    const effectiveFrom = payload.effective_from || new Date().toISOString();
+    const versionResult = db.prepare(`
+      INSERT INTO product_price_versions (
+        version_number, name, effective_from, notes, created_by_user_id
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run(
+      nextVersionNumber,
+      String(payload.name || `نسخه ${nextVersionNumber}`).trim(),
+      effectiveFrom,
+      payload.notes ? String(payload.notes).trim() : null,
+      changedByUserId
+    );
+    const versionId = Number(versionResult.lastInsertRowid);
+    const insertItem = db.prepare(`
+      INSERT INTO product_price_version_items (
+        price_version_id, product_id, product_name_snapshot, category_name_snapshot,
+        previous_price_toman, new_price_toman
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const updateProductPrice = db.prepare(`
+      UPDATE products
+      SET daily_price_toman = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND deleted_at IS NULL
+    `);
+    const insertHistory = db.prepare(`
+      INSERT INTO product_price_history (
+        product_id, daily_price_toman, changed_by_user_id, reason, price_version_id
+      ) VALUES (?, ?, ?, ?, ?)
+    `);
+
+    products.forEach((product) => {
+      const previousPrice = Number(product.daily_price_toman || 0);
+      const newPrice = priceByProductId.has(Number(product.id))
+        ? priceByProductId.get(Number(product.id))
+        : previousPrice;
+      insertItem.run(
+        versionId, product.id, product.name, product.category_name || null,
+        previousPrice, newPrice
+      );
+      if (newPrice !== previousPrice) {
+        updateProductPrice.run(newPrice, product.id);
+        insertHistory.run(product.id, newPrice, changedByUserId, String(payload.name).trim(), versionId);
+      }
+    });
+
+    return versionId;
+  });
+
+  function createPriceVersion(payload, changedByUserId) {
+    return getPriceVersion(createPriceVersionTransaction(payload, changedByUserId));
   }
 
   return {
@@ -290,7 +423,10 @@ function createProductCatalogService(db) {
     createProduct,
     updateProduct,
     deleteProduct,
-    getPriceHistory
+    getPriceHistory,
+    listPriceVersions,
+    getPriceVersion,
+    createPriceVersion
   };
 }
 

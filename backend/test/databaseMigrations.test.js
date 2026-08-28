@@ -122,7 +122,7 @@ test('migrates legacy data and is idempotent', () => {
 
     assert.equal(
       db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
-      5
+      6
     );
     assert.equal(db.prepare('SELECT role FROM users WHERE id = 1').get().role, 'MANAGER');
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name = 'phone'").get().count, 1);
@@ -137,6 +137,14 @@ test('migrates legacy data and is idempotent', () => {
     const product = db.prepare('SELECT * FROM products WHERE id = 1').get();
     assert.equal(product.name, 'Sony Alpha 7 IV');
     assert.equal(product.daily_price_toman, 0);
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'product_price_versions'").get().count,
+      1
+    );
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('product_price_history') WHERE name = 'price_version_id'").get().count,
+      1
+    );
     assert.equal(
       db.prepare('SELECT parent_id FROM product_categories WHERE id = 2').get().parent_id,
       1

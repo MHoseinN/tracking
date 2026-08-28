@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
 const db = require('../db/database');
 const {
   DeliveryListDraftError,
@@ -7,6 +8,7 @@ const {
 const { createDeliveryInvoiceService } = require('../services/deliveryInvoiceService');
 const { createDeliverySettlementService } = require('../services/deliverySettlementService');
 const { createInvoicePdfService } = require('../services/invoicePdfService');
+const deliveryListEvents = require('../services/deliveryListEventService');
 
 const draftService = createDeliveryListDraftService(db);
 const invoiceService = createDeliveryInvoiceService(db);
@@ -33,9 +35,20 @@ function listDrafts(_req, res) {
   catch (error) { return handleError(error, res); }
 }
 
-function listDeliveryLists(_req, res) {
-  try { return res.json({ lists: draftService.listDeliveryLists() }); }
+function listDeliveryLists(req, res) {
+  try {
+    const lists = draftService.listDeliveryLists();
+    const etag = `"${crypto.createHash('sha1').update(JSON.stringify(lists)).digest('base64url')}"`;
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'private, no-cache');
+    if (req.headers['if-none-match'] === etag) return res.status(304).end();
+    return res.json({ lists });
+  }
   catch (error) { return handleError(error, res); }
+}
+
+function subscribeDeliveryListEvents(req, res) {
+  return deliveryListEvents.subscribe(req, res);
 }
 
 function getList(req, res) {
@@ -46,13 +59,21 @@ function getList(req, res) {
 
 function finalizeDraft(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.json(draftService.finalizeDraft(req.params.id, req.body.version, req.user.id)); }
+  try {
+    const result = draftService.finalizeDraft(req.params.id, req.body.version, req.user.id);
+    deliveryListEvents.publish({ action: 'FINALIZED', list_id: Number(req.params.id) });
+    return res.json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
 function recordReturn(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.status(201).json(draftService.recordReturn(req.params.id, req.body, req.user.id)); }
+  try {
+    const result = draftService.recordReturn(req.params.id, req.body, req.user.id);
+    deliveryListEvents.publish({ action: 'RETURN_RECORDED', list_id: Number(req.params.id) });
+    return res.status(201).json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
@@ -66,6 +87,7 @@ function issueInvoice(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try {
     const invoice = invoiceService.issueInvoice(req.params.id, req.body, req.user.id);
+    deliveryListEvents.publish({ action: 'INVOICE_ISSUED', list_id: Number(req.params.id) });
     return res.status(201).json({ invoice, list: draftService.getList(req.params.id) });
   } catch (error) { return handleError(error, res); }
 }
@@ -85,6 +107,7 @@ function updateIssuedInvoice(req, res) {
       req.body,
       req.user.id
     );
+    deliveryListEvents.publish({ action: 'INVOICE_UPDATED', list_id: Number(req.params.id) });
     return res.json({ invoice, list: draftService.getList(req.params.id) });
   } catch (error) { return handleError(error, res); }
 }
@@ -98,6 +121,7 @@ function updateInvoiceSendStatus(req, res) {
       req.body,
       req.user.id
     );
+    deliveryListEvents.publish({ action: 'INVOICE_SEND_UPDATED', list_id: Number(req.params.id) });
     return res.json({ invoice, list: draftService.getList(req.params.id) });
   } catch (error) { return handleError(error, res); }
 }
@@ -110,13 +134,21 @@ function getSettlement(req, res) {
 
 function recordPayment(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.status(201).json(settlementService.recordPayment(req.params.id, req.body, req.user.id)); }
+  try {
+    const result = settlementService.recordPayment(req.params.id, req.body, req.user.id);
+    deliveryListEvents.publish({ action: 'PAYMENT_RECORDED', list_id: Number(req.params.id) });
+    return res.status(201).json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
 function voidPayment(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.json(settlementService.voidPayment(req.params.id, req.params.paymentId, req.user.id)); }
+  try {
+    const result = settlementService.voidPayment(req.params.id, req.params.paymentId, req.user.id);
+    deliveryListEvents.publish({ action: 'PAYMENT_VOIDED', list_id: Number(req.params.id) });
+    return res.json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
@@ -142,13 +174,21 @@ async function downloadInvoicePdf(req, res) {
 }
 
 function createDraft(req, res) {
-  try { return res.status(201).json(draftService.createDraft(req.user.id)); }
+  try {
+    const result = draftService.createDraft(req.user.id);
+    deliveryListEvents.publish({ action: 'DRAFT_CREATED', list_id: Number(result.id) });
+    return res.status(201).json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
 function saveDraft(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.json(draftService.saveDraft(req.params.id, req.body)); }
+  try {
+    const result = draftService.saveDraft(req.params.id, req.body);
+    deliveryListEvents.publish({ action: 'DRAFT_UPDATED', list_id: Number(req.params.id) });
+    return res.json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
@@ -160,12 +200,17 @@ function deleteDraft(req, res) {
 
 function archiveList(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
-  try { return res.json(draftService.archiveList(req.params.id, req.user.id)); }
+  try {
+    const result = draftService.archiveList(req.params.id, req.user.id);
+    deliveryListEvents.publish({ action: 'LIST_ARCHIVED', list_id: Number(req.params.id) });
+    return res.json(result);
+  }
   catch (error) { return handleError(error, res); }
 }
 
 module.exports = {
   listDeliveryLists,
+  subscribeDeliveryListEvents,
   listDrafts,
   getList,
   createDraft,

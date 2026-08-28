@@ -8,6 +8,8 @@ const requiredTables = [
   'product_categories',
   'products',
   'product_price_history',
+  'product_price_versions',
+  'product_price_version_items',
   'delivery_lists',
   'delivery_list_items',
   'return_events',
@@ -66,7 +68,7 @@ try {
   }
 
   const migrationCount = db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count;
-  if (migrationCount !== 2) {
+  if (migrationCount !== 6) {
     throw new Error(`Unexpected migration count: ${migrationCount}`);
   }
 

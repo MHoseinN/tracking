@@ -5,6 +5,7 @@ const {
   ProductCatalogError,
   createProductCatalogService
 } = require('../src/services/productCatalogService');
+const { renderPriceVersionPdf } = require('../src/services/productPriceVersionPdfService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -12,9 +13,10 @@ function createDatabase() {
   db.exec(`
     CREATE TABLE users (
       id INTEGER PRIMARY KEY,
+      username TEXT,
       display_name TEXT
     );
-    INSERT INTO users (id, display_name) VALUES (1, 'مدیر');
+    INSERT INTO users (id, username, display_name) VALUES (1, 'manager', 'مدیر');
 
     CREATE TABLE product_categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,16 +43,43 @@ function createDatabase() {
       FOREIGN KEY (category_id) REFERENCES product_categories(id)
     );
 
+    CREATE TABLE product_price_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      version_number INTEGER NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      effective_from TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      notes TEXT,
+      created_by_user_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+    );
+
     CREATE TABLE product_price_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       product_id INTEGER NOT NULL,
       daily_price_toman INTEGER NOT NULL,
       effective_from TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       changed_by_user_id INTEGER,
+      price_version_id INTEGER,
       reason TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (product_id) REFERENCES products(id),
-      FOREIGN KEY (changed_by_user_id) REFERENCES users(id)
+      FOREIGN KEY (changed_by_user_id) REFERENCES users(id),
+      FOREIGN KEY (price_version_id) REFERENCES product_price_versions(id)
+    );
+
+    CREATE TABLE product_price_version_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      price_version_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      product_name_snapshot TEXT NOT NULL,
+      category_name_snapshot TEXT,
+      previous_price_toman INTEGER NOT NULL,
+      new_price_toman INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (price_version_id) REFERENCES product_price_versions(id),
+      FOREIGN KEY (product_id) REFERENCES products(id),
+      UNIQUE (price_version_id, product_id)
     );
   `);
   return db;
@@ -86,6 +115,62 @@ test('products have a daily price but no inventory quantity and price changes ar
   } finally {
     db.close();
   }
+});
+
+test('price versions snapshot the complete catalog and update changed prices atomically', () => {
+  const db = createDatabase();
+  try {
+    const service = createProductCatalogService(db);
+    const category = service.createCategory({ name: 'دوربین', parent_id: null });
+    const camera = service.createProduct({
+      name: 'Sony A7 IV', category_id: category.id, daily_price_toman: 1500000
+    }, 1);
+    const lens = service.createProduct({
+      name: 'Sony 24-70', category_id: category.id, daily_price_toman: 700000
+    }, 1);
+
+    const version = service.createPriceVersion({
+      name: 'نسخه ۱ قیمت تجهیزات ۱۴۰۵',
+      items: [
+        { product_id: camera.id, new_price_toman: 1800000 },
+        { product_id: lens.id, new_price_toman: 700000 }
+      ]
+    }, 1);
+
+    assert.equal(version.version_number, 1);
+    assert.equal(version.product_count, 2);
+    assert.equal(version.changed_product_count, 1);
+    assert.equal(version.items.length, 2);
+    assert.equal(version.items.find((item) => item.product_id === camera.id).previous_price_toman, 1500000);
+    assert.equal(version.items.find((item) => item.product_id === camera.id).new_price_toman, 1800000);
+    assert.equal(service.listProducts().find((item) => item.id === camera.id).daily_price_toman, 1800000);
+    assert.equal(service.getPriceHistory(camera.id)[0].price_version_id, version.id);
+    assert.equal(service.listPriceVersions()[0].changed_product_count, 1);
+  } finally {
+    db.close();
+  }
+});
+
+test('price version PDF contains a valid multi-product document', async () => {
+  const buffer = await renderPriceVersionPdf({
+    id: 1,
+    version_number: 1,
+    name: 'نسخه ۱ قیمت تجهیزات ۱۴۰۵',
+    effective_from: '2026-08-28T10:00:00.000Z',
+    items: Array.from({ length: 30 }, (_, index) => ({
+      id: index + 1,
+      product_id: index + 1,
+      product_name_snapshot: `محصول ${index + 1}`,
+      category_name_snapshot: 'دوربین',
+      previous_price_toman: 500000,
+      new_price_toman: 600000,
+      price_changed: true
+    }))
+  }, 'مجموعه آزمایشی');
+
+  assert.ok(buffer.length > 5000);
+  assert.equal(buffer.subarray(0, 4).toString(), '%PDF');
+  assert.match(buffer.toString('latin1'), /%%EOF/);
 });
 
 test('product and category deletion are soft and protected by catalog relations', () => {
