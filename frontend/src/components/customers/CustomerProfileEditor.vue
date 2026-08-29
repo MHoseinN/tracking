@@ -4,19 +4,19 @@
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-700">نام</label>
         <input :value="draft.first_name" type="text" placeholder="نام"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          class="app-input"
           @input="$emit('update-field', 'first_name', $event.target.value)" />
       </div>
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-700">نام خانوادگی</label>
         <input :value="draft.last_name" type="text" placeholder="نام خانوادگی"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          class="app-input"
           @input="$emit('update-field', 'last_name', $event.target.value)" />
       </div>
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-700">شماره تماس</label>
         <input :value="draft.phone" type="text" placeholder="شماره تماس"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          class="app-input"
           :class="{ 'border-rose-300 focus:border-rose-400 focus:ring-rose-100': phoneDuplicateError }"
           @input="$emit('update-field', 'phone', $event.target.value)" />
         <p v-if="phoneDuplicateError" class="mt-1 text-xs text-rose-500">{{ phoneDuplicateError }}</p>
@@ -24,7 +24,7 @@
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-700">معرف</label>
         <input :value="draft.referrer" type="text" placeholder="معرف"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          class="app-input"
           @input="$emit('update-field', 'referrer', $event.target.value)" />
       </div>
       <div>
@@ -39,7 +39,7 @@
     <div class="grid gap-4 xl:grid-cols-[1fr_280px] xl:items-start">
       <div>
         <textarea :value="notes" rows="7" placeholder="درباره این مشتری بنویسید..."
-          class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          class="app-input"
           @input="$emit('update:notes', $event.target.value)"></textarea>
       </div>
 

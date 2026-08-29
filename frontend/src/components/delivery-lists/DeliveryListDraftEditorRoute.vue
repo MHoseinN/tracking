@@ -36,7 +36,7 @@
             <span class="text-sm font-semibold text-slate-700">نام مشتری</span>
             <input v-model.trim="form.customerName" list="delivery-customers" type="text" maxlength="255"
               placeholder="نام مشتری را وارد یا انتخاب کنید" @input="syncCustomerId"
-              class="h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+              class="h-12 w-full rounded-lg border border-stone-300 px-4 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
             <datalist id="delivery-customers">
               <option v-for="customer in invoiceStore.customers" :key="customer.id" :value="customer.name" />
             </datalist>

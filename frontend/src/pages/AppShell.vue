@@ -10,23 +10,6 @@
       @close-mobile="mobileNavOpen = false"
     />
 
-    <header class="app-shell__header">
-      <div class="flex h-full items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:px-6">
-        <AppIconButton class="lg:hidden" label="باز کردن منوی اصلی" @click="mobileNavOpen = true">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </AppIconButton>
-        <GlobalSearch />
-        <HeaderActions />
-        <AppIconButton class="lg:hidden" label="باز کردن نوار عملیات" @click="mobileActionsOpen = true">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h10M4 17h7" />
-          </svg>
-        </AppIconButton>
-      </div>
-    </header>
-
     <button
       v-if="mobileActionsOpen"
       type="button"
@@ -52,18 +35,59 @@
             </svg>
             <span class="sr-only">بستن یا جمع کردن نوار عملیات</span>
           </button>
-          <h2 class="app-shell__label-text text-base font-black text-slate-900">عملیات این صفحه</h2>
+          <h2 class="app-shell__label-text text-base font-black text-emerald-950">عملیات این صفحه</h2>
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
-          <div id="app-shell-actions" class="app-shell__actions-content flex h-full w-full flex-col gap-2" />
+          <div id="app-shell-actions" class="app-shell__actions-content flex w-full flex-col gap-2" />
+        </div>
+
+        <div class="app-shell__actions-search app-shell__label-text">
+          <GlobalSearch />
+        </div>
+
+        <div class="app-shell__account app-shell__label-text">
+          <button type="button" class="app-shell__account-summary" @click="router.push('/profile')">
+            <span class="app-shell__account-avatar" aria-hidden="true">
+              <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0" />
+              </svg>
+            </span>
+            <span class="min-w-0 text-right">
+              <strong class="block truncate text-sm text-emerald-950">{{ displayName }}</strong>
+              <small class="text-xs text-emerald-700/70">{{ roleLabel }}</small>
+            </span>
+          </button>
+          <button type="button" class="app-shell__profile-button" @click="router.push('/profile')">پروفایل</button>
+          <button type="button" class="app-shell__logout-button" @click="handleLogout">
+            <span>خروج</span>
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+            </svg>
+          </button>
         </div>
       </div>
     </aside>
 
+    <div class="app-shell__mobile-controls lg:hidden">
+      <AppIconButton label="باز کردن منوی اصلی" @click="mobileNavOpen = true">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </AppIconButton>
+      <AppIconButton label="باز کردن نوار عملیات" @click="mobileActionsOpen = true">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 7h16M4 12h10M4 17h7" /></svg>
+      </AppIconButton>
+    </div>
+
     <main class="app-shell__main scrollbar-hide">
       <div class="app-shell__content">
         <div v-if="contentReady" class="min-w-0">
+          <section v-if="props.title" class="app-shell__page-heading">
+            <div class="app-shell__breadcrumb">مدیریت <span aria-hidden="true">‹</span> {{ props.title }}</div>
+            <h1>{{ props.title }}</h1>
+            <p v-if="props.subtitle">{{ props.subtitle }}</p>
+          </section>
           <slot />
         </div>
       </div>
@@ -75,12 +99,11 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import GlobalSearch from '../components/GlobalSearch.vue';
-import HeaderActions from '../components/HeaderActions.vue';
 import SidebarNavigation from '../components/SidebarNavigation.vue';
 import AppIconButton from '../components/ui/AppIconButton.vue';
 import { useAuthStore } from '../stores/authStore';
 
-defineProps({
+const props = defineProps({
   title: { type: String, default: '' },
   subtitle: { type: String, default: '' }
 });
@@ -112,6 +135,11 @@ const shellClassNames = computed(() => ({
   'app-shell--nav-collapsed': navCollapsed.value,
   'app-shell--actions-collapsed': actionsCollapsed.value
 }));
+const displayName = computed(() => authStore.user?.display_name
+  || [authStore.user?.first_name, authStore.user?.last_name].filter(Boolean).join(' ')
+  || authStore.user?.username
+  || 'کاربر سیستم');
+const roleLabel = computed(() => authStore.user?.role === 'MANAGER' ? 'مدیر' : 'ادمین');
 
 function toggleGroup(key) {
   openGroups.value = { ...openGroups.value, [key]: !openGroups.value[key] };
@@ -140,6 +168,11 @@ function navigateTo(path) {
   closeMobilePanels();
   if (!path || route.path === path) return;
   router.push(path);
+}
+
+async function handleLogout() {
+  authStore.logout();
+  await router.replace({ name: 'Login' });
 }
 
 onMounted(async () => {

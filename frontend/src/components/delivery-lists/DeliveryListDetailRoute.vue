@@ -3,7 +3,7 @@
     <Teleport to="#app-shell-actions">
       <button v-if="canRecordReturn" type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
         @click="showReturnModal = true">ثبت مرجوعی</button>
-      <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full bg-violet-600 hover:bg-violet-700"
+      <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full"
         :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
       <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
         :disabled="loadingSettlement" @click="openSettlement">{{ loadingSettlement ? 'در حال دریافت...' : 'مدیریت پرداخت و تسویه' }}</button>

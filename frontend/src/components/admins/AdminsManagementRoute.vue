@@ -6,8 +6,11 @@
 
     <AppTablePanel title="مدیریت ادمین‌ها">
       <template #filters>
-        <input v-model.trim="searchQuery" class="app-filter-control" type="search"
-          placeholder="نام، نام کاربری یا شماره تماس" />
+        <AppFilterBar columns-class="md:grid-cols-1">
+          <label class="app-filter-field"><span class="app-filter-label">جستجوی ادمین</span>
+            <input v-model.trim="searchQuery" class="app-filter-control" type="search"
+              placeholder="نام، نام کاربری یا شماره تماس" /></label>
+        </AppFilterBar>
       </template>
       <AppDataTable class="admins-table" :column-count="10" :loading="loading" :empty="!filteredUsers.length"
         min-width="100%" loading-message="در حال دریافت حساب‌های داخلی..."
@@ -41,7 +44,7 @@
           <td class="text-center">
             <AppStatusBadge group="active" :status="Boolean(user.is_active)" />
           </td>
-          <td class="text-center font-black text-indigo-700">{{ formatNumber(user.delivered_count) }}</td>
+          <td class="text-center font-black text-teal-700">{{ formatNumber(user.delivered_count) }}</td>
           <td class="text-center font-black text-emerald-700">{{ formatNumber(user.received_count) }}</td>
           <td>
             <div class="flex items-center justify-center gap-1">

@@ -10,41 +10,29 @@
       title="مرکز مدیریت لیست‌ها"
       :count="draftStore.loading ? null : filteredDrafts.length"
     >
-      <template #header>
-        <div class="lists-panel-heading">
-          <label class="lists-heading-search">
-            <span class="sr-only">جست‌وجوی مشتری یا شماره لیست</span>
-            <input
-              v-model.trim="searchQuery"
-              type="search"
-              placeholder="جست‌وجوی مشتری یا شماره لیست"
-              class="app-filter-control"
-            />
-          </label>
-        </div>
-      </template>
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-5">
-          <label class="space-y-1">
-            <span class="text-xs font-bold text-slate-600">تاریخ تحویل</span>
+        <AppFilterBar :expanded="filtersExpanded" collapsible columns-class="md:grid-cols-2 xl:grid-cols-3"
+          advanced-columns-class="md:grid-cols-3" @update:expanded="filtersExpanded = $event">
+          <label class="app-filter-field">
+            <span class="app-filter-label">جستجو</span>
+            <input v-model.trim="searchQuery" type="search" placeholder="مشتری یا شماره لیست" class="app-filter-control" />
+          </label>
+          <label class="app-filter-field">
+            <span class="app-filter-label">تاریخ تحویل</span>
             <JalaliDatePicker v-model="deliveryDateFilter" input-class="app-filter-control !h-11" />
           </label>
-          <label class="space-y-1">
-            <span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
+          <label class="app-filter-field">
+            <span class="app-filter-label">وضعیت لیست</span>
             <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" />
           </label>
-          <label class="space-y-1">
-            <span class="text-xs font-bold text-slate-600">وضعیت فاکتور</span>
-            <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="app-filter-control" />
-          </label>
-          <label class="space-y-1">
-            <span class="text-xs font-bold text-slate-600">وضعیت ارسال</span>
-            <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="app-filter-control" />
-          </label>
-          <label class="space-y-1">
-            <span class="text-xs font-bold text-slate-600">وضعیت تسویه</span>
-            <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="app-filter-control" />
-          </label>
+          <template #advanced>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت فاکتور</span>
+              <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="app-filter-control" /></label>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت ارسال</span>
+              <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="app-filter-control" /></label>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت تسویه</span>
+              <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="app-filter-control" /></label>
+          </template>
           <template #actions>
             <AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton>
           </template>
@@ -245,6 +233,7 @@ const toast = useToast();
 const draftStore = useDeliveryListStore();
 const tableSectionRef = ref(null);
 const searchQuery = ref('');
+const filtersExpanded = ref(false);
 const deliveryDateFilter = ref('');
 const listStatusFilter = ref('all');
 const invoiceStatusFilter = ref('all');

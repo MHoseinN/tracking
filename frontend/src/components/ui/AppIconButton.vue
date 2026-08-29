@@ -33,12 +33,12 @@ const props = defineProps({
 defineEmits(['click']);
 
 const variantClasses = {
-  primary: 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 focus-visible:ring-indigo-200',
+  primary: 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 focus-visible:ring-emerald-200',
   secondary: 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50 focus-visible:ring-slate-200',
   success: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus-visible:ring-emerald-200',
   warning: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 focus-visible:ring-amber-200',
   danger: 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus-visible:ring-rose-200',
-  info: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 focus-visible:ring-blue-200',
+  info: 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100 focus-visible:ring-teal-200',
   ghost: 'border-transparent bg-transparent text-slate-500 hover:bg-slate-100 focus-visible:ring-slate-200'
 };
 

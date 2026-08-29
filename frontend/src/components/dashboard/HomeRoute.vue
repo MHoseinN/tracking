@@ -1,9 +1,10 @@
 <template>
   <div class="space-y-6">
     <Teleport to="#app-shell-actions">
-      <div class="w-full sm:w-42">
+      <label class="app-filter-field w-full">
+        <span class="app-filter-label">سال آماری</span>
         <CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" />
-      </div>
+      </label>
       <AppButton variant="primary" block :loading="creatingList" @click="createNewList">ایجاد لیست جدید</AppButton>
       <AppButton variant="secondary" block @click="showCustomerForm = true">افزودن مشتری</AppButton>
     </Teleport>

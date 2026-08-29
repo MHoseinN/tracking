@@ -1,35 +1,25 @@
 <template>
-  <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
-    <div
-      class="flex min-h-12 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 shadow-md transition focus-within:ring-4 focus-within:ring-blue-100">
-
-      <svg v-if="searchIcon" class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor"
-        viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-      </svg>
-      <input v-if="showTextInput" :value="textModelValue" @input="$emit('update:textModelValue', $event.target.value)"
-        type="text" :placeholder="textPlaceholder"
-        class="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 " />
-
-      <button v-if="hasValue" type="button" @click="$emit('clear')"
-        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-        title="پاک کردن">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <div v-if="showTextInput" class="h-8 w-px shrink-0 bg-slate-200"></div>
-
-      <JalaliDatePicker :model-value="dateModelValue" trigger-mode="button" button-placeholder="تاریخ"
-        button-class="text-slate-600 hover:bg-slate-100" @update:modelValue="$emit('update:dateModelValue', $event)" />
-
+  <div class="app-filter-bar">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <label v-if="showTextInput" class="app-filter-field">
+        <span class="app-filter-label">جست‌وجوی مشتری</span>
+        <input :value="textModelValue" type="search" :placeholder="textPlaceholder" class="app-filter-control"
+          @input="$emit('update:textModelValue', $event.target.value)" />
+      </label>
+      <label class="app-filter-field">
+        <span class="app-filter-label">تاریخ</span>
+        <JalaliDatePicker :model-value="dateModelValue" input-class="app-filter-control !h-11"
+          @update:modelValue="$emit('update:dateModelValue', $event)" />
+      </label>
+      <label class="app-filter-field">
+        <span class="app-filter-label">وضعیت حساب</span>
+        <CustomSelect :model-value="filterModelValue" :options="filterOptions" trigger-class="app-filter-control"
+          @update:model-value="$emit('update:filterModelValue', $event)" />
+      </label>
     </div>
-
-    <CustomSelect :model-value="filterModelValue" :options="filterOptions"
-      trigger-class="h-12 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium shadow-md transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
-      @update:model-value="$emit('update:filterModelValue', $event)" />
+    <div v-if="hasValue" class="flex justify-end">
+      <button type="button" class="app-button-secondary" @click="$emit('clear')">پاک‌کردن فیلترها</button>
+    </div>
   </div>
 </template>
 

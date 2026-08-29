@@ -26,7 +26,7 @@
                 <tr>
                   <th class="w-40 border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">روش ارسال</th>
                   <td class="border border-slate-300 p-2">
-                    <select v-model="form.channel" class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500">
+                    <select v-model="form.channel" class="h-11 w-full rounded-lg border border-stone-300 px-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100">
                       <option value="EITA">ایتا</option>
                       <option value="PRINT">نسخه چاپی</option>
                       <option value="MANUAL">ارسال دستی</option>
@@ -36,19 +36,19 @@
                   <th class="w-40 border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">زمان ارسال</th>
                   <td class="border border-slate-300 p-2">
                     <input v-model="form.sent_at" type="datetime-local" required
-                      class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500" />
+                      class="h-11 w-full rounded-lg border border-stone-300 px-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
                   </td>
                 </tr>
                 <tr>
                   <th class="border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">گیرنده / شناسه</th>
                   <td class="border border-slate-300 p-2">
                     <input v-model.trim="form.recipient" type="text" maxlength="255" placeholder="اختیاری"
-                      class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500" />
+                      class="h-11 w-full rounded-lg border border-stone-300 px-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
                   </td>
                   <th class="border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">یادداشت</th>
                   <td class="border border-slate-300 p-2">
                     <input v-model.trim="form.notes" type="text" maxlength="2000" placeholder="اختیاری"
-                      class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500" />
+                      class="h-11 w-full rounded-lg border border-stone-300 px-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
                   </td>
                 </tr>
               </tbody>

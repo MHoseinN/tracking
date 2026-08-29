@@ -10,13 +10,16 @@
     <AppTablePanel title="مدیریت مشتریان"
       :count="loading ? null : sortedRows.length">
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-4">
-          <label class="space-y-1 col-span-2"><span class="text-xs font-bold text-slate-600">جست‌وجوی مشتری</span>
+        <AppFilterBar :expanded="filtersExpanded" collapsible columns-class="md:grid-cols-1"
+          advanced-columns-class="md:grid-cols-2" @update:expanded="filtersExpanded = $event">
+          <label class="app-filter-field"><span class="app-filter-label">جست‌وجوی مشتری</span>
             <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="نام مشتری یا شماره تماس" /></label>
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت حساب</span>
-            <CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="app-filter-control" /></label>
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت شماره تماس</span>
-            <CustomSelect v-model="phoneFilter" :options="phoneFilterOptions" trigger-class="app-filter-control" /></label>
+          <template #advanced>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت حساب</span>
+              <CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="app-filter-control" /></label>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت شماره تماس</span>
+              <CustomSelect v-model="phoneFilter" :options="phoneFilterOptions" trigger-class="app-filter-control" /></label>
+          </template>
         </AppFilterBar>
       </template>
       <AppDataTable class="customers-table" :column-count="8" :loading="loading" :empty="!sortedRows.length"
@@ -42,7 +45,7 @@
 
         <tr v-for="(row, index) in paginatedRows" :key="row.id" class="app-table-row">
           <td class="text-center font-bold text-slate-500">{{ formatNumber(rowStartIndex + index + 1) }}</td>
-          <td class="cursor-pointer font-black text-slate-900 hover:text-indigo-700" @click="navigateToCustomer(row.id)">
+          <td class="cursor-pointer font-black text-slate-900 hover:text-emerald-800" @click="navigateToCustomer(row.id)">
             {{ row.first_name }} {{ row.last_name }}
           </td>
           <td @click.stop>
@@ -113,6 +116,7 @@ const loading = ref(false);
 const errorMessage = ref('');
 const tableSectionRef = ref(null);
 const searchQuery = ref('');
+const filtersExpanded = ref(false);
 const statusFilter = ref('all');
 const phoneFilter = ref('all');
 const sortKey = ref('total_invoices_amount');

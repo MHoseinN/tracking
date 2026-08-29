@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+  <div class="min-h-screen bg-[#f4f1e7] flex items-center justify-center p-4">
+    <div class="bg-[#fffdf8] border border-stone-200 rounded-lg shadow-xl p-8 w-full max-w-md">
       <!-- Logo / Title -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 text-emerald-900 rounded-full mb-4">
           <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-10">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
@@ -18,7 +18,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">نام کاربری</label>
           <input v-model="form.username" type="text" placeholder="نام کاربری را وارد کنید"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-700 transition"
             :class="{ 'border-red-500': errors.username }" autocomplete="username" />
           <p v-if="errors.username" class="text-red-500 text-xs mt-1">{{ errors.username }}</p>
         </div>
@@ -27,7 +27,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">رمز عبور</label>
           <input v-model="form.password" type="password" placeholder="رمز عبور را وارد کنید"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-700 transition"
             :class="{ 'border-red-500': errors.password }" autocomplete="current-password" />
           <p v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password }}</p>
         </div>
@@ -39,7 +39,7 @@
 
         <!-- Submit button -->
         <button type="submit" :disabled="loading"
-          class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          class="w-full bg-teal-700 text-white py-3 rounded-lg font-semibold hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
           <span v-if="loading" class="flex items-center justify-center gap-2">
             <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

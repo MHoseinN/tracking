@@ -3,7 +3,7 @@
     @click="$emit('close-mobile')" />
   <aside class="app-shell__nav" :class="{ 'app-shell__nav--mobile-open': mobileOpen }">
     <div class="flex h-full flex-col px-3">
-      <div class="py-6">
+      <div class="border-b border-white/10 py-6">
         <div class="flex items-center gap-3">
           <button type="button" class="app-shell__toggle" @click="$emit('toggle-sidebar', 'nav')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -13,8 +13,8 @@
             </svg>
           </button>
           <div class="min-w-0 app-shell__label-block">
-            <p class="text-sm font-bold text-gray-500">مدیریت</p>
-            <h1 class="truncate text-xl font-black text-slate-900">موسسه الهدی</h1>
+            <h1 class="truncate text-lg font-black text-white">موسسه الهدی</h1>
+            <p class="mt-1 truncate text-[11px] font-medium text-emerald-100/70">مدیریت هوشمند اجاره‌ها</p>
           </div>
         </div>
       </div>
@@ -23,7 +23,7 @@
         <div v-for="group in navGroups" :key="group.key" class="py-1 last-0">
           <button v-if="!group.items?.length" type="button"
             class="flex w-full rounded-lg text-right transition app-shell__menu-button px-4"
-            :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
+            :class="isGroupActive(group) ? 'app-shell__menu-button--active' : ''"
             :aria-current="isGroupActive(group) ? 'page' : undefined" @click="$emit('navigate', group.to)">
             <span class="flex items-center justify-center gap-2 min-w-0"><span class="app-shell__menu-icon"><svg
                   class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +35,7 @@
           <template v-else>
             <button type="button"
               class="flex w-full items-center justify-between rounded-lg text-right transition app-shell__menu-button px-4"
-              :class="isGroupActive(group) ? 'app-shell__menu-button--active text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
+              :class="isGroupActive(group) ? 'app-shell__menu-button--active' : ''"
               @click="$emit('toggle-group', group.key)">
               <span class="flex items-center gap-2 min-w-0"><span class="app-shell__menu-icon"><svg class="h-5 w-5"
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +53,7 @@
             <div v-if="openGroups[group.key]" class="mr-10 py-1 app-shell__submenu">
               <button v-for="item in group.items" :key="item.key" type="button"
                 class="flex w-full px-6 items-center justify-between rounded-lg text-right text-sm transition app-shell__menu-button"
-                :class="isActiveRoute(item) ? 'app-shell__menu-button--subactive font-bold text-indigo-700' : 'bg-white text-zinc-700 hover:bg-slate-50 hover:text-indigo-700'"
+                :class="isActiveRoute(item) ? 'app-shell__menu-button--subactive font-bold' : ''"
                 @click="$emit('navigate', item.to)"><span class="flex items-center gap-2 min-w-0"><span
                     class="truncate app-shell__label-text">{{ item.label }}</span></span></button>
             </div>

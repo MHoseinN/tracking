@@ -21,7 +21,7 @@
               :class="optionClasses(option)" @click="selectOption(option)">
               <span class="truncate">{{ option.label }}</span>
               <span v-if="isSelected(option)"
-                class="inline-flex h-5 w-5 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                class="inline-flex h-5 w-5 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
@@ -81,10 +81,10 @@ function isSelected(option) {
 
 function optionClasses(option) {
   if (isSelected(option)) {
-    return 'bg-indigo-50 text-slate-900 shadow-sm ring-1 ring-indigo-200';
+    return 'bg-emerald-50 text-slate-900 shadow-sm ring-1 ring-emerald-200';
   }
 
-  return 'text-slate-600 hover:bg-indigo-50 hover:text-slate-900';
+  return 'text-slate-600 hover:bg-emerald-50 hover:text-slate-900';
 }
 
 function closeDropdown() {

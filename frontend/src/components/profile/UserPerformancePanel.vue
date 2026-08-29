@@ -7,40 +7,41 @@
         <div class="inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-1">
           <button v-for="option in viewOptions" :key="option.value" type="button"
             class="rounded-md px-4 py-2 text-sm font-bold transition"
-            :class="viewMode === option.value ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800'"
+            :class="viewMode === option.value ? 'bg-white text-emerald-800 shadow-sm ring-1 ring-stone-200' : 'text-slate-500 hover:text-emerald-900'"
             @click="viewMode = option.value">{{ option.label }}</button>
         </div>
 
-        <label v-if="viewMode === 'overview'" class="performance-filter-field">
+        <label v-if="viewMode === 'overview'" class="performance-filter-field app-filter-field">
+          <span class="app-filter-label">سال آماری</span>
           <CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" />
         </label>
 
         <template v-else>
-          <label class="performance-filter-field performance-filter-field--wide"><span
-              class="text-xs font-bold text-slate-600">نوع بازه</span>
+          <label class="performance-filter-field performance-filter-field--wide app-filter-field"><span
+              class="app-filter-label">نوع بازه</span>
             <CustomSelect v-model="filters.mode" :options="modeOptions" trigger-class="app-filter-control" />
           </label>
-          <label v-if="filters.mode === 'day'" class="performance-filter-field">
-            <span class="text-xs font-bold text-slate-600">تاریخ</span>
+          <label v-if="filters.mode === 'day'" class="performance-filter-field app-filter-field">
+            <span class="app-filter-label">تاریخ</span>
             <JalaliDatePicker v-model="filters.day" input-class="app-filter-control !h-11" />
           </label>
           <template v-if="filters.mode === 'month'">
-            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">ماه</span>
+            <label class="performance-filter-field app-filter-field"><span class="app-filter-label">ماه</span>
               <CustomSelect v-model="filters.month" :options="monthOptions" trigger-class="app-filter-control" />
             </label>
-            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">سال ماه</span>
+            <label class="performance-filter-field app-filter-field"><span class="app-filter-label">سال ماه</span>
               <CustomSelect v-model="filters.monthYear" :options="yearOptions" trigger-class="app-filter-control" />
             </label>
           </template>
-          <label v-if="filters.mode === 'year'" class="performance-filter-field"><span
-              class="text-xs font-bold text-slate-600">سال</span>
+          <label v-if="filters.mode === 'year'" class="performance-filter-field app-filter-field"><span
+              class="app-filter-label">سال</span>
             <CustomSelect v-model="filters.year" :options="yearFilterOptions" trigger-class="app-filter-control" />
           </label>
           <template v-if="filters.mode === 'range'">
-            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">از تاریخ</span>
+            <label class="performance-filter-field app-filter-field"><span class="app-filter-label">از تاریخ</span>
               <JalaliDatePicker v-model="filters.from" input-class="app-filter-control !h-11" />
             </label>
-            <label class="performance-filter-field"><span class="text-xs font-bold text-slate-600">تا تاریخ</span>
+            <label class="performance-filter-field app-filter-field"><span class="app-filter-label">تا تاریخ</span>
               <JalaliDatePicker v-model="filters.to" input-class="app-filter-control !h-11" />
             </label>
           </template>
@@ -63,7 +64,7 @@
       </template>
       <tr v-for="row in tableRows" :key="row.key" class="app-table-row">
         <td class="font-black text-slate-800">{{ rowLabel(row) }}</td>
-        <td class="text-center font-black text-indigo-700">{{ formatNumber(row.delivered) }}</td>
+        <td class="text-center font-black text-teal-700">{{ formatNumber(row.delivered) }}</td>
         <td class="text-center font-black text-emerald-700">{{ formatNumber(row.received) }}</td>
       </tr>
     </AppDataTable>
@@ -188,11 +189,25 @@ function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleStr
 }
 
 .performance-filter-field {
+  position: relative;
   display: flex;
   width: 11rem;
   flex: 0 0 11rem;
   flex-direction: column;
-  gap: .25rem;
+  padding-top: .4rem;
+}
+
+.performance-filter-field > .app-filter-label {
+  position: absolute;
+  top: 0;
+  right: .8rem;
+  z-index: 2;
+  background: white;
+  padding: 0 .35rem;
+  color: #475569;
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: .85rem;
 }
 
 .performance-filter-field--wide {

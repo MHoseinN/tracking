@@ -2,10 +2,12 @@
   <AppTablePanel :title="`محصولات ${categoryName || 'همه دسته‌ها'}`">
     <template #filters>
       <AppFilterBar columns-class="md:grid-cols-2">
-        <input :value="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی محصول یا دسته‌بندی"
-          @input="$emit('update:search-query', $event.target.value)" />
-        <CustomSelect :model-value="selectedCategoryId || ''" :options="categoryOptions"
-          trigger-class="app-filter-control" @update:model-value="$emit('update:selected-category-id', $event)" />
+        <label class="app-filter-field"><span class="app-filter-label">جستجوی محصول</span>
+          <input :value="searchQuery" class="app-filter-control" type="search" placeholder="نام محصول یا دسته‌بندی"
+            @input="$emit('update:search-query', $event.target.value)" /></label>
+        <label class="app-filter-field"><span class="app-filter-label">دسته‌بندی</span>
+          <CustomSelect :model-value="selectedCategoryId || ''" :options="categoryOptions"
+            trigger-class="app-filter-control" @update:model-value="$emit('update:selected-category-id', $event)" /></label>
         <template #actions>
           <AppButton variant="secondary" @click="$emit('clear-filters')">پاک‌کردن فیلترها</AppButton>
         </template>

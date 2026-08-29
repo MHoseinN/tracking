@@ -29,7 +29,7 @@
                   @keydown.down.prevent="focusNext()" @keydown.up.prevent="focusPrev()"
                   @keydown.enter.prevent="handleCustomerEnter()" @blur="onBlur" type="text"
                   placeholder="جستجو یا انتخاب مشتری"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-700"
                   :class="{ 'border-red-500': errors.customer_id }" />
 
                 <button v-if="form.customer_id" type="button" @click="clearCustomer"
@@ -67,7 +67,7 @@
               قیمت (تومان) <span class="text-red-500">*</span>
             </label>
             <input v-model.number="form.price" type="number" min="0" step="1000" placeholder="مبلغ به تومان"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-700"
               :class="{ 'border-red-500': errors.price }" dir="ltr" />
             <p v-if="formattedPrice" class="text-sm text-left text-gray-500 mt-1">{{ formattedPrice }}</p>
             <p v-if="errors.price" class="text-red-500 text-xs mt-1">{{ errors.price }}</p>
@@ -76,7 +76,7 @@
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">توضیحات فاکتور</label>
             <textarea v-model="form.notes" rows="4" placeholder="توضیح یا یادداشت مرتبط با این فاکتور..."
-              class="w-full rounded-lg max-h-36 border overflow-scroll border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+              class="w-full rounded-lg max-h-36 border overflow-scroll border-stone-300 px-3 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-700"></textarea>
           </div>
 
           <!-- Buttons -->
