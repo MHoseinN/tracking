@@ -14,7 +14,7 @@
           </button>
           <div class="min-w-0 app-shell__label-block">
             <h1 class="truncate text-lg font-black text-white">موسسه الهدی</h1>
-            <p class="mt-1 truncate text-[11px] font-medium text-emerald-100/70">مدیریت هوشمند اجاره‌ها</p>
+            <p class="mt-1 truncate text-[11px] font-medium text-emerald-100/70">مدیریت لیست‌ها</p>
           </div>
         </div>
       </div>

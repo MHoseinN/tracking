@@ -1,7 +1,7 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block @click="router.push('/lists')">رفتن به مدیریت لیست‌ها</AppButton>
+      <AppButton variant="primary" block @click="router.push('/lists')">رفتن به  لیست‌ها</AppButton>
       <AppButton variant="info" block @click="exportInvoices">
         گزارش‌گیری
         <template #trailing><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,7 +12,7 @@
     </Teleport>
     <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900">
       این صفحه فقط برای مشاهده و ویرایش حساب‌های مستقل نسخه قبلی نگه داشته شده است. حساب‌ها و فاکتورهای جدید از مسیر
-      <button type="button" class="font-black text-indigo-700 hover:underline" @click="router.push('/lists')">مدیریت لیست‌ها</button>
+      <button type="button" class="font-black text-indigo-700 hover:underline" @click="router.push('/lists')"> لیست‌ها</button>
       ایجاد می‌شوند.
     </div>
     <!-- Invoice table -->

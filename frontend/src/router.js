@@ -47,7 +47,7 @@ const routes = [
     component: () => import('./components/reports/ReportsRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'گزارش‌ها و آمار',
+      title: 'آمار',
       subtitle: 'مرور روند درآمد، فاکتورها و عملکرد مشتریان'
     }
   },
@@ -87,7 +87,7 @@ const routes = [
     component: () => import('./components/delivery-lists/DeliveryListDraftsRoute.vue'),
     meta: {
       requiresAuth: true,
-      title: 'مدیریت لیست‌ها',
+      title: ' لیست‌ها',
       subtitle: 'پیگیری یکپارچه پیش‌نویس، تحویل، برگشت، فاکتور و تسویه'
     }
   },

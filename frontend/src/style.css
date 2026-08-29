@@ -215,18 +215,21 @@ body {
   @apply space-y-5 p-3 lg:p-4 xl:p-5;
 }
 
-.app-shell__page-heading {
-  margin-bottom: 1rem;
-  border: 1px solid #e4ddcd;
-  border-radius: .75rem;
-  background: rgb(255 255 255 / .88);
-  padding: 1rem 1.25rem;
-  box-shadow: 0 8px 24px rgb(2 44 34 / .035);
+.app-shell__breadcrumb {
+  display:flex;
+  min-height:1.75rem;
+  align-items:center;
+  gap:.4rem;
+  margin-bottom:.65rem;
+  padding:0 .2rem;
+  color:#7b897f;
+  font-size:.72rem;
+  font-weight:700;
 }
-
-.app-shell__page-heading h1 { margin-top:.2rem; color:#17352c; font-size:1.45rem; font-weight:900; line-height:1.7; }
-.app-shell__page-heading p { margin-top:.1rem; color:#64748b; font-size:.78rem; line-height:1.7; }
-.app-shell__breadcrumb { color:#7b897f; font-size:.68rem; font-weight:700; }
+.app-shell__breadcrumb-link { border:0; background:transparent; color:#64786e; transition:color .15s; }
+.app-shell__breadcrumb-link:hover { color:#0f766e; text-decoration:underline; text-underline-offset:3px; }
+.app-shell__breadcrumb-link--current { color:#17352c; font-weight:900; }
+.app-shell__breadcrumb-separator { color:#a7b0aa; }
 
 .app-shell__toggle {
   @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition duration-200;
@@ -322,7 +325,7 @@ body {
   color: #fff;
 }
 
-.app-shell__actions-search { border-top:1px solid #e7dfcb; padding-top:.8rem; }
+.app-shell__actions-search { border-bottom:1px solid #e7dfcb; padding:.15rem 0 .85rem; }
 .app-shell__account { display:flex; flex-direction:column; gap:.55rem; border-top:1px solid #e7dfcb; padding-top:.85rem; }
 .app-shell__account-summary { display:flex; width:100%; align-items:center; gap:.7rem; border-radius:.65rem; padding:.4rem; transition:.2s; }
 .app-shell__account-summary:hover { background:#f4eedf; }

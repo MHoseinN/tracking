@@ -83,7 +83,7 @@
                 <h2 class="text-lg font-black text-slate-900">آخرین تسویه‌ها و پرداخت‌ها</h2>
                 <span class="app-table-panel__count">{{ formatNumber(recentPayments.length) }} ردیف</span>
               </div>
-              <AppButton size="sm" variant="secondary" @click="router.push('/lists')">پیگیری در مدیریت لیست‌ها</AppButton>
+              <AppButton size="sm" variant="secondary" @click="router.push('/lists')">پیگیری در  لیست‌ها</AppButton>
             </div>
           </template>
           <AppDataTable class="home-table" :column-count="5" :empty="!recentPayments.length" min-width="100%"

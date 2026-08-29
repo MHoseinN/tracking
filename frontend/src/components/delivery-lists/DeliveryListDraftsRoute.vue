@@ -7,7 +7,7 @@
     </Teleport>
 
     <AppTablePanel
-      title="مرکز مدیریت لیست‌ها"
+      title="مرکز  لیست‌ها"
       :count="draftStore.loading ? null : filteredDrafts.length"
     >
       <template #filters>

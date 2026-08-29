@@ -4,7 +4,6 @@
     <AppShell
       v-else-if="currentRoute.meta.requiresAuth && authStore.isAuthenticated"
       :title="currentRoute.meta.title || ''"
-      :subtitle="currentRoute.meta.subtitle || ''"
     >
       <component :is="Component" :key="currentRoute.fullPath" />
     </AppShell>

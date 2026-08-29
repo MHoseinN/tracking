@@ -65,8 +65,8 @@ const dataInitialized = ref(false);
 
 const routeItems = [
   { key: 'route-home', type: 'route', label: 'خانه', meta: 'نمای کلی سیستم', badge: 'صفحه', to: '/home' },
-  { key: 'route-lists', type: 'route', label: 'مدیریت لیست‌ها', meta: 'تحویل، برگشت، فاکتور و تسویه', badge: 'صفحه', to: '/lists' },
-  { key: 'route-reports', type: 'route', label: 'گزارش‌ها و آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
+  { key: 'route-lists', type: 'route', label: ' لیست‌ها', meta: 'تحویل، برگشت، فاکتور و تسویه', badge: 'صفحه', to: '/lists' },
+  { key: 'route-reports', type: 'route', label: 'آمار', meta: 'تحلیل درآمد و فاکتورها', badge: 'صفحه', to: '/reports' },
   { key: 'route-users', type: 'route', label: 'مشتریان', meta: 'فهرست و اطلاعات مشتریان', badge: 'صفحه', to: '/users' },
   { key: 'route-products', type: 'route', label: 'محصولات', meta: 'دسته‌بندی، قیمت و وضعیت محصولات', badge: 'صفحه', to: '/products' }
 ];
