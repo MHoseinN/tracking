@@ -24,7 +24,11 @@
         </div>
       </template>
       <template #filters>
-        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-4">
+        <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-5">
+          <label class="space-y-1">
+            <span class="text-xs font-bold text-slate-600">تاریخ تحویل</span>
+            <JalaliDatePicker v-model="deliveryDateFilter" input-class="app-filter-control !h-11" />
+          </label>
           <label class="space-y-1">
             <span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
             <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" />
@@ -217,6 +221,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomSelect from '../CustomSelect.vue';
+import JalaliDatePicker from '../JalaliDatePicker.vue';
 import AppPagination from '../AppPagination.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
@@ -240,6 +245,7 @@ const toast = useToast();
 const draftStore = useDeliveryListStore();
 const tableSectionRef = ref(null);
 const searchQuery = ref('');
+const deliveryDateFilter = ref('');
 const listStatusFilter = ref('all');
 const invoiceStatusFilter = ref('all');
 const sendStatusFilter = ref('all');
@@ -284,12 +290,13 @@ const filteredDrafts = computed(() => {
     const matchesInvoiceStatus = invoiceStatusFilter.value === 'all' || draft.invoice_status === invoiceStatusFilter.value;
     const matchesSendStatus = sendStatusFilter.value === 'all' || draft.invoice_send_status === sendStatusFilter.value;
     const matchesSettlementStatus = settlementStatusFilter.value === 'all' || draft.settlement_status === settlementStatusFilter.value;
+    const matchesDeliveryDate = !deliveryDateFilter.value || formatDate(draft.delivered_at) === deliveryDateFilter.value;
     const matchesQuery = !query
       || String(draft.customer_name || '').toLowerCase().includes(query)
       || String(draft.created_by_name || '').toLowerCase().includes(query)
       || String(draft.delivered_by_name || '').toLowerCase().includes(query)
       || String(draft.list_number || '').toLowerCase().includes(query);
-    return matchesListStatus && matchesInvoiceStatus && matchesSendStatus && matchesSettlementStatus && matchesQuery;
+    return matchesListStatus && matchesInvoiceStatus && matchesSendStatus && matchesSettlementStatus && matchesDeliveryDate && matchesQuery;
   });
 });
 
@@ -307,7 +314,7 @@ const {
 } = usePaginatedList(filteredDrafts, {
   initialPageSize: 15,
   pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, listStatusFilter, invoiceStatusFilter, sendStatusFilter, settlementStatusFilter],
+  resetSources: [searchQuery, deliveryDateFilter, listStatusFilter, invoiceStatusFilter, sendStatusFilter, settlementStatusFilter],
   scrollTarget: tableSectionRef
 });
 
@@ -335,6 +342,7 @@ async function syncLists() {
 
 function clearFilters() {
   searchQuery.value = '';
+  deliveryDateFilter.value = '';
   listStatusFilter.value = 'all';
   invoiceStatusFilter.value = 'all';
   sendStatusFilter.value = 'all';

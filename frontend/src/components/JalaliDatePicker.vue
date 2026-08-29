@@ -14,7 +14,9 @@
       </svg>
     </button>
 
-    <div v-if="show" class="fixed z-50 mx-auto bg-white mt-1 rounded-md border border-gray-300 shadow-lg p-2 w-64">
+    <Teleport to="body">
+    <div v-if="show" ref="calendarPanel" class="fixed w-64 overflow-y-auto rounded-md border border-gray-300 bg-white p-2 shadow-lg"
+      :style="calendarStyle">
       <div class="flex items-center justify-between">
         <button type="button" @click="prevMonth"
           class="rounded-full flex items-center text-3xl w-8 h-8 justify-center hover:bg-gray-200 font-extrabold transition">‹</button>
@@ -42,11 +44,12 @@
           class="bg-rose-500 rounded-lg text-sm px-4 py-1 hover:bg-rose-600 text-white">لغو</button>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import PersianDate from 'persian-date';
 import { formatYear, PERSIAN_MONTHS } from '../utils/dateConverter';
 
@@ -67,6 +70,8 @@ const currentMonth = ref(null);
 const selectedDay = ref(null);
 const displayValue = ref('');
 const pickerRoot = ref(null);
+const calendarPanel = ref(null);
+const calendarStyle = ref({ top: '0px', left: '0px', zIndex: 220, maxHeight: 'calc(100vh - 16px)' });
 
 const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
@@ -116,6 +121,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleClickOutside);
+  removePositionListeners();
+});
+
+watch(show, async (open) => {
+  if (!open) return removePositionListeners();
+  addPositionListeners();
+  await nextTick();
+  updateCalendarPosition();
 });
 
 const monthLabel = computed(() => PERSIAN_MONTHS[currentMonth.value - 1] || '');
@@ -161,9 +174,39 @@ function handleClickOutside(event) {
   if (!show.value) return;
   if (!pickerRoot.value) return;
 
-  if (!pickerRoot.value.contains(event.target)) {
+  if (!pickerRoot.value.contains(event.target) && !calendarPanel.value?.contains(event.target)) {
     closeCalendar();
   }
+}
+
+function addPositionListeners() {
+  window.addEventListener('resize', updateCalendarPosition);
+  window.addEventListener('scroll', updateCalendarPosition, true);
+}
+
+function removePositionListeners() {
+  window.removeEventListener('resize', updateCalendarPosition);
+  window.removeEventListener('scroll', updateCalendarPosition, true);
+}
+
+function updateCalendarPosition() {
+  if (!show.value || !pickerRoot.value) return;
+  const triggerRect = pickerRoot.value.getBoundingClientRect();
+  const panelWidth = calendarPanel.value?.offsetWidth || 256;
+  const panelHeight = calendarPanel.value?.offsetHeight || 342;
+  const viewportPadding = 8;
+  const gap = 6;
+  const spaceBelow = window.innerHeight - triggerRect.bottom - viewportPadding;
+  const spaceAbove = triggerRect.top - viewportPadding;
+  let top = triggerRect.bottom + gap;
+  if (spaceBelow < panelHeight + gap && spaceAbove > spaceBelow) top = triggerRect.top - panelHeight - gap;
+  top = Math.max(viewportPadding, Math.min(top, window.innerHeight - panelHeight - viewportPadding));
+  let left = triggerRect.right - panelWidth;
+  left = Math.max(viewportPadding, Math.min(left, window.innerWidth - panelWidth - viewportPadding));
+  calendarStyle.value = {
+    top: `${Math.round(top)}px`, left: `${Math.round(left)}px`, zIndex: 220,
+    maxHeight: `calc(100vh - ${viewportPadding * 2}px)`
+  };
 }
 
 function prevMonth() {
