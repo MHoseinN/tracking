@@ -1,30 +1,16 @@
 <template>
   <div class="app-shell" :class="shellClassNames">
-    <SidebarNavigation
-      :nav-groups="navGroups"
-      :open-groups="openGroups"
-      :mobile-open="mobileNavOpen"
-      @toggle-sidebar="toggleSidebar"
-      @toggle-group="toggleGroup"
-      @navigate="navigateTo"
-      @close-mobile="mobileNavOpen = false"
-    />
+    <SidebarNavigation :nav-groups="navGroups" :open-groups="openGroups" :mobile-open="mobileNavOpen"
+      @toggle-sidebar="toggleSidebar" @toggle-group="toggleGroup" @navigate="navigateTo"
+      @close-mobile="mobileNavOpen = false" />
 
-    <button
-      v-if="mobileActionsOpen"
-      type="button"
-      class="app-shell__backdrop lg:hidden"
-      aria-label="بستن نوار عملیات"
-      @click="mobileActionsOpen = false"
-    />
+    <button v-if="mobileActionsOpen" type="button" class="app-shell__backdrop lg:hidden" aria-label="بستن نوار عملیات"
+      @click="mobileActionsOpen = false" />
 
-    <aside
-      class="app-shell__actions"
-      :class="{
-        'app-shell__actions--collapsed': actionsCollapsed,
-        'app-shell__actions--mobile-open': mobileActionsOpen
-      }"
-    >
+    <aside class="app-shell__actions" :class="{
+      'app-shell__actions--collapsed': actionsCollapsed,
+      'app-shell__actions--mobile-open': mobileActionsOpen
+    }">
       <div class="flex h-full flex-col gap-3" :class="actionsCollapsed ? 'justify-start py-3' : 'p-4'">
         <div class="app-shell__actions-header flex items-center gap-3 px-2">
           <button type="button" class="app-shell__toggle" @click="toggleSidebar('actions')">
@@ -35,7 +21,7 @@
             </svg>
             <span class="sr-only">بستن یا جمع کردن نوار عملیات</span>
           </button>
-          <h2 class="app-shell__label-text text-base font-black text-emerald-950">عملیات این صفحه</h2>
+          <h2 class="app-shell__label-text text-sm font-black text-emerald-950">عملیات این صفحه</h2>
         </div>
 
         <div class="app-shell__actions-search app-shell__label-text">
@@ -73,10 +59,14 @@
 
     <div class="app-shell__mobile-controls lg:hidden">
       <AppIconButton label="باز کردن منوی اصلی" @click="mobileNavOpen = true">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </AppIconButton>
       <AppIconButton label="باز کردن نوار عملیات" @click="mobileActionsOpen = true">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 7h16M4 12h10M4 17h7" /></svg>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-width="2" d="M4 7h16M4 12h10M4 17h7" />
+        </svg>
       </AppIconButton>
     </div>
 
@@ -88,8 +78,8 @@
               <span v-if="index" class="app-shell__breadcrumb-separator" aria-hidden="true">‹</span>
               <button type="button" class="app-shell__breadcrumb-link"
                 :class="{ 'app-shell__breadcrumb-link--current': index === breadcrumbs.length - 1 }"
-                :aria-current="index === breadcrumbs.length - 1 ? 'page' : undefined"
-                @click="navigateTo(item.to)">{{ item.label }}</button>
+                :aria-current="index === breadcrumbs.length - 1 ? 'page' : undefined" @click="navigateTo(item.to)">{{
+                  item.label }}</button>
             </template>
           </nav>
           <slot />

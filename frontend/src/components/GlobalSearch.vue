@@ -4,8 +4,7 @@
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
         d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z" />
     </svg>
-    <span>جستجوی سراسری</span>
-    <kbd>Ctrl K</kbd>
+    <span title="Ctrl + K">جستجوی سراسری</span>
   </button>
 
   <Teleport to="body">
@@ -16,19 +15,22 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z" />
           </svg>
-          <input ref="searchInput" v-model.trim="query" type="search"
-            placeholder="جستجو در مشتری، لیست یا محصول..." @keydown.esc="closeResults" />
+          <input ref="searchInput" v-model.trim="query" type="search" placeholder="جستجو در مشتری، لیست یا محصول..."
+            @keydown.esc="closeResults" />
           <kbd>Esc</kbd>
         </div>
 
         <div class="global-search-results">
           <div v-if="loading" class="px-4 py-8 text-center text-sm text-slate-500">در حال آماده‌سازی نتایج...</div>
-          <div v-else-if="!query" class="px-4 py-8 text-center text-sm text-slate-500">برای شروع جستجو، نام مشتری، شماره لیست یا محصول را بنویسید.</div>
-          <div v-else-if="sections.length === 0" class="px-4 py-8 text-center text-sm text-slate-500">نتیجه‌ای پیدا نشد.</div>
+          <div v-else-if="!query" class="px-4 py-8 text-center text-sm text-slate-500">برای شروع جستجو، نام مشتری، شماره
+            لیست یا محصول را بنویسید.</div>
+          <div v-else-if="sections.length === 0" class="px-4 py-8 text-center text-sm text-slate-500">نتیجه‌ای پیدا نشد.
+          </div>
           <div v-else class="max-h-[60vh] overflow-y-auto p-3">
             <div v-for="section in sections" :key="section.title" class="mb-3 last:mb-0">
               <p class="mb-2 px-2 text-xs font-bold text-emerald-800/70">{{ section.title }}</p>
-              <button v-for="item in section.items" :key="item.key" type="button" class="global-search-result" @click="selectItem(item)">
+              <button v-for="item in section.items" :key="item.key" type="button" class="global-search-result"
+                @click="selectItem(item)">
                 <div class="min-w-0">
                   <p class="truncate text-sm font-semibold text-slate-800">{{ item.label }}</p>
                   <p v-if="item.meta" class="mt-1 truncate text-xs text-slate-500">{{ item.meta }}</p>
@@ -77,13 +79,13 @@ const sections = computed(() => {
   const routes = routeItems.filter((item) => item.label.toLowerCase().includes(normalizedQuery) || item.meta.toLowerCase().includes(normalizedQuery));
   const lists = (deliveryListStore.lists || []).filter((list) => [list.list_number, list.customer_name]
     .some((value) => String(value || '').toLowerCase().includes(normalizedQuery))).slice(0, 6).map((list) => ({
-    key: `list-${list.id}`, type: 'route', label: list.list_number || `لیست ${list.id}`,
-    meta: list.customer_name || 'بدون نام مشتری', badge: 'لیست', to: `/lists/${list.id}`
-  }));
+      key: `list-${list.id}`, type: 'route', label: list.list_number || `لیست ${list.id}`,
+      meta: list.customer_name || 'بدون نام مشتری', badge: 'لیست', to: `/lists/${list.id}`
+    }));
   const customers = (invoiceStore.customers || []).filter((customer) => [customer.name, customer.phone]
     .some((value) => String(value || '').toLowerCase().includes(normalizedQuery))).slice(0, 6).map((customer) => ({
-    key: `customer-${customer.id}`, type: 'customer', label: customer.name, meta: 'باز کردن صفحه اختصاصی مشتری', badge: 'مشتری', id: customer.id
-  }));
+      key: `customer-${customer.id}`, type: 'customer', label: customer.name, meta: 'باز کردن صفحه اختصاصی مشتری', badge: 'مشتری', id: customer.id
+    }));
   const products = (productCatalogStore.products || []).filter((product) => String(product.name || '').toLowerCase().includes(normalizedQuery) || String(product.category_name || '').toLowerCase().includes(normalizedQuery)).slice(0, 6).map((product) => ({
     key: `product-${product.id}`, type: 'product', label: product.name, meta: product.category_name || 'بدون دسته‌بندی', badge: 'محصول', to: '/products'
   }));
@@ -129,15 +131,102 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut));
 </script>
 
 <style scoped>
-.global-search-trigger { display:flex; width:100%; height:3rem; align-items:center; justify-content:center; gap:.55rem; border-radius:.65rem; background:#0f766e; padding:0 .75rem; color:white; font-size:.78rem; font-weight:800; box-shadow:0 8px 20px rgb(15 118 110 / .18); transition:.2s; }
-.global-search-trigger:hover { background:#115e59; }
-.global-search-trigger kbd { margin-right:auto; border-radius:.35rem; background:rgb(255 255 255 / .16); padding:.2rem .4rem; font-size:.65rem; direction:ltr; }
-.global-search-backdrop { position:fixed; inset:0; z-index:210; display:flex; align-items:flex-start; justify-content:center; background:rgb(2 44 34 / .42); padding:12vh 1rem 1rem; backdrop-filter:blur(3px); }
-.global-search-dialog { width:min(42rem, 100%); overflow:hidden; border:1px solid #a7c7b7; border-radius:.85rem; background:white; box-shadow:0 30px 80px rgb(2 44 34 / .3); }
-.global-search-input-wrap { display:flex; height:4rem; align-items:center; gap:.75rem; border-bottom:1px solid #d6e3dc; padding:0 1rem; }
-.global-search-input-wrap input { min-width:0; flex:1; background:transparent; color:#1e293b; outline:none; }
-.global-search-input-wrap kbd { border:1px solid #d6e3dc; border-radius:.35rem; background:#f7faf8; padding:.2rem .45rem; color:#64748b; font-size:.65rem; }
-.global-search-results { min-height:8rem; background:#fff; }
-.global-search-result { display:flex; width:100%; align-items:center; justify-content:space-between; gap:.75rem; border-radius:.55rem; padding:.7rem .75rem; text-align:right; transition:.15s; }
-.global-search-result:hover { background:#f0f7f3; }
+.global-search-trigger {
+  display: flex;
+  width: 100%;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  border-radius: .65rem;
+  border: 1px solid rgb(203, 203, 203);
+  background: #f4eedf;
+  padding: 0 .75rem;
+  color: black;
+  font-size: .78rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgb(15 118 110 / .18);
+  transition: .2s;
+}
+
+.global-search-trigger:hover {
+  background: #fff5e0;
+}
+
+.global-search-trigger kbd {
+  margin-right: auto;
+  border-radius: .35rem;
+  background: rgb(255 255 255 / .16);
+  padding: .2rem .4rem;
+  font-size: .65rem;
+  direction: ltr;
+}
+
+.global-search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: rgb(2 44 34 / .42);
+  padding: 12vh 1rem 1rem;
+  backdrop-filter: blur(3px);
+}
+
+.global-search-dialog {
+  width: min(42rem, 100%);
+  overflow: hidden;
+  border: 1px solid #a7c7b7;
+  border-radius: .85rem;
+  background: white;
+  box-shadow: 0 30px 80px rgb(2 44 34 / .3);
+}
+
+.global-search-input-wrap {
+  display: flex;
+  height: 4rem;
+  align-items: center;
+  gap: .75rem;
+  border-bottom: 1px solid #d6e3dc;
+  padding: 0 1rem;
+}
+
+.global-search-input-wrap input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  color: #1e293b;
+  outline: none;
+}
+
+.global-search-input-wrap kbd {
+  border: 1px solid #d6e3dc;
+  border-radius: .35rem;
+  background: #f7faf8;
+  padding: .2rem .45rem;
+  color: #64748b;
+  font-size: .65rem;
+}
+
+.global-search-results {
+  min-height: 8rem;
+  background: #fff;
+}
+
+.global-search-result {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  border-radius: .55rem;
+  padding: .7rem .75rem;
+  text-align: right;
+  transition: .15s;
+}
+
+.global-search-result:hover {
+  background: #f0f7f3;
+}
 </style>

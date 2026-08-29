@@ -1,8 +1,11 @@
-
 import { defineStore } from "pinia";
-import { getCurrentUser, login as loginRequest, updateProfile as updateProfileRequest } from '../modules/auth/api/auth.service';
-import { getApiErrorMessage } from '../utils/apiError';
-import { cancelPendingRequests } from '../utils/api';
+import {
+  getCurrentUser,
+  login as loginRequest,
+  updateProfile as updateProfileRequest,
+} from "../modules/auth/api/auth.service";
+import { getApiErrorMessage } from "../utils/apiError";
+import { cancelPendingRequests } from "../utils/api";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -34,7 +37,7 @@ export const useAuthStore = defineStore("auth", {
 
         return { success: true };
       } catch (err) {
-        const message = getApiErrorMessage(err, 'خطا در ورود به سیستم');
+        const message = getApiErrorMessage(err, "خطا در ورود به سیستم");
         this.error = message;
         return { success: false, message };
       } finally {
@@ -88,11 +91,14 @@ export const useAuthStore = defineStore("auth", {
       try {
         const response = await updateProfileRequest(payload);
         this.user = response.data.user;
-        localStorage.setItem('user', JSON.stringify(this.user));
+        localStorage.setItem("user", JSON.stringify(this.user));
         return { success: true, data: response.data };
       } catch (error) {
-        return { success: false, message: getApiErrorMessage(error, 'ذخیره پروفایل با خطا مواجه شد') };
+        return {
+          success: false,
+          message: getApiErrorMessage(error, "ذخیره پروفایل با خطا مواجه شد"),
+        };
       }
-    }
+    },
   },
 });

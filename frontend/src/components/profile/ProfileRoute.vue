@@ -14,20 +14,23 @@
 
         <form class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5" @submit.prevent="saveProfile">
           <AppFormField for-id="profile-first-name" label="نام" required>
-            <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.first_name" maxlength="50" class="app-input h-12" /></template>
+            <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.first_name" maxlength="50"
+                class="app-input h-12" /></template>
           </AppFormField>
           <AppFormField for-id="profile-last-name" label="نام خانوادگی" required>
-            <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.last_name" maxlength="70" class="app-input h-12" /></template>
+            <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.last_name" maxlength="70"
+                class="app-input h-12" /></template>
           </AppFormField>
           <AppFormField for-id="profile-username" label="نام کاربری" required>
             <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.username" maxlength="50"
-              autocomplete="username" dir="ltr" class="app-input h-12 text-left" /></template>
+                autocomplete="username" dir="ltr" class="app-input h-12 text-left" /></template>
           </AppFormField>
           <AppFormField for-id="profile-phone" label="شماره تماس">
             <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.phone" maxlength="50"
-              autocomplete="tel" dir="ltr" class="app-input h-12 text-left" /></template>
+                autocomplete="tel" dir="ltr" class="app-input h-12 text-left" /></template>
           </AppFormField>
-          <AppFormField label="نقش"><input :value="profile.role === 'MANAGER' ? 'مدیر' : 'ادمین'" disabled class="app-input h-12 bg-slate-100" /></AppFormField>
+          <AppFormField label="نقش"><input :value="profile.role === 'MANAGER' ? 'مدیر' : 'ادمین'" disabled
+              class="app-input h-12 bg-slate-100" /></AppFormField>
           <div class="flex items-end md:col-span-2 xl:col-span-3">
             <AppButton type="submit" variant="primary" size="lg" :loading="saving">ذخیره مشخصات</AppButton>
           </div>
@@ -40,8 +43,8 @@
     </template>
   </div>
 
-  <ChangePasswordModal :is-open="passwordModalOpen" :saving="passwordSaving"
-    @close="passwordModalOpen = false" @submit="savePassword" />
+  <ChangePasswordModal :is-open="passwordModalOpen" :saving="passwordSaving" @close="passwordModalOpen = false"
+    @submit="savePassword" />
 </template>
 
 <script setup>
