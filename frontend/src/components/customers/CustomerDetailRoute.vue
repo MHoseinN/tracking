@@ -19,8 +19,10 @@
       :count="loading ? null : filteredLists.length">
       <template #filters>
         <AppFilterBar columns-class="md:grid-cols-2 xl:grid-cols-5">
-          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">شماره لیست</span>
+          <label class="space-y-1 md:col-span-2 xl:col-span-5"><span class="text-xs font-bold text-slate-600">جست‌وجوی لیست</span>
             <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="جست‌وجوی شماره لیست" /></label>
+          <label class="space-y-1"><span class="text-xs font-bold text-slate-600">تاریخ تحویل</span>
+            <JalaliDatePicker v-model="deliveryDateFilter" input-class="app-filter-control !h-11" /></label>
           <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت لیست</span>
             <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" /></label>
           <label class="space-y-1"><span class="text-xs font-bold text-slate-600">وضعیت فاکتور</span>
@@ -46,10 +48,22 @@
           <td class="text-center font-bold text-slate-500">{{ formatNumber(rowStartIndex + index + 1) }}</td>
           <td class="font-black text-slate-800">{{ displayListNumber(list) }}</td>
           <td>{{ formatDate(list.delivered_at) }}</td>
-          <td><AppStatusBadge group="list" :status="list.status" /></td>
-          <td><AppStatusBadge group="invoice" :status="list.invoice_status" /></td>
-          <td><AppStatusBadge group="send" :status="list.invoice_send_status" /></td>
-          <td><AppStatusBadge group="settlement" :status="list.settlement_status" /></td>
+          <td><AppStatusButton group="list" :status="list.status" :loading="isActionLoading(list, 'list')"
+              :aria-label="`مدیریت وضعیت لیست ${displayListNumber(list)}`" @click="manageListStatus(list)" /></td>
+          <td><AppStatusButton group="invoice" :status="list.invoice_status" :loading="isActionLoading(list, 'invoice')"
+              :aria-label="`مدیریت فاکتور ${displayListNumber(list)}`" @click="manageInvoice(list)" /></td>
+          <td>
+            <AppStatusButton v-if="hasIssuedInvoice(list)" group="send" :status="list.invoice_send_status"
+              :loading="isActionLoading(list, 'send')" :aria-label="`مدیریت ارسال ${displayListNumber(list)}`"
+              @click="manageInvoiceSend(list)" />
+            <AppStatusBadge v-else group="send" :status="list.invoice_send_status" />
+          </td>
+          <td>
+            <AppStatusButton v-if="list.status !== 'DRAFT'" group="settlement" :status="list.settlement_status"
+              :loading="isActionLoading(list, 'settlement')" :aria-label="`مدیریت تسویه ${displayListNumber(list)}`"
+              @click="openSettlement(list)" />
+            <AppStatusBadge v-else group="settlement" :status="list.settlement_status" />
+          </td>
           <td class="font-black text-slate-800">{{ hasInvoice(list) ? formatCurrency(list.invoice_total_toman) : '—' }}</td>
           <td>
             <AppIconButton label="مشاهده جزئیات" size="sm" @click="router.push(`/lists/${list.id}`)">
@@ -64,6 +78,19 @@
           :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event" @go-to-page="goToPage" />
       </template>
     </AppTablePanel>
+
+    <DeliveryReturnModal :is-open="Boolean(returnTargetList)" :list="returnTargetList" :saving="returning"
+      @close="returnTargetList = null" @save="handleReturn" />
+    <DeliveryInvoiceIssueModal :is-open="showInvoiceIssueModal" :preview="invoicePreview" :saving="issuingInvoice"
+      @close="closeInvoiceIssueModal" @issue="handleIssueInvoice" />
+    <DeliveryInvoiceSendModal :is-open="showInvoiceSendModal" :invoice="sendInvoice" :saving="updatingSendStatus"
+      @close="closeInvoiceSendModal" @save="handleInvoiceSend" @request-unsent="invoiceToResetSend = sendInvoice" />
+    <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
+      @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
+    <ConfirmModal :is-open="Boolean(invoiceToResetSend)" title="لغو وضعیت ارسال فاکتور"
+      :message="`فاکتور ${invoiceToResetSend?.invoice_number || ''} دوباره به وضعیت «ارسال‌نشده» برگردد؟ این تغییر در تاریخچه ثبت می‌شود.`"
+      :loading="updatingSendStatus" confirm-text="بله، ارسال‌نشده شود" loading-text="در حال ثبت..."
+      @confirm="confirmResetInvoiceSend" @cancel="invoiceToResetSend = null" />
   </div>
 </template>
 
@@ -72,14 +99,21 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppPagination from '../AppPagination.vue';
+import ConfirmModal from '../ConfirmModal.vue';
 import CustomSelect from '../CustomSelect.vue';
+import JalaliDatePicker from '../JalaliDatePicker.vue';
 import CustomerSummaryPanel from './CustomerSummaryPanel.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
 import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
 import AppStatusBadge from '../ui/AppStatusBadge.vue';
+import AppStatusButton from '../ui/AppStatusButton.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
+import DeliveryInvoiceIssueModal from '../delivery-lists/DeliveryInvoiceIssueModal.vue';
+import DeliveryInvoiceSendModal from '../delivery-lists/DeliveryInvoiceSendModal.vue';
+import DeliveryReturnModal from '../delivery-lists/DeliveryReturnModal.vue';
+import DeliverySettlementModal from '../delivery-lists/DeliverySettlementModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import { usePaginatedList } from '../../composables/usePaginatedList';
@@ -102,10 +136,26 @@ const isCustomerInfoOpen = ref(false);
 const tableSectionRef = ref(null);
 const summary = ref({ list_count: 0, invoice_count: 0, invoiced_total_toman: 0, paid_total_toman: 0, balance_toman: 0 });
 const searchQuery = ref('');
+const deliveryDateFilter = ref('');
 const listStatusFilter = ref('all');
 const invoiceStatusFilter = ref('all');
 const sendStatusFilter = ref('all');
 const settlementStatusFilter = ref('all');
+const actionLoadingKey = ref('');
+const returnTargetList = ref(null);
+const returning = ref(false);
+const invoiceTargetList = ref(null);
+const invoicePreview = ref(null);
+const showInvoiceIssueModal = ref(false);
+const issuingInvoice = ref(false);
+const sendTargetList = ref(null);
+const sendInvoice = ref(null);
+const showInvoiceSendModal = ref(false);
+const updatingSendStatus = ref(false);
+const invoiceToResetSend = ref(null);
+const showSettlementModal = ref(false);
+const settlementSummary = ref(null);
+const settlementSaving = ref(false);
 
 const makeOptions = (items) => [{ label: 'همه', value: 'all' }, ...items];
 const listStatusOptions = makeOptions([
@@ -128,6 +178,7 @@ const settlementStatusOptions = makeOptions([
 
 const filteredLists = computed(() => lists.value.filter((list) => (
   (!searchQuery.value || String(list.list_number || list.id).includes(searchQuery.value))
+  && (!deliveryDateFilter.value || formatDate(list.delivered_at) === deliveryDateFilter.value)
   && (listStatusFilter.value === 'all' || list.status === listStatusFilter.value)
   && (invoiceStatusFilter.value === 'all' || list.invoice_status === invoiceStatusFilter.value)
   && (sendStatusFilter.value === 'all' || list.invoice_send_status === sendStatusFilter.value)
@@ -137,7 +188,7 @@ const filteredLists = computed(() => lists.value.filter((list) => (
 const { currentPage, pageSize, pageSizeOptions, totalRows, totalPages, rowStartIndex,
   paginatedItems: paginatedLists, visiblePageNumbers, goToPage } = usePaginatedList(filteredLists, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, listStatusFilter, invoiceStatusFilter, sendStatusFilter, settlementStatusFilter],
+  resetSources: [searchQuery, deliveryDateFilter, listStatusFilter, invoiceStatusFilter, sendStatusFilter, settlementStatusFilter],
   scrollTarget: tableSectionRef
 });
 
@@ -176,11 +227,165 @@ async function createListForCustomer() {
   router.push({ path: `/lists/${result.data.id}/edit`, query: { customer_id: customerId.value } });
 }
 
+function setActionLoading(list, action) {
+  actionLoadingKey.value = list ? `${list.id}:${action}` : '';
+}
+
+function isActionLoading(list, action) {
+  return actionLoadingKey.value === `${list.id}:${action}`;
+}
+
+async function manageListStatus(list) {
+  if (list.status === 'DRAFT') return router.push(`/lists/${list.id}/edit`);
+  if (list.status === 'COMPLETED') return router.push(`/lists/${list.id}`);
+  setActionLoading(list, 'list');
+  const result = await deliveryListStore.getListDetails(list.id);
+  setActionLoading();
+  if (!result.success) return toast.error(result.message);
+  const hasRemaining = (result.data.items || []).some((item) => Number(item.remaining_quantity) > 0);
+  if (!hasRemaining) return router.push(`/lists/${list.id}`);
+  returnTargetList.value = result.data;
+}
+
+async function handleReturn(payload) {
+  if (!returnTargetList.value || returning.value) return;
+  returning.value = true;
+  const result = await deliveryListStore.recordReturn(returnTargetList.value.id, payload);
+  returning.value = false;
+  if (!result.success) return toast.error(result.message);
+  returnTargetList.value = null;
+  await loadWorkflow();
+  toast.success(result.data.status === 'COMPLETED' ? 'برگشت کامل ثبت و لیست تکمیل شد' : 'مرجوعی اقلام ثبت شد');
+}
+
+async function manageInvoice(list) {
+  if (list.status === 'DRAFT') {
+    toast.info('ابتدا تحویل این پیش‌نویس را ثبت کنید');
+    return router.push(`/lists/${list.id}/edit`);
+  }
+  setActionLoading(list, 'invoice');
+  const result = await deliveryListStore.getInvoicePreview(list.id);
+  setActionLoading();
+  if (!result.success) return toast.error(result.message);
+  if (!(result.data.lines || []).length) {
+    toast.info('مرجوعی فاکتورنشده‌ای برای صدور وجود ندارد؛ جزئیات لیست باز شد');
+    return router.push(`/lists/${list.id}`);
+  }
+  invoiceTargetList.value = list;
+  invoicePreview.value = result.data;
+  showInvoiceIssueModal.value = true;
+}
+
+function closeInvoiceIssueModal() {
+  if (issuingInvoice.value) return;
+  showInvoiceIssueModal.value = false;
+  invoiceTargetList.value = null;
+  invoicePreview.value = null;
+}
+
+async function handleIssueInvoice(payload) {
+  if (!invoiceTargetList.value || issuingInvoice.value) return;
+  issuingInvoice.value = true;
+  const result = await deliveryListStore.issueInvoice(invoiceTargetList.value.id, payload);
+  issuingInvoice.value = false;
+  if (!result.success) return toast.error(result.message);
+  closeInvoiceIssueModal();
+  await loadWorkflow();
+  toast.success(`فاکتور ${result.data.invoice.invoice_number} صادر شد`);
+}
+
+async function manageInvoiceSend(list) {
+  setActionLoading(list, 'send');
+  const detailResult = await deliveryListStore.getListDetails(list.id);
+  if (!detailResult.success) {
+    setActionLoading();
+    return toast.error(detailResult.message);
+  }
+  const invoices = detailResult.data.invoices || [];
+  const targetInvoice = invoices.find((invoice) => invoice.send_status !== 'SENT') || invoices[invoices.length - 1];
+  if (!targetInvoice) {
+    setActionLoading();
+    return toast.info('ابتدا فاکتور این لیست را صادر کنید');
+  }
+  const invoiceResult = await deliveryListStore.getInvoice(list.id, targetInvoice.id);
+  setActionLoading();
+  if (!invoiceResult.success) return toast.error(invoiceResult.message);
+  sendTargetList.value = list;
+  sendInvoice.value = invoiceResult.data;
+  showInvoiceSendModal.value = true;
+}
+
+async function handleInvoiceSend(payload) {
+  if (updatingSendStatus.value || !sendInvoice.value || !sendTargetList.value) return;
+  updatingSendStatus.value = true;
+  const result = await deliveryListStore.updateInvoiceSendStatus(sendTargetList.value.id, sendInvoice.value.id, payload);
+  updatingSendStatus.value = false;
+  if (!result.success) return toast.error(result.message);
+  sendInvoice.value = result.data.invoice;
+  await loadWorkflow();
+  toast.success('ارسال فاکتور ثبت شد');
+}
+
+async function confirmResetInvoiceSend() {
+  if (updatingSendStatus.value || !invoiceToResetSend.value || !sendTargetList.value) return;
+  updatingSendStatus.value = true;
+  const result = await deliveryListStore.updateInvoiceSendStatus(sendTargetList.value.id, invoiceToResetSend.value.id, {
+    send_status: 'NOT_SENT', channel: 'MANUAL', sent_at: new Date().toISOString(),
+    notes: 'وضعیت ارسال با تأیید کاربر لغو شد'
+  });
+  updatingSendStatus.value = false;
+  if (!result.success) return toast.error(result.message);
+  sendInvoice.value = result.data.invoice;
+  invoiceToResetSend.value = null;
+  await loadWorkflow();
+  toast.success('فاکتور به وضعیت ارسال‌نشده برگشت');
+}
+
+function closeInvoiceSendModal() {
+  if (updatingSendStatus.value) return;
+  showInvoiceSendModal.value = false;
+  sendTargetList.value = null;
+  sendInvoice.value = null;
+  invoiceToResetSend.value = null;
+}
+
+async function openSettlement(list) {
+  setActionLoading(list, 'settlement');
+  const result = await deliveryListStore.getSettlement(list.id);
+  setActionLoading();
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  showSettlementModal.value = true;
+}
+
+async function handleRecordPayment(payload) {
+  if (settlementSaving.value) return;
+  settlementSaving.value = true;
+  const result = await deliveryListStore.recordPayment(settlementSummary.value.list.id, payload);
+  settlementSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  await loadWorkflow();
+  toast.success('پرداخت ثبت شد');
+}
+
+async function handleVoidPayment(paymentId) {
+  if (settlementSaving.value) return;
+  settlementSaving.value = true;
+  const result = await deliveryListStore.voidPayment(settlementSummary.value.list.id, paymentId);
+  settlementSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  settlementSummary.value = result.data;
+  await loadWorkflow();
+  toast.success('پرداخت باطل شد و وضعیت تسویه دوباره محاسبه شد');
+}
+
 function clearFilters() {
-  searchQuery.value = ''; listStatusFilter.value = 'all'; invoiceStatusFilter.value = 'all';
+  searchQuery.value = ''; deliveryDateFilter.value = ''; listStatusFilter.value = 'all'; invoiceStatusFilter.value = 'all';
   sendStatusFilter.value = 'all'; settlementStatusFilter.value = 'all';
 }
-function hasInvoice(list) { return ['PARTIALLY_ISSUED', 'ISSUED'].includes(list.invoice_status); }
+function hasInvoice(list) { return hasIssuedInvoice(list); }
+function hasIssuedInvoice(list) { return ['PARTIALLY_ISSUED', 'ISSUED'].includes(list.invoice_status); }
 function displayListNumber(list) {
   if (list.list_number) return list.list_number;
   return list.status === 'DRAFT' ? `پیش‌نویس ${formatNumber(list.id)}` : `سابقه ${formatNumber(list.id)}`;
