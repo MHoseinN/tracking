@@ -139,24 +139,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut));
   justify-content: center;
   gap: .55rem;
   border-radius: .65rem;
-  border: 1px solid rgb(203, 203, 203);
-  background: #f4eedf;
+  border: 1px solid #d8c59f;
+  background: #f3ead7;
   padding: 0 .75rem;
-  color: black;
+  color: #185844;
   font-size: .78rem;
   font-weight: 800;
-  box-shadow: 0 8px 20px rgb(15 118 110 / .18);
+  box-shadow: 0 8px 20px rgb(89 72 38 / .1);
   transition: .2s;
 }
 
 .global-search-trigger:hover {
-  background: #fff5e0;
+  border-color: #c8ae78;
+  background: #eadcbc;
 }
 
 .global-search-trigger kbd {
   margin-right: auto;
   border-radius: .35rem;
-  background: rgb(255 255 255 / .16);
+  background: rgb(255 255 255 / .62);
   padding: .2rem .4rem;
   font-size: .65rem;
   direction: ltr;

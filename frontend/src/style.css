@@ -342,7 +342,21 @@ body {
 
 .app-shell--actions-collapsed .app-shell__actions .app-shell__actions-header {
   justify-content: center;
+  width:100%;
+  gap:0;
+  padding-left:0;
+  padding-right:0;
 }
+
+.app-shell--actions-collapsed .app-shell__actions .app-shell__toggle,
+.app-shell--actions-collapsed .global-search-trigger,
+.app-shell--actions-collapsed .app-shell__profile-button,
+.app-shell--actions-collapsed .app-shell__logout-button { width:3rem; height:3rem; margin-left:auto; margin-right:auto; padding:0; }
+.app-shell--actions-collapsed .app-shell__actions-search { width:100%; padding-left:.5rem; padding-right:.5rem; }
+.app-shell--actions-collapsed .global-search-trigger span,
+.app-shell--actions-collapsed .global-search-trigger kbd { display:none; }
+.app-shell--actions-collapsed .app-shell__account { width:100%; align-items:center; padding-left:.5rem; padding-right:.5rem; }
+.app-shell--actions-collapsed .app-shell__account-summary { display:none; }
 
 .app-shell--actions-collapsed .app-shell__actions {
   padding-left: 0;

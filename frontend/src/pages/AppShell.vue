@@ -24,7 +24,7 @@
           <h2 class="app-shell__label-text text-sm font-black text-emerald-950">عملیات این صفحه</h2>
         </div>
 
-        <div class="app-shell__actions-search app-shell__label-text">
+        <div class="app-shell__actions-search">
           <GlobalSearch />
         </div>
 
@@ -32,7 +32,7 @@
           <div id="app-shell-actions" class="app-shell__actions-content flex w-full flex-col gap-2" />
         </div>
 
-        <div class="app-shell__account app-shell__label-text">
+        <div class="app-shell__account">
           <button type="button" class="app-shell__account-summary" @click="router.push('/profile')">
             <span class="app-shell__account-avatar" aria-hidden="true">
               <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,14 +40,13 @@
                   d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0" />
               </svg>
             </span>
-            <span class="min-w-0 text-right">
+            <span class="app-shell__label-text min-w-0 text-right">
               <strong class="block truncate text-sm text-emerald-950">{{ displayName }}</strong>
               <small class="text-xs text-emerald-700/70">{{ roleLabel }}</small>
             </span>
           </button>
-          <button type="button" class="app-shell__profile-button" @click="router.push('/profile')">پروفایل</button>
           <button type="button" class="app-shell__logout-button" @click="handleLogout">
-            <span>خروج</span>
+            <span class="app-shell__label-text">خروج</span>
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                 d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />

@@ -132,20 +132,27 @@
             </div>
           </div>
 
-          <AppTablePanel title="۱۰۰ مشتری برتر" :count="topCustomers.length"
-            description="رتبه‌بندی بر اساس مجموع مبلغ فاکتورهای صادرشده در بازه انتخابی">
-            <AppDataTable class="top-customers-table" :column-count="5" :empty="!topCustomers.length"
+          <div ref="topCustomersTableRef">
+          <AppTablePanel title="۱۰۰ مشتری برتر" :count="topCustomersTotalRows">
+            <AppDataTable class="top-customers-table" :column-count="6" :empty="!topCustomersTotalRows"
               min-width="100%" empty-message="داده کافی برای رتبه‌بندی مشتریان وجود ندارد.">
               <template #head>
                 <tr>
+                  <th>ردیف</th>
                   <th>نام مشتری</th>
-                  <th>تعداد فاکتور</th>
-                  <th>میانگین هر فاکتور</th>
-                  <th>مجموع مبالغ فاکتور</th>
-                  <th>مانده تسویه‌نشده</th>
+                  <th v-for="column in sortableCustomerColumns" :key="column.key"
+                    :aria-sort="customerSortAria(column.key)">
+                    <button type="button" class="top-customers-sort" @click="toggleCustomerSort(column.key)">
+                      <span>{{ column.label }}</span>
+                      <span class="top-customers-sort__icon" :class="{ 'top-customers-sort__icon--active': customerSorts[column.key] }">
+                        {{ customerSortIcon(column.key) }}
+                      </span>
+                    </button>
+                  </th>
                 </tr>
               </template>
-              <tr v-for="customer in topCustomers" :key="customer.id || customer.name" class="app-table-row">
+              <tr v-for="(customer, index) in paginatedTopCustomers" :key="customer.id || customer.name" class="app-table-row">
+                <td class="text-center font-bold text-slate-500">{{ formatNumber(topCustomersRowStartIndex + index + 1) }}</td>
                 <td class="font-black text-slate-900">{{ customer.name }}</td>
                 <td class="text-center font-bold">{{ formatNumber(customer.invoiceCount) }}</td>
                 <td class="text-center font-bold">{{ formatCurrency(customer.average) }}</td>
@@ -155,7 +162,15 @@
                 </td>
               </tr>
             </AppDataTable>
+            <template #footer>
+              <AppPagination :total-rows="topCustomersTotalRows" :row-start-index="topCustomersRowStartIndex"
+                :page-size="topCustomersPageSize" :page-size-options="topCustomersPageSizeOptions"
+                :current-page="topCustomersCurrentPage" :total-pages="topCustomersTotalPages"
+                :visible-page-numbers="topCustomersVisiblePageNumbers"
+                @update:page-size="topCustomersPageSize = $event" @go-to-page="goToTopCustomersPage" />
+            </template>
           </AppTablePanel>
+          </div>
         </div>
       </section>
     </div>
@@ -163,7 +178,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import AppPagination from '../AppPagination.vue';
 import AppContentState from '../AppContentState.vue';
 import AppStatCard from '../AppStatCard.vue';
 import CustomSelect from '../CustomSelect.vue';
@@ -172,6 +188,7 @@ import AppTablePanel from '../ui/AppTablePanel.vue';
 import ReportChartPanel from './ReportChartPanel.vue';
 import { exportRowsToExcel } from '../../utils/exportToExcel';
 import { useReportsData } from '../../composables/useReportsData';
+import { usePaginatedList } from '../../composables/usePaginatedList';
 
 const {
   loading,
@@ -193,6 +210,63 @@ const {
   formatCurrency,
   formatPeriodLabel
 } = useReportsData();
+
+const topCustomersTableRef = ref(null);
+const sortableCustomerColumns = [
+  { key: 'invoiceCount', label: 'تعداد فاکتور' },
+  { key: 'average', label: 'میانگین هر فاکتور' },
+  { key: 'total', label: 'مجموع مبالغ فاکتور' },
+  { key: 'outstanding', label: 'مانده تسویه‌نشده' }
+];
+const customerSorts = reactive({ invoiceCount: null, average: null, total: null, outstanding: null });
+const customerSortPriority = ref([]);
+const sortedTopCustomers = computed(() => {
+  const activeKeys = customerSortPriority.value.filter((key) => customerSorts[key]);
+  if (!activeKeys.length) return topCustomers.value;
+  return [...topCustomers.value].sort((left, right) => {
+    for (const key of activeKeys) {
+      const difference = (Number(left[key]) || 0) - (Number(right[key]) || 0);
+      if (difference !== 0) return customerSorts[key] === 'asc' ? difference : -difference;
+    }
+    return String(left.name || '').localeCompare(String(right.name || ''), 'fa');
+  });
+});
+const {
+  currentPage: topCustomersCurrentPage,
+  pageSize: topCustomersPageSize,
+  pageSizeOptions: topCustomersPageSizeOptions,
+  totalRows: topCustomersTotalRows,
+  totalPages: topCustomersTotalPages,
+  rowStartIndex: topCustomersRowStartIndex,
+  paginatedItems: paginatedTopCustomers,
+  visiblePageNumbers: topCustomersVisiblePageNumbers,
+  goToPage: goToTopCustomersPage
+} = usePaginatedList(sortedTopCustomers, {
+  initialPageSize: 10,
+  pageSizeOptions: [10, 15, 20, 50, 100],
+  resetSources: [selectedYear],
+  scrollTarget: topCustomersTableRef
+});
+
+function toggleCustomerSort(key) {
+  const nextDirection = customerSorts[key] === null ? 'asc' : customerSorts[key] === 'asc' ? 'desc' : null;
+  customerSorts[key] = nextDirection;
+  customerSortPriority.value = [key, ...customerSortPriority.value.filter((item) => item !== key)];
+  if (!nextDirection) customerSortPriority.value = customerSortPriority.value.filter((item) => item !== key);
+  topCustomersCurrentPage.value = 1;
+}
+
+function customerSortIcon(key) {
+  if (customerSorts[key] === 'asc') return '↑';
+  if (customerSorts[key] === 'desc') return '↓';
+  return '↕';
+}
+
+function customerSortAria(key) {
+  if (customerSorts[key] === 'asc') return 'ascending';
+  if (customerSorts[key] === 'desc') return 'descending';
+  return 'none';
+}
 
 const chartSeries = computed(() => {
   const rows = [...activeRows.value].sort((left, right) => String(left.period).localeCompare(String(right.period)));
@@ -226,9 +300,13 @@ function exportReports() {
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
-.top-customers-table :deep(th:nth-child(1)) { width: 25%; }
-.top-customers-table :deep(th:nth-child(2)) { width: 12%; }
-.top-customers-table :deep(th:nth-child(3)) { width: 20%; }
-.top-customers-table :deep(th:nth-child(4)) { width: 23%; }
-.top-customers-table :deep(th:nth-child(5)) { width: 20%; }
+.top-customers-table :deep(th:nth-child(1)) { width: 7%; }
+.top-customers-table :deep(th:nth-child(2)) { width: 23%; }
+.top-customers-table :deep(th:nth-child(3)) { width: 13%; }
+.top-customers-table :deep(th:nth-child(4)) { width: 19%; }
+.top-customers-table :deep(th:nth-child(5)) { width: 21%; }
+.top-customers-table :deep(th:nth-child(6)) { width: 17%; }
+.top-customers-sort { display:inline-flex; width:100%; align-items:center; justify-content:center; gap:.35rem; color:inherit; }
+.top-customers-sort__icon { color:#94a3b8; font-size:.9rem; transition:.15s; }
+.top-customers-sort__icon--active { color:#0f766e; font-weight:900; }
 </style>
