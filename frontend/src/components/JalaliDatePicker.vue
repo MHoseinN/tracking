@@ -1,8 +1,9 @@
 <template>
-  <div ref="pickerRoot" class="relative">
+  <div ref="pickerRoot" class="jalali-picker"
+    :class="triggerMode === 'input' ? 'jalali-picker--input' : 'jalali-picker--button'">
     <input v-if="triggerMode === 'input'" v-model="displayValue" @focus="openCalendar" readonly
       :placeholder="placeholder"
-      class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 cursor-pointer"
+      class="jalali-picker__input w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-1 focus:ring-green-400 cursor-pointer"
       :class="[inputClass, { 'border-red-500': error }]" />
     <button v-else type="button" @click="toggleCalendar"
       class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm bgro font-medium transition"
@@ -237,5 +238,28 @@ function selectDay(day) {
 </script>
 
 <style scoped>
-/* simple scrollbar for dropdown */
+.jalali-picker {
+  position: relative;
+}
+
+.jalali-picker--input {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+.jalali-picker--button {
+  display: inline-flex;
+}
+
+.jalali-picker__input {
+  display: block;
+  height: 100%;
+  min-height: 2.75rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  direction: ltr;
+  line-height: normal;
+  text-align: center;
+}
 </style>

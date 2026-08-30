@@ -1,6 +1,10 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
+      <button v-if="list?.proforma" type="button" class="app-button-secondary w-full border-violet-300 text-violet-700"
+        :disabled="loadingProforma" @click="openProforma">
+        {{ loadingProforma ? 'در حال ساخت...' : 'مشاهده پیش‌فاکتور' }}
+      </button>
       <button v-if="canRecordReturn" type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
         @click="showReturnModal = true">ثبت مرجوعی</button>
       <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full"
@@ -85,6 +89,9 @@
       @close="showReturnModal = false" @save="handleReturn" />
     <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
       @close="showInvoiceModal = false" @issue="handleIssueInvoice" />
+    <DeliveryProformaPreviewModal :is-open="showProformaModal" :list-number="list?.list_number"
+      :pdf-url="proformaPdfUrl" :loading="loadingProforma" :downloading="downloadingProforma"
+      @close="closeProforma" @download="downloadPreparedProforma" />
     <DeliveryInvoicePreviewModal :is-open="showIssuedInvoiceModal" :invoice="selectedInvoice"
       :pdf-url="invoicePdfUrl" :saving="editingInvoice" :loading-pdf="loadingInvoicePdf"
       :downloading="Boolean(downloadingInvoiceId)" @close="closeIssuedInvoiceModal"
@@ -110,6 +117,7 @@ import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import DeliveryReturnModal from './DeliveryReturnModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
+import DeliveryProformaPreviewModal from './DeliveryProformaPreviewModal.vue';
 import DeliveryInvoicePreviewModal from './DeliveryInvoicePreviewModal.vue';
 import DeliveryInvoiceSendModal from './DeliveryInvoiceSendModal.vue';
 import DeliverySettlementModal from './DeliverySettlementModal.vue';
@@ -146,6 +154,11 @@ const sendInvoice = ref(null);
 const loadingSendInvoiceId = ref(null);
 const updatingSendStatus = ref(false);
 const invoiceToResetSend = ref(null);
+const showProformaModal = ref(false);
+const loadingProforma = ref(false);
+const downloadingProforma = ref(false);
+const proformaPdfBlob = ref(null);
+const proformaPdfUrl = ref('');
 
 const canRecordReturn = computed(() => (
   ['DELIVERED', 'REMAINING', 'NEEDS_FOLLOW_UP'].includes(list.value?.status)
@@ -179,10 +192,55 @@ onMounted(async () => {
   finally { loading.value = false; }
 });
 
-onBeforeUnmount(() => releaseInvoicePdfUrl());
+onBeforeUnmount(() => {
+  releaseInvoicePdfUrl();
+  releaseProformaPdfUrl();
+});
 
 function handleEmbeddedListSaved(updatedList) {
   if (updatedList) list.value = updatedList;
+}
+
+async function openProforma() {
+  if (loadingProforma.value || !list.value?.proforma) return;
+  showProformaModal.value = true;
+  loadingProforma.value = true;
+  const result = await listStore.downloadProformaPdf(list.value.id);
+  loadingProforma.value = false;
+  if (!result.success) {
+    showProformaModal.value = false;
+    return toast.error(result.message);
+  }
+  releaseProformaPdfUrl();
+  proformaPdfBlob.value = result.data;
+  proformaPdfUrl.value = URL.createObjectURL(result.data);
+}
+
+function closeProforma() {
+  if (loadingProforma.value) return;
+  showProformaModal.value = false;
+  releaseProformaPdfUrl();
+}
+
+function releaseProformaPdfUrl() {
+  if (proformaPdfUrl.value) URL.revokeObjectURL(proformaPdfUrl.value);
+  proformaPdfUrl.value = '';
+  proformaPdfBlob.value = null;
+}
+
+function downloadPreparedProforma() {
+  if (downloadingProforma.value || !proformaPdfBlob.value) return;
+  downloadingProforma.value = true;
+  const url = URL.createObjectURL(proformaPdfBlob.value);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `proforma-${list.value.list_number}.pdf`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+  downloadingProforma.value = false;
+  toast.success('فایل PDF پیش‌فاکتور دانلود شد');
 }
 
 async function createNewDraft() {

@@ -384,6 +384,36 @@ test('finalizes a complete draft and creates exactly one linked proforma', () =>
   }
 });
 
+test('generates a non-binding proforma PDF from the latest delivery list data', async () => {
+  const db = createDatabase();
+  try {
+    const listService = createDeliveryListDraftService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      night_before: true,
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
+    });
+    const finalized = listService.finalizeDraft(draft.id, saved.version, 1);
+
+    const result = await createInvoicePdfService(db).generateProforma(finalized.id);
+    assert.equal(result.filename, 'proforma-051000.pdf');
+    assert.equal(result.buffer.subarray(0, 5).toString(), '%PDF-');
+    assert.ok(result.buffer.length > 10000);
+    assert.equal(result.data.invoice._document_type, 'PROFORMA');
+    assert.equal(result.data.invoice.status, 'PROFORMA');
+    assert.equal(result.data.invoice.final_amount_toman, 3000000);
+    assert.equal(result.data.lines.length, 1);
+    assert.equal(result.data.lines[0].charged_days, 1);
+    assert.equal(result.data.list_financials.invoiced_toman, 0);
+  } finally {
+    db.close();
+  }
+});
+
 test('edits a finalized list without recreating its proforma', () => {
   const db = createDatabase();
   try {

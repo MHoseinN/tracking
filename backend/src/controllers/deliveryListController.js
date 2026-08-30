@@ -173,6 +173,27 @@ async function downloadInvoicePdf(req, res) {
   } catch (error) { return handleError(error, res); }
 }
 
+async function downloadProformaPdf(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const result = await invoicePdfService.generateProforma(req.params.id);
+
+    if (req.query.transport === 'base64') {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({
+        filename: result.filename,
+        content_type: 'application/pdf',
+        data_base64: result.buffer.toString('base64')
+      });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader('Content-Length', result.buffer.length);
+    return res.send(result.buffer);
+  } catch (error) { return handleError(error, res); }
+}
+
 function createDraft(req, res) {
   try {
     const result = draftService.createDraft(req.user.id);
@@ -227,5 +248,6 @@ module.exports = {
   getSettlement,
   recordPayment,
   voidPayment,
+  downloadProformaPdf,
   downloadInvoicePdf
 };

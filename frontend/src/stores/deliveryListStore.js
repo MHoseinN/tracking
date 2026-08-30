@@ -278,6 +278,20 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       } catch (error) {
         return { success: false, message: getApiErrorMessage(error, 'دانلود PDF فاکتور انجام نشد') };
       }
+    },
+
+    async downloadProformaPdf(id) {
+      try {
+        const response = await deliveryListService.downloadProformaPdf(id);
+        const blob = response.data;
+        const signature = blob instanceof Blob ? await blob.slice(0, 5).text() : '';
+        if (!(blob instanceof Blob) || !blob.size || signature !== '%PDF-') {
+          throw new Error('پاسخ PDF پیش‌فاکتور معتبر نیست');
+        }
+        return { success: true, data: blob, filename: response.filename };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'دانلود PDF پیش‌فاکتور انجام نشد') };
+      }
     }
   }
 });

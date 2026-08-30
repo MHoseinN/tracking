@@ -1,6 +1,6 @@
 const path = require('path');
 const PDFDocument = require('pdfkit');
-const { DeliveryListDraftError } = require('./deliveryListDraftService');
+const { DeliveryListDraftError, calculateChargedDays } = require('./deliveryListDraftService');
 
 const vazirmatnRoot = path.dirname(require.resolve('vazirmatn/package.json'));
 const regularFont = path.join(vazirmatnRoot, 'fonts', 'ttf', 'Vazirmatn-Regular.ttf');
@@ -96,6 +96,71 @@ function getInvoicePdfData(db, listId, invoiceId) {
       paid_toman: Number(listFinancials.paid) || 0,
       balance_toman: Math.max(0, Number(listFinancials.invoiced) - Number(listFinancials.paid))
     }
+  };
+}
+
+function getProformaPdfData(db, listId) {
+  const invoice = db.prepare(`
+    SELECT invoices.*, delivery_lists.list_number, delivery_lists.status AS list_status,
+           delivery_lists.delivered_at, delivery_lists.expected_return_at,
+           delivery_lists.billing_cutoff_minutes_snapshot, delivery_lists.night_before,
+           delivery_lists.notes AS list_notes,
+           COALESCE(customers.name, delivery_lists.customer_name_snapshot) AS customer_name,
+           customers.phone AS customer_phone,
+           COALESCE(app_settings.collection_name, 'مجموعه من') AS collection_name
+    FROM invoices
+    JOIN delivery_lists ON delivery_lists.id = invoices.delivery_list_id
+    LEFT JOIN customers ON customers.id = delivery_lists.customer_id
+    LEFT JOIN app_settings ON app_settings.id = 1
+    WHERE invoices.delivery_list_id = ? AND invoices.status = 'PROFORMA'
+      AND invoices.deleted_at IS NULL AND delivery_lists.archived_at IS NULL
+    ORDER BY invoices.id DESC LIMIT 1
+  `).get(listId);
+  if (!invoice) throw new DeliveryListDraftError('پیش‌فاکتور این لیست پیدا نشد', 404);
+  if (!invoice.delivered_at || !invoice.expected_return_at) {
+    throw new DeliveryListDraftError('برای ساخت پیش‌فاکتور، تاریخ تحویل و برگشت را کامل کنید', 409);
+  }
+
+  const chargedDays = calculateChargedDays({
+    deliveredAt: invoice.delivered_at,
+    returnedAt: invoice.expected_return_at,
+    cutoffMinutes: Number(invoice.billing_cutoff_minutes_snapshot),
+    nightBefore: Boolean(invoice.night_before)
+  });
+  const items = db.prepare(`
+    SELECT id, product_name_snapshot, delivered_quantity, daily_price_toman
+    FROM delivery_list_items
+    WHERE delivery_list_id = ? AND deleted_at IS NULL
+    ORDER BY id
+  `).all(listId);
+  if (!items.length) throw new DeliveryListDraftError('پیش‌فاکتور هیچ محصولی ندارد', 409);
+
+  const lines = items.map((item) => ({
+    id: item.id,
+    description: item.product_name_snapshot,
+    quantity: Number(item.delivered_quantity),
+    billing_from_at: invoice.delivered_at,
+    billing_to_at: invoice.expected_return_at,
+    charged_days: chargedDays,
+    unit_price_toman: Number(item.daily_price_toman),
+    line_total_toman: Number(item.delivered_quantity) * chargedDays * Number(item.daily_price_toman)
+  }));
+  const total = lines.reduce((sum, line) => sum + line.line_total_toman, 0);
+  return {
+    invoice: {
+      ...invoice,
+      _document_type: 'PROFORMA',
+      invoice_number: invoice.list_number,
+      parent_invoice_number: null,
+      notes: invoice.list_notes,
+      subtotal_toman: total,
+      extra_charges_toman: 0,
+      discount_amount_toman: 0,
+      final_amount_toman: total
+    },
+    lines,
+    adjustments: [],
+    list_financials: { invoiced_toman: 0, paid_toman: 0, balance_toman: 0 }
   };
 }
 
@@ -205,7 +270,7 @@ function drawContinuationHeader(doc, invoice) {
   drawText(doc, invoice.collection_name, PAGE.margin, 25, contentWidth, {
     align: 'center', bold: true, size: 13
   });
-  drawText(doc, 'ادامه فاکتور',
+  drawText(doc, invoice._document_type === 'PROFORMA' ? 'ادامه پیش‌فاکتور' : 'ادامه فاکتور',
     PAGE.margin, 47, contentWidth, { align: 'center', size: 8.5, color: '#4b5563' });
   drawText(doc, invoice.invoice_number, PAGE.margin, 63, contentWidth, {
     align: 'center', bold: true, size: 8.5, color: '#4b5563'
@@ -256,11 +321,13 @@ function drawPageFrame(doc, pageNumber) {
 
 function renderInvoicePdf(data) {
   const { invoice, lines, adjustments } = data;
+  const isProforma = invoice._document_type === 'PROFORMA';
+  const documentTitle = isProforma ? 'پیش‌فاکتور' : 'صورتحساب اجاره تجهیزات';
   const doc = new PDFDocument({
     size: 'A4',
     margins: { top: PAGE.margin, right: PAGE.margin, bottom: 52, left: PAGE.margin },
     info: {
-      Title: `Invoice ${invoice.invoice_number}`,
+      Title: `${isProforma ? 'Proforma' : 'Invoice'} ${invoice.invoice_number}`,
       Author: invoice.collection_name,
       Subject: `Delivery list ${invoice.list_number}`
     }
@@ -287,7 +354,7 @@ function renderInvoicePdf(data) {
   drawText(doc, title.text, titleX, 31, titleWidth, {
     align: 'center', bold: true, size: title.size, lineBreak: false
   });
-  drawText(doc, 'صورتحساب اجاره تجهیزات', titleX, 60, titleWidth, {
+  drawText(doc, documentTitle, titleX, 60, titleWidth, {
     align: 'center', bold: true, size: 10.5, color: '#374151'
   });
   const headerMetaOptions = { labelWidth: 52, valueGap: 0 };
@@ -300,7 +367,7 @@ function renderInvoicePdf(data) {
   drawMetaLine(doc, topCustomerX, 98, topCustomerWidth,
     'نام مشتری', invoice.customer_name);
   drawMetaLine(doc, topInvoiceX, 98, topInvoiceWidth,
-    'شماره فاکتور', invoice.invoice_number, headerMetaOptions);
+    isProforma ? 'شماره لیست' : 'شماره فاکتور', invoice.invoice_number, headerMetaOptions);
   drawMetaLine(doc, PAGE.margin, 98, topAttachmentWidth,
     'پیوست', invoice.parent_invoice_number, { ...headerMetaOptions, emptyValue: '' });
 
@@ -363,7 +430,7 @@ function renderInvoicePdf(data) {
     ['جمع اجاره اقلام به تومان', invoice.subtotal_toman],
     ['هزینه های اضافی به تومان', invoice.extra_charges_toman],
     ['تخفیف به تومان', -Number(invoice.discount_amount_toman || 0)],
-    ['جمع کل این فاکتور به تومان', invoice.final_amount_toman]
+    [isProforma ? 'جمع برآوردی پیش‌فاکتور به تومان' : 'جمع کل این فاکتور به تومان', invoice.final_amount_toman]
   ];
   if (y + (summaryRows.length * 28) > TABLE_BOTTOM) y = addTablePage(doc, invoice);
   summaryRows.forEach(([label, amount], index) => {
@@ -384,6 +451,17 @@ function renderInvoicePdf(data) {
     'تاریخ برگشت', formatPersianDateTime(latestReturnAt(lines)));
   y += 30;
 
+  if (isProforma) {
+    if (y + 48 > TABLE_BOTTOM) {
+      doc.addPage();
+      y = 72;
+    }
+    drawCell(doc, PAGE.margin, y, contentWidth, 42,
+      'این پیش‌فاکتور صرفاً برآورد اولیه است و سند مالی قطعی محسوب نمی‌شود. مبلغ نهایی بر اساس زمان واقعی برگشت، خسارت، کسری و هزینه‌های نهایی محاسبه خواهد شد.',
+      { align: 'right', fill: '#fffbeb', stroke: '#d97706', color: '#92400e', bold: true, size: 8.2 });
+    y += 48;
+  }
+
   if (y + 96 > PAGE.height - 30) {
     doc.addPage();
     y = 72;
@@ -403,7 +481,22 @@ function createInvoicePdfService(db) {
     const buffer = await renderInvoicePdf(data);
     return { buffer, filename: `invoice-${data.invoice.invoice_number}.pdf`, data };
   }
-  return { generate, getInvoicePdfData: (listId, invoiceId) => getInvoicePdfData(db, listId, invoiceId) };
+  async function generateProforma(listId) {
+    const data = getProformaPdfData(db, listId);
+    const buffer = await renderInvoicePdf(data);
+    return { buffer, filename: `proforma-${data.invoice.list_number}.pdf`, data };
+  }
+  return {
+    generate,
+    generateProforma,
+    getInvoicePdfData: (listId, invoiceId) => getInvoicePdfData(db, listId, invoiceId),
+    getProformaPdfData: (listId) => getProformaPdfData(db, listId)
+  };
 }
 
-module.exports = { createInvoicePdfService, renderInvoicePdf, getInvoicePdfData };
+module.exports = {
+  createInvoicePdfService,
+  renderInvoicePdf,
+  getInvoicePdfData,
+  getProformaPdfData
+};

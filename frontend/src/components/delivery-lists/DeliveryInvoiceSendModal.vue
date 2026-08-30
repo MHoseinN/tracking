@@ -36,7 +36,7 @@
                   <th class="w-40 border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">زمان ارسال</th>
                   <td class="border border-slate-300 p-2">
                     <input v-model="form.sent_at" type="datetime-local" required
-                      class="h-11 w-full rounded-lg border border-stone-300 px-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
+                      class="h-11 w-full rounded-lg border border-stone-300 px-3 text-center text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
                   </td>
                 </tr>
                 <tr>

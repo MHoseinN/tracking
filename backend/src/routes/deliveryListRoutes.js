@@ -19,6 +19,7 @@ const {
   getSettlement,
   recordPayment,
   voidPayment,
+  downloadProformaPdf,
   downloadInvoicePdf
 } = require('../controllers/deliveryListController');
 
@@ -128,6 +129,7 @@ router.post('/:id/payments/:paymentId/void', [
   idValidation,
   param('paymentId').isInt({ min: 1 })
 ], voidPayment);
+router.get('/:id/proforma/pdf', [idValidation], downloadProformaPdf);
 router.get('/:id/invoices/:invoiceId/pdf', [
   idValidation,
   param('invoiceId').isInt({ min: 1 })
