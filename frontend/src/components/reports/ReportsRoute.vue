@@ -133,7 +133,7 @@
           </div>
 
           <div ref="topCustomersTableRef">
-          <AppTablePanel title="۱۰۰ مشتری برتر" :count="topCustomersTotalRows">
+          <AppTablePanel title=" مشتریان برتر">
             <AppDataTable class="top-customers-table" :column-count="6" :empty="!topCustomersTotalRows"
               min-width="100%" empty-message="داده کافی برای رتبه‌بندی مشتریان وجود ندارد.">
               <template #head>

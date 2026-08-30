@@ -1,16 +1,10 @@
 <template>
   <AppTablePanel :title="`محصولات ${categoryName || 'همه دسته‌ها'}`">
     <template #filters>
-      <AppFilterBar columns-class="md:grid-cols-2">
+      <AppFilterBar columns-class="md:grid-cols-1">
         <label class="app-filter-field"><span class="app-filter-label">جستجوی محصول</span>
           <input :value="searchQuery" class="app-filter-control" type="search" placeholder="نام محصول یا دسته‌بندی"
             @input="$emit('update:search-query', $event.target.value)" /></label>
-        <label class="app-filter-field"><span class="app-filter-label">دسته‌بندی</span>
-          <CustomSelect :model-value="selectedCategoryId || ''" :options="categoryOptions"
-            trigger-class="app-filter-control" @update:model-value="$emit('update:selected-category-id', $event)" /></label>
-        <template #actions>
-          <AppButton variant="secondary" @click="$emit('clear-filters')">پاک‌کردن فیلترها</AppButton>
-        </template>
       </AppFilterBar>
     </template>
     <AppDataTable class="products-table" :column-count="5" :loading="loading" :empty="!products.length" min-width="100%"
@@ -58,8 +52,6 @@
 
 <script setup>
 import AppPagination from '../AppPagination.vue';
-import CustomSelect from '../CustomSelect.vue';
-import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
 import AppFilterBar from '../ui/AppFilterBar.vue';
 import AppIconButton from '../ui/AppIconButton.vue';
@@ -67,14 +59,13 @@ import AppTablePanel from '../ui/AppTablePanel.vue';
 
 defineProps({
   categoryName: { type: String, default: '' }, searchQuery: { type: String, default: '' },
-  selectedCategoryId: { type: [String, Number], default: null }, categoryOptions: { type: Array, default: () => [] },
   products: { type: Array, default: () => [] }, loading: { type: Boolean, default: false },
   totalRows: { type: Number, default: 0 }, rowStartIndex: { type: Number, default: 0 },
   pageSize: { type: Number, required: true }, pageSizeOptions: { type: Array, default: () => [] },
   currentPage: { type: Number, required: true }, totalPages: { type: Number, required: true },
   visiblePageNumbers: { type: Array, default: () => [] }
 });
-defineEmits(['update:search-query', 'update:selected-category-id', 'clear-filters', 'update:page-size', 'go-to-page', 'edit', 'delete']);
+defineEmits(['update:search-query', 'update:page-size', 'go-to-page', 'edit', 'delete']);
 function formatPrice(value) { return `${Math.round(Number(value) || 0).toLocaleString('fa-IR')} تومان`; }
 </script>
 

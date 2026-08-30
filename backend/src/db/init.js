@@ -1,5 +1,4 @@
 const db = require('./database');
-const bcrypt = require('bcryptjs');
 const { runMigrations } = require('./migrations');
 
 function initDatabase() {
@@ -75,14 +74,6 @@ function initDatabase() {
   const invoiceColumns = db.prepare('PRAGMA table_info(invoices)').all().map((c) => c.name);
   if (!invoiceColumns.includes('notes')) {
     db.exec('ALTER TABLE invoices ADD COLUMN notes TEXT');
-  }
-
-  // Create default admin user if not exists
-  const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get('1010');
-  if (!existingUser) {
-    const hashedPassword = bcrypt.hashSync('123456', 10);
-    db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('1010', hashedPassword);
-    console.log('Default admin user created: username=1010, password=123456');
   }
 
   runMigrations(db);

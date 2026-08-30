@@ -42,8 +42,23 @@
         empty-message="برای این مشتری لیستی با فیلتر فعلی پیدا نشد.">
         <template #head>
           <tr>
-            <th>ردیف</th><th>شماره لیست</th><th>تاریخ تحویل</th><th>وضعیت لیست</th><th>فاکتور</th>
-            <th>ارسال</th><th>تسویه</th><th>مبلغ فاکتور</th><th>عملیات</th>
+            <th>ردیف</th>
+            <th>شماره لیست</th>
+            <th :aria-sort="sortAriaValue('deliveredAt')">
+              <button class="customer-list-sort" type="button" @click="toggleListSort('deliveredAt')">
+                <span>تاریخ تحویل</span>
+                <span class="customer-list-sort__icon" aria-hidden="true">{{ sortIcon('deliveredAt') }}</span>
+              </button>
+            </th>
+            <th>وضعیت لیست</th><th>فاکتور</th>
+            <th>ارسال</th><th>تسویه</th>
+            <th :aria-sort="sortAriaValue('invoiceAmount')">
+              <button class="customer-list-sort" type="button" @click="toggleListSort('invoiceAmount')">
+                <span>مبلغ فاکتور</span>
+                <span class="customer-list-sort__icon" aria-hidden="true">{{ sortIcon('invoiceAmount') }}</span>
+              </button>
+            </th>
+            <th>عملیات</th>
           </tr>
         </template>
 
@@ -98,7 +113,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppPagination from '../AppPagination.vue';
@@ -145,6 +160,8 @@ const listStatusFilter = ref('all');
 const invoiceStatusFilter = ref('all');
 const sendStatusFilter = ref('all');
 const settlementStatusFilter = ref('all');
+const listSorts = reactive({ deliveredAt: 'desc', invoiceAmount: 'desc' });
+const listSortPriority = ref(['deliveredAt', 'invoiceAmount']);
 const actionLoadingKey = ref('');
 const returnTargetList = ref(null);
 const returning = ref(false);
@@ -189,8 +206,21 @@ const filteredLists = computed(() => lists.value.filter((list) => (
   && (settlementStatusFilter.value === 'all' || list.settlement_status === settlementStatusFilter.value)
 )));
 
+const sortedLists = computed(() => filteredLists.value
+  .map((list, originalIndex) => ({ list, originalIndex }))
+  .sort((leftEntry, rightEntry) => {
+    for (const key of listSortPriority.value) {
+      const direction = listSorts[key] === 'asc' ? 1 : -1;
+      const leftValue = listSortValue(leftEntry.list, key);
+      const rightValue = listSortValue(rightEntry.list, key);
+      if (leftValue !== rightValue) return (leftValue - rightValue) * direction;
+    }
+    return leftEntry.originalIndex - rightEntry.originalIndex;
+  })
+  .map(({ list }) => list));
+
 const { currentPage, pageSize, pageSizeOptions, totalRows, totalPages, rowStartIndex,
-  paginatedItems: paginatedLists, visiblePageNumbers, goToPage } = usePaginatedList(filteredLists, {
+  paginatedItems: paginatedLists, visiblePageNumbers, goToPage } = usePaginatedList(sortedLists, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
   resetSources: [searchQuery, deliveryDateFilter, listStatusFilter, invoiceStatusFilter, sendStatusFilter, settlementStatusFilter],
   scrollTarget: tableSectionRef
@@ -388,6 +418,19 @@ function clearFilters() {
   searchQuery.value = ''; deliveryDateFilter.value = ''; listStatusFilter.value = 'all'; invoiceStatusFilter.value = 'all';
   sendStatusFilter.value = 'all'; settlementStatusFilter.value = 'all';
 }
+function listSortValue(list, key) {
+  if (key === 'invoiceAmount') return Number(list.invoice_total_toman) || 0;
+  const rawDate = list.delivered_at || list.created_at;
+  if (!rawDate) return 0;
+  return Date.parse(String(rawDate).replace(' ', 'T')) || 0;
+}
+function toggleListSort(key) {
+  listSorts[key] = listSorts[key] === 'desc' ? 'asc' : 'desc';
+  listSortPriority.value = [key, ...listSortPriority.value.filter((item) => item !== key)];
+  currentPage.value = 1;
+}
+function sortIcon(key) { return listSorts[key] === 'desc' ? '↓' : '↑'; }
+function sortAriaValue(key) { return listSorts[key] === 'desc' ? 'descending' : 'ascending'; }
 function hasInvoice(list) { return hasIssuedInvoice(list); }
 function hasIssuedInvoice(list) { return ['PARTIALLY_ISSUED', 'ISSUED'].includes(list.invoice_status); }
 function displayListNumber(list) {
@@ -402,7 +445,7 @@ function exportCustomerLists() {
   exportRowsToExcel({
     fileName: `customer-${customerId.value}-lists`, sheetTitle: `لیست‌های ${customer.value?.name || 'مشتری'}`,
     headers: ['شماره لیست', 'تاریخ تحویل', 'وضعیت لیست', 'فاکتور', 'ارسال', 'تسویه', 'مبلغ فاکتور'],
-    rows: filteredLists.value.map((list) => [list.list_number || list.id, formatDate(list.delivered_at),
+    rows: sortedLists.value.map((list) => [list.list_number || list.id, formatDate(list.delivered_at),
       list.status, list.invoice_status, list.invoice_send_status, list.settlement_status, list.invoice_total_toman])
   });
 }
@@ -422,6 +465,8 @@ function exportCustomerLists() {
 .customer-lists-table :deep(th:nth-child(8)) { width: 15%; }
 .customer-lists-table :deep(th:nth-child(9)) { width: 8%; }
 .customer-lists-table :deep(.app-status-badge) { max-width: 100%; padding-inline: .35rem; white-space: normal; justify-content: center; }
+.customer-list-sort { display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: .35rem; color: inherit; font: inherit; }
+.customer-list-sort__icon { color: #0f766e; font-size: .95rem; font-weight: 900; }
 @media (max-width: 1023px) {
   .customer-lists-table :deep(th:nth-child(3)), .customer-lists-table :deep(td:nth-child(3)),
   .customer-lists-table :deep(th:nth-child(6)), .customer-lists-table :deep(td:nth-child(6)),

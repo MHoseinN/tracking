@@ -15,13 +15,11 @@
 
       <section ref="tableSectionRef" class="space-y-6">
         <ProductCatalogList :category-name="selectedCategoryObject?.name" :search-query="productSearch"
-          :selected-category-id="selectedCategoryId" :category-options="categoryFilterOptions"
           :products="paginatedItems" :loading="catalogStore.loading" :total-rows="totalRows"
           :row-start-index="rowStartIndex" :page-size="pageSize" :page-size-options="pageSizeOptions"
           :current-page="currentPage" :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers"
           @update:search-query="productSearch = $event"
-          @update:selected-category-id="selectedCategoryId = $event || null"
-          @clear-filters="clearProductFilters" @update:page-size="pageSize = $event"
+          @update:page-size="pageSize = $event"
           @go-to-page="goToPage" @edit="openProductModal" @delete="openDeleteProduct" />
       </section>
     </div>
@@ -109,11 +107,6 @@ const visibleProducts = computed(() => {
     return matchesSearch && matchesCategory;
   });
 });
-const categoryFilterOptions = computed(() => [
-  { label: 'همه دسته‌بندی‌ها', value: '' },
-  ...flatCategoryOptions.value.map((category) => ({ label: category.label, value: category.id }))
-]);
-
 const {
   currentPage,
   pageSize,
@@ -159,11 +152,6 @@ function isCategoryDescendant(categoryId, selectedId) {
     current = categories.find((item) => String(item.id) === String(current.parent_id));
   }
   return false;
-}
-
-function clearProductFilters() {
-  productSearch.value = '';
-  selectedCategoryId.value = null;
 }
 
 </script>
