@@ -14,63 +14,23 @@
     <AppContentState v-if="loading" loading message="در حال دریافت جزئیات لیست..." />
 
     <div v-else-if="list" class="space-y-5">
-      <section class="app-panel p-5">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="app-badge" :class="listStatus.className">{{ listStatus.label }}</span>
-              <span class="app-badge" :class="invoiceStatus.className">{{ invoiceStatus.label }}</span>
-              <span class="app-badge" :class="invoiceSendStatus.className">{{ invoiceSendStatus.label }}</span>
-              <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
-            </div>
-            <p class="mt-3 text-xs font-semibold text-slate-500">{{ list.list_number ? 'شماره لیست' : 'شناسه پیش‌نویس' }}</p>
-            <h2 class="mt-1 text-2xl font-black text-slate-900">{{ list.list_number || list.id }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ list.customer_name || 'مشتری نامشخص' }}</p>
-          </div>
-          <div class="rounded-lg border border-violet-200 bg-violet-50 px-5 py-4 text-center">
-            <p class="text-xs text-violet-600">پیش‌فاکتور متصل</p>
-            <p class="mt-2 text-lg font-black text-violet-800">{{ list.proforma ? `#${formatNumber(list.proforma.id)}` : 'ایجاد نشده' }}</p>
-          </div>
-        </div>
-      </section>
+      <DeliveryListDraftEditorRoute
+        embedded
+        :initial-list="list"
+        @saved="handleEmbeddedListSaved"
+        @finalized="handleEmbeddedListSaved"
+      />
 
-      <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div class="app-panel p-4"><p class="text-xs text-slate-500">زمان تحویل</p><p class="mt-2 text-sm font-bold text-slate-800">{{ formatDateTime(list.delivered_at) }}</p></div>
-        <div class="app-panel p-4"><p class="text-xs text-slate-500">برگشت تقریبی</p><p class="mt-2 text-sm font-bold text-slate-800">{{ formatDateTime(list.expected_return_at) }}</p></div>
-        <div class="app-panel p-4"><p class="text-xs text-slate-500">تحویل‌دهنده</p><p class="mt-2 text-sm font-bold text-slate-800">{{ list.delivered_by_name || '—' }}</p></div>
-        <div class="app-panel p-4"><p class="text-xs text-slate-500">قاعده محاسبه</p><p class="mt-2 text-sm font-bold text-slate-800">{{ list.night_before ? 'شب قبل فعال' : 'محاسبه عادی' }}</p></div>
-      </section>
-
-      <section class="app-panel overflow-hidden">
-        <div class="border-b border-slate-100 p-5">
-          <h3 class="text-base font-black text-slate-800">اقلام تحویل‌شده</h3>
+      <section class="app-panel flex flex-wrap items-center justify-between gap-3 p-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="app-badge" :class="listStatus.className">{{ listStatus.label }}</span>
+          <span class="app-badge" :class="invoiceStatus.className">{{ invoiceStatus.label }}</span>
+          <span class="app-badge" :class="invoiceSendStatus.className">{{ invoiceSendStatus.label }}</span>
+          <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
         </div>
-        <div>
-          <table class="w-full table-fixed border-collapse border border-slate-300">
-            <thead class="bg-slate-100">
-              <tr>
-                <th v-for="heading in ['نام محصول','قیمت روزانه','تعداد','برگشت سالم','خسارت/مفقودی','مانده','جمع روزانه','وضعیت']" :key="heading" class="border border-slate-300 px-4 py-3 text-right text-xs font-bold text-slate-600">{{ heading }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in list.items" :key="item.id">
-                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-slate-800">{{ item.product_name_snapshot }}</td>
-                <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ formatCurrency(item.daily_price_toman) }}</td>
-                <td class="border border-slate-300 px-4 py-4 text-sm text-slate-600">{{ formatNumber(item.delivered_quantity) }}</td>
-                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-emerald-700">{{ formatNumber(item.healthy_returned_quantity) }}</td>
-                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-rose-700">{{ formatNumber(item.damaged_quantity + item.lost_quantity) }}</td>
-                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-orange-700">{{ formatNumber(item.remaining_quantity) }}</td>
-                <td class="border border-slate-300 px-4 py-4 text-sm font-bold text-indigo-700">{{ formatCurrency(item.daily_price_toman * item.delivered_quantity) }}</td>
-                <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="itemStatusMeta(item.item_status).className">{{ itemStatusMeta(item.item_status).label }}</span></td>
-              </tr>
-            </tbody>
-            <tfoot class="border-t border-slate-200 bg-slate-50">
-              <tr>
-                <td colspan="6" class="border border-slate-300 px-4 py-4 text-sm font-bold text-slate-700">جمع نرخ روزانه</td>
-                <td colspan="2" class="border border-slate-300 px-4 py-4 text-base font-black text-indigo-700">{{ formatCurrency(dailyTotal) }}</td>
-              </tr>
-            </tfoot>
-          </table>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
+          <span>تحویل‌دهنده: <strong class="text-slate-800">{{ list.delivered_by_name || '—' }}</strong></span>
+          <span>پیش‌فاکتور: <strong class="text-violet-700">{{ list.proforma ? `#${formatNumber(list.proforma.id)}` : 'ایجاد نشده' }}</strong></span>
         </div>
       </section>
 
@@ -153,6 +113,7 @@ import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryInvoicePreviewModal from './DeliveryInvoicePreviewModal.vue';
 import DeliveryInvoiceSendModal from './DeliveryInvoiceSendModal.vue';
 import DeliverySettlementModal from './DeliverySettlementModal.vue';
+import DeliveryListDraftEditorRoute from './DeliveryListDraftEditorRoute.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
 
@@ -186,9 +147,6 @@ const loadingSendInvoiceId = ref(null);
 const updatingSendStatus = ref(false);
 const invoiceToResetSend = ref(null);
 
-const dailyTotal = computed(() => (list.value?.items || []).reduce((sum, item) => (
-  sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
-), 0));
 const canRecordReturn = computed(() => (
   ['DELIVERED', 'REMAINING', 'NEEDS_FOLLOW_UP'].includes(list.value?.status)
   && (list.value?.items || []).some((item) => Number(item.remaining_quantity) > 0)
@@ -222,6 +180,10 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => releaseInvoicePdfUrl());
+
+function handleEmbeddedListSaved(updatedList) {
+  if (updatedList) list.value = updatedList;
+}
 
 async function createNewDraft() {
   const result = await listStore.createDraft();
@@ -416,15 +378,6 @@ function closeIssuedInvoiceModal() {
   showIssuedInvoiceModal.value = false;
   selectedInvoice.value = null;
   releaseInvoicePdfUrl();
-}
-
-function itemStatusMeta(status) {
-  return {
-    DELIVERED: { label: 'تحویل', className: 'bg-blue-100 text-blue-700' },
-    RETURNED: { label: 'برگشت', className: 'bg-emerald-100 text-emerald-700' },
-    REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
-    DAMAGE: { label: 'خسارت/مفقودی', className: 'bg-rose-100 text-rose-700' }
-  }[status] || { label: status || 'نامشخص', className: 'bg-slate-100 text-slate-600' };
 }
 
 function invoiceSendStatusMeta(status) {

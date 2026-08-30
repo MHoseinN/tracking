@@ -185,8 +185,8 @@ function createDraft(req, res) {
 function saveDraft(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try {
-    const result = draftService.saveDraft(req.params.id, req.body);
-    deliveryListEvents.publish({ action: 'DRAFT_UPDATED', list_id: Number(req.params.id) });
+    const result = draftService.saveDraft(req.params.id, req.body, req.user.id);
+    deliveryListEvents.publish({ action: 'LIST_UPDATED', list_id: Number(req.params.id) });
     return res.json(result);
   }
   catch (error) { return handleError(error, res); }

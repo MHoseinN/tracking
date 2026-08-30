@@ -42,6 +42,7 @@ router.put('/:id/draft', [
   body('night_before').optional().isBoolean(),
   body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 }),
   body('items').isArray({ max: 500 }),
+  body('items.*.id').optional({ nullable: true }).isInt({ min: 1 }),
   body('items.*.product_id').isInt({ min: 1 }),
   body('items.*.daily_price_toman').isInt({ min: 0 }),
   body('items.*.delivered_quantity').isInt({ min: 1 }),

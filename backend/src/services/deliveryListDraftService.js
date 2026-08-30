@@ -326,7 +326,13 @@ function createDeliveryListDraftService(db) {
       throw new DeliveryListDraftError('اقلام پیش‌نویس نامعتبر هستند');
     }
     const productIds = new Set();
+    const itemIds = new Set();
     return items.map((item) => {
+      const itemId = nullableId(item.id);
+      if (itemId && itemIds.has(itemId)) {
+        throw new DeliveryListDraftError('شناسه قلم تکراری است');
+      }
+      if (itemId) itemIds.add(itemId);
       const productId = nullableId(item.product_id);
       if (!productId) throw new DeliveryListDraftError('انتخاب محصول برای هر ردیف الزامی است');
       if (productIds.has(productId)) {
@@ -352,6 +358,7 @@ function createDeliveryListDraftService(db) {
         throw new DeliveryListDraftError('قیمت روزانه محصول نامعتبر است');
       }
       return {
+        itemId,
         productId: product.id,
         productName: product.name,
         dailyPrice,
@@ -361,18 +368,21 @@ function createDeliveryListDraftService(db) {
     });
   }
 
-  function saveDraft(id, payload = {}) {
-    const draft = getDraftRow(id);
+  function saveDraft(id, payload = {}, actorUserId = null) {
+    const draft = getListRow(id);
     const expectedVersion = payload.version === null || payload.version === undefined
       ? Number(draft.version)
       : Number(payload.version);
     if (!Number.isInteger(expectedVersion) || expectedVersion !== Number(draft.version)) {
-      throw new DeliveryListDraftError('این پیش‌نویس در جای دیگری تغییر کرده است؛ صفحه را دوباره بارگذاری کنید', 409);
+      throw new DeliveryListDraftError('این لیست در جای دیگری تغییر کرده است؛ صفحه را دوباره بارگذاری کنید', 409);
     }
 
     const customerId = nullableId(payload.customer_id);
     const customerName = nullableText(payload.customer_name_snapshot);
     const customer = resolveCustomer(customerId, customerName);
+    if (draft.status !== 'DRAFT' && !customer.customerId) {
+      throw new DeliveryListDraftError('لیست ثبت‌شده باید مشتری معتبر داشته باشد');
+    }
     const items = normalizeItems(payload.items || []);
     const deliveredAt = nullableText(payload.delivered_at);
     const expectedReturnAt = nullableText(payload.expected_return_at);
@@ -386,7 +396,7 @@ function createDeliveryListDraftService(db) {
             expected_return_at = ?, night_before = ?, notes = ?,
             last_autosaved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP,
             version = version + 1
-        WHERE id = ? AND status = 'DRAFT' AND archived_at IS NULL AND version = ?
+        WHERE id = ? AND archived_at IS NULL AND version = ?
       `).run(
         customer.customerId,
         customer.customerName,
@@ -401,7 +411,20 @@ function createDeliveryListDraftService(db) {
         throw new DeliveryListDraftError('ذخیره هم‌زمان انجام نشد؛ صفحه را دوباره بارگذاری کنید', 409);
       }
 
-      db.prepare('DELETE FROM delivery_list_items WHERE delivery_list_id = ?').run(id);
+      const existingItems = db.prepare(`
+        SELECT id
+        FROM delivery_list_items
+        WHERE delivery_list_id = ? AND deleted_at IS NULL
+      `).all(id);
+      const existingIds = new Set(existingItems.map((item) => Number(item.id)));
+      const retainedIds = new Set();
+      const updateItem = db.prepare(`
+        UPDATE delivery_list_items
+        SET product_id = ?, product_name_snapshot = ?, daily_price_toman = ?,
+            delivered_quantity = ?, notes = ?, deleted_at = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND delivery_list_id = ?
+      `);
       const insertItem = db.prepare(`
         INSERT INTO delivery_list_items (
           delivery_list_id, product_id, product_name_snapshot,
@@ -409,19 +432,102 @@ function createDeliveryListDraftService(db) {
         ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
       items.forEach((item) => {
-        insertItem.run(
-          id,
-          item.productId,
-          item.productName,
-          item.dailyPrice,
-          item.quantity,
-          item.notes
-        );
+        if (item.itemId) {
+          if (!existingIds.has(item.itemId)) {
+            throw new DeliveryListDraftError('یکی از اقلام این لیست معتبر نیست', 409);
+          }
+          const returned = db.prepare(`
+            SELECT COALESCE(SUM(healthy_quantity + damaged_quantity + lost_quantity), 0) AS quantity
+            FROM return_event_items
+            WHERE delivery_list_item_id = ? AND deleted_at IS NULL
+          `).get(item.itemId);
+          if (item.quantity < Number(returned.quantity || 0)) {
+            throw new DeliveryListDraftError(`تعداد «${item.productName}» نمی‌تواند کمتر از تعداد برگشت‌خورده باشد`);
+          }
+          updateItem.run(
+            item.productId, item.productName, item.dailyPrice,
+            item.quantity, item.notes, item.itemId, id
+          );
+          retainedIds.add(item.itemId);
+        } else {
+          const result = insertItem.run(
+            id, item.productId, item.productName,
+            item.dailyPrice, item.quantity, item.notes
+          );
+          retainedIds.add(Number(result.lastInsertRowid));
+        }
       });
+
+      existingItems.forEach((item) => {
+        if (retainedIds.has(Number(item.id))) return;
+        db.prepare(`
+          UPDATE delivery_list_items
+          SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND delivery_list_id = ? AND deleted_at IS NULL
+        `).run(item.id, id);
+      });
+
+      if (draft.status !== 'DRAFT') {
+        const state = db.prepare(`
+          SELECT
+            (SELECT COALESCE(SUM(delivered_quantity), 0)
+               FROM delivery_list_items
+              WHERE delivery_list_id = ? AND deleted_at IS NULL) AS total_delivered,
+            (SELECT COALESCE(SUM(
+               return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+             ), 0)
+               FROM return_event_items
+               JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+              WHERE delivery_list_items.delivery_list_id = ?
+                AND delivery_list_items.deleted_at IS NULL
+                AND return_event_items.deleted_at IS NULL) AS total_returned,
+            (SELECT COALESCE(SUM(
+               return_event_items.damaged_quantity + return_event_items.lost_quantity
+             ), 0)
+               FROM return_event_items
+               JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+              WHERE delivery_list_items.delivery_list_id = ?
+                AND delivery_list_items.deleted_at IS NULL
+                AND return_event_items.deleted_at IS NULL
+                AND return_event_items.issue_resolved_at IS NULL) AS unresolved_issues
+        `).get(id, id, id);
+        const nextStatus = Number(state.unresolved_issues) > 0
+          ? 'NEEDS_FOLLOW_UP'
+          : Number(state.total_returned) === 0
+            ? 'DELIVERED'
+            : Number(state.total_returned) < Number(state.total_delivered)
+              ? 'REMAINING'
+              : 'COMPLETED';
+        db.prepare(`
+          UPDATE delivery_lists
+          SET status = ?,
+              completed_at = CASE
+                WHEN ? = 'COMPLETED' THEN COALESCE(completed_at, CURRENT_TIMESTAMP)
+                ELSE NULL
+              END,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(nextStatus, nextStatus, id);
+      }
+
+      if (draft.status !== 'DRAFT') {
+        db.prepare(`
+          INSERT INTO audit_logs (
+            actor_user_id, entity_type, entity_id, action,
+            before_json, after_json, metadata_json
+          ) VALUES (?, 'DELIVERY_LIST', ?, 'UPDATE_DELIVERY_LIST', ?, ?, ?)
+        `).run(
+          actorUserId,
+          String(id),
+          JSON.stringify({ version: Number(draft.version), status: draft.status }),
+          JSON.stringify({ version: expectedVersion + 1, customer_id: customer.customerId }),
+          JSON.stringify({ item_count: items.length, edited_after_finalize: true })
+        );
+      }
     });
 
     save();
-    return getDraft(id);
+    return getList(id);
   }
 
   function deleteDraft(id) {

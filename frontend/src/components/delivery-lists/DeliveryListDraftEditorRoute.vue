@@ -1,143 +1,165 @@
 <template>
   <div>
-    <Teleport to="#app-shell-actions">
+    <Teleport v-if="!embedded" to="#app-shell-actions">
       <button type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
         :disabled="finalizing" @click="openFinalizeConfirm">
-        {{ finalizing ? 'در حال ثبت تحویل...' : 'ثبت نهایی تحویل' }}
+        {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره تغییرات لیست') }}
       </button>
       <button type="button" class="app-button-primary w-full" :disabled="creating" @click="createAnotherDraft">
         {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست دیگر' }}
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">فهرست پیش‌نویس‌ها</button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به لیست‌ها</button>
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال آماده‌سازی پیش‌نویس..." />
 
-    <div v-else class="space-y-5">
-      <section class="app-panel p-5">
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="app-badge bg-amber-100 text-amber-700">پیش‌نویس</span>
-              <span class="text-xs text-slate-400">شناسه {{ formatNumber(draftId) }}</span>
-            </div>
-            <h2 class="mt-2 text-xl font-black text-slate-900">ساخت لیست تحویل</h2>
-          </div>
-          <div class="rounded-lg px-4 py-2 text-sm font-bold" :class="saveStatusClass">
-            {{ saveStatusText }}
-          </div>
-        </div>
-      </section>
-
-      <section class="app-panel p-5">
-        <h3 class="mb-5 text-base font-black text-slate-800">اطلاعات مشتری و زمان‌ها</h3>
-        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <label class="space-y-2 md:col-span-2">
-            <span class="text-sm font-semibold text-slate-700">نام مشتری</span>
-            <input v-model.trim="form.customerName" list="delivery-customers" type="text" maxlength="255"
-              placeholder="نام مشتری را وارد یا انتخاب کنید" @input="syncCustomerId"
-              class="h-12 w-full rounded-lg border border-stone-300 px-4 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
-            <datalist id="delivery-customers">
-              <option v-for="customer in invoiceStore.customers" :key="customer.id" :value="customer.name" />
-            </datalist>
-            <button type="button" class="mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-800"
-              @click="showCustomerModal = true">+ ایجاد مشتری جدید</button>
-          </label>
-
-          <label class="space-y-2">
-            <span class="text-sm font-semibold text-slate-700">تاریخ تحویل</span>
-            <JalaliDatePicker v-model="form.deliveryDate" input-class="h-12" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-sm font-semibold text-slate-700">ساعت تحویل</span>
-            <input v-model="form.deliveryTime" type="time"
-              class="h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-blue-400" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-sm font-semibold text-slate-700">تاریخ تقریبی برگشت</span>
-            <JalaliDatePicker v-model="form.expectedReturnDate" input-class="h-12" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-sm font-semibold text-slate-700">ساعت تقریبی برگشت</span>
-            <input v-model="form.expectedReturnTime" type="time"
-              class="h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-blue-400" />
-          </label>
-          <label class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2">
-            <input v-model="form.nightBefore" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-indigo-600" />
-            <span>
-              <span class="block text-sm font-bold text-slate-700">شب قبل</span>
-              <span class="mt-1 block text-xs text-slate-500">روز تحویل در محاسبه اجاره منظور نشود.</span>
+    <div v-else>
+      <section class="draft-workspace app-panel overflow-visible">
+        <header class="draft-workspace__header">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-lg font-black text-slate-900">{{ isDraft ? 'ایجاد لیست تحویل' : 'ویرایش لیست تحویل' }}</h2>
+            <span class="app-badge" :class="editorStatusMeta.className">{{ editorStatusMeta.label }}</span>
+            <span class="draft-id-badge">
+              {{ isDraft ? `شناسه ${formatNumber(draftId)}` : `شماره لیست ${loadedListNumber || formatNumber(draftId)}` }}
             </span>
+          </div>
+          <div class="rounded-lg px-3 py-2 text-xs font-bold" :class="saveStatusClass">{{ saveStatusText }}</div>
+        </header>
+
+        <div class="draft-information-grid">
+          <label class="draft-field draft-field--customer">
+            <span class="draft-field__label">مشتری</span>
+            <div class="draft-customer-control">
+              <input v-model.trim="form.customerName" type="text" maxlength="255"
+                placeholder="نام مشتری را وارد یا انتخاب کنید" autocomplete="off"
+                @focus="customerSearchOpen = true" @input="handleCustomerSearchInput"
+                @blur="closeCustomerSearch" @keydown.escape="customerSearchOpen = false" />
+              <button type="button" title="ایجاد مشتری جدید" aria-label="ایجاد مشتری جدید"
+                @click="showCustomerModal = true">+</button>
+            </div>
+            <div v-if="customerSearchOpen" class="draft-customer-results">
+              <button v-for="customerOption in filteredCustomers" :key="customerOption.id" type="button"
+                @mousedown.prevent="selectCustomer(customerOption)">
+                <strong>{{ customerOption.name }}</strong>
+                <span>{{ customerOption.phone || 'بدون شماره تماس' }}</span>
+              </button>
+              <div v-if="!filteredCustomers.length" class="draft-customer-results__empty">
+                مشتری‌ای با این عبارت پیدا نشد.
+              </div>
+            </div>
+          </label>
+
+          <label class="draft-field">
+            <span class="draft-field__label">تاریخ تحویل</span>
+            <JalaliDatePicker v-model="form.deliveryDate" input-class="draft-field__control" />
+          </label>
+          <label class="draft-field">
+            <span class="draft-field__label">ساعت تحویل</span>
+            <input v-model="form.deliveryTime" class="draft-field__control" type="time" />
+          </label>
+          <label class="draft-field">
+            <span class="draft-field__label">تاریخ تقریبی برگشت</span>
+            <JalaliDatePicker v-model="form.expectedReturnDate" input-class="draft-field__control" />
+          </label>
+          <label class="draft-field">
+            <span class="draft-field__label">ساعت تقریبی برگشت</span>
+            <input v-model="form.expectedReturnTime" class="draft-field__control" type="time" />
+          </label>
+          <label class="draft-night-before" :class="{ 'draft-night-before--active': form.nightBefore }">
+            <input v-model="form.nightBefore" type="checkbox" />
+            <span class="draft-night-before__switch" aria-hidden="true"><span></span></span>
+            <span><strong>شب قبل</strong><small>روز تحویل در محاسبه اجاره منظور نشود</small></span>
+          </label>
+          <label class="draft-field draft-field--notes">
+            <span class="draft-field__label">توضیحات کلی لیست</span>
+            <input v-model.trim="form.notes" class="draft-field__control" type="text" maxlength="5000"
+              placeholder="یادداشت اختیاری برای این لیست" />
           </label>
         </div>
-      </section>
 
-      <section class="app-panel overflow-hidden">
-        <div class="flex flex-col gap-4 border-b border-slate-100 p-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="draft-items-toolbar">
           <div>
             <h3 class="text-base font-black text-slate-800">اقلام لیست</h3>
-            <p class="mt-1 text-xs text-slate-500">تعداد موجودی مانع افزودن محصول نیست.</p>
+            <p class="mt-1 text-xs text-slate-500">در هر ردیف نام محصول را جست‌وجو و انتخاب کنید.</p>
           </div>
-          <div class="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-            <CustomSelect v-model="selectedProductId" :options="availableProductOptions" placeholder="انتخاب محصول"
-              wrapper-class="w-full sm:w-80" trigger-class="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm" />
-            <button type="button" class="app-button-primary h-12 px-6" :disabled="!selectedProductId" @click="addProduct">
-              افزودن قلم
+          <div class="draft-row-actions">
+            <span>افزودن ردیف:</span>
+            <button v-for="count in [1, 5, 10]" :key="count" type="button" @click="addRows(count)">
+              +{{ formatNumber(count) }}
             </button>
+            <span class="draft-items-count">{{ formatNumber(activeItems.length) }} قلم انتخاب‌شده</span>
           </div>
         </div>
 
-        <div v-if="!form.items.length" class="px-5 py-14 text-center text-sm text-slate-400">
-          هنوز محصولی به این پیش‌نویس اضافه نشده است.
-        </div>
-        <div v-else class="overflow-x-auto">
-          <table class="w-full min-w-[900px]">
-            <thead class="border-b border-slate-100 bg-slate-50">
+        <div class="draft-table-wrap">
+          <table class="draft-items-table">
+            <thead>
               <tr>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">نام محصول</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">قیمت روزانه</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">تعداد</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">وضعیت</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">توضیحات</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500">عملیات</th>
+                <th>ردیف</th>
+                <th>محصول</th>
+                <th>تعداد</th>
+                <th>قیمت روزانه</th>
+                <th>جمع روزانه</th>
+                <th>توضیحات</th>
+                <th>عملیات</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in form.items" :key="item.localKey" class="border-b border-slate-100 last:border-0">
-                <td class="px-4 py-4 text-sm font-bold text-slate-800">{{ item.product_name_snapshot }}</td>
-                <td class="px-4 py-4">
-                  <input v-model.number="item.daily_price_toman" type="number" min="0" step="1000"
-                    class="h-10 w-44 rounded-lg border border-slate-200 px-3 text-sm" />
+              <tr v-for="(item, index) in form.items" :key="item.localKey" class="draft-item-row"
+                :class="{ 'draft-item-row--empty': !item.product_id }">
+                <td class="draft-row-number">{{ formatNumber(index + 1) }}</td>
+                <td class="draft-product-search-cell">
+                  <div class="draft-product-search">
+                    <svg class="draft-product-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                    <input v-model.trim="rowSearchState[item.localKey].query" type="search"
+                      :data-product-search="index" placeholder="جست‌وجوی نام محصول..."
+                      @focus="openRowSearch(item)" @input="openRowSearch(item)"
+                      @blur="closeRowSearch(item)" @keydown.escape="rowSearchState[item.localKey].open = false"
+                      @keydown.enter.prevent="selectFirstRowResult(item)" />
+                    <div v-if="rowSearchState[item.localKey].open" class="draft-product-results">
+                      <button v-for="product in searchableProductsForRow(item)" :key="product.id" type="button"
+                        class="draft-product-result" @mousedown.prevent="selectProductForRow(item, product)">
+                        <span class="draft-product-result__name">{{ product.name }}</span>
+                        <strong>{{ formatCurrency(product.daily_price_toman) }}</strong>
+                      </button>
+                      <div v-if="!searchableProductsForRow(item).length" class="draft-product-results__empty">
+                        محصولی با این عبارت پیدا نشد.
+                      </div>
+                    </div>
+                  </div>
                 </td>
-                <td class="px-4 py-4">
-                  <input v-model.number="item.delivered_quantity" type="number" min="1" step="1"
-                    class="h-10 w-24 rounded-lg border border-slate-200 px-3 text-sm" />
+                <td>
+                  <div class="draft-stepper">
+                    <button type="button" aria-label="کاهش تعداد" :disabled="!item.product_id" @click="decrementQuantity(item)">−</button>
+                    <input v-model.number="item.delivered_quantity" type="number" min="1" step="1" :disabled="!item.product_id" />
+                    <button type="button" aria-label="افزایش تعداد" :disabled="!item.product_id" @click="incrementQuantity(item)">+</button>
+                  </div>
                 </td>
-                <td class="px-4 py-4"><span class="app-badge bg-amber-100 text-amber-700">پیش‌نویس</span></td>
-                <td class="px-4 py-4">
-                  <input v-model.trim="item.notes" type="text" maxlength="1000" placeholder="اختیاری"
-                    class="h-10 w-full min-w-48 rounded-lg border border-slate-200 px-3 text-sm" />
-                </td>
-                <td class="px-4 py-4">
-                  <button type="button" class="app-button-secondary border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
-                    @click="removeProduct(item.localKey)">حذف</button>
+                <td><input v-model.number="item.daily_price_toman" class="draft-table-input draft-price-input"
+                  type="number" min="0" step="1000" :disabled="!item.product_id" /></td>
+                <td class="draft-line-total">{{ item.product_id ? formatCurrency(itemDailyTotal(item)) : '—' }}</td>
+                <td><input v-model.trim="item.notes" class="draft-table-input" type="text" maxlength="1000"
+                  placeholder="اختیاری" :disabled="!item.product_id" /></td>
+                <td>
+                  <button type="button" class="draft-delete-button" title="حذف قلم" aria-label="حذف قلم"
+                    :disabled="!item.product_id && form.items.length <= 5"
+                    @click="removeProduct(item.localKey)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="flex flex-col gap-4 border-t border-slate-100 bg-slate-50 p-5 md:flex-row md:items-end md:justify-between">
-          <label class="w-full space-y-2 md:max-w-2xl">
-            <span class="text-sm font-semibold text-slate-700">توضیحات کلی لیست</span>
-            <textarea v-model.trim="form.notes" rows="3" maxlength="5000"
-              class="w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-blue-400"></textarea>
-          </label>
-          <div class="rounded-lg border border-slate-200 bg-white px-5 py-4 text-left">
-            <p class="text-xs text-slate-500">جمع روزانه اقلام</p>
-            <p class="mt-2 text-lg font-black text-indigo-700">{{ formatCurrency(dailyTotal) }}</p>
+        <footer class="draft-summary-bar">
+          <div class="draft-summary-item"><span>تعداد اقلام</span><strong>{{ formatNumber(activeItems.length) }}</strong></div>
+          <div class="draft-summary-item"><span>مجموع تعداد</span><strong>{{ formatNumber(totalQuantity) }}</strong></div>
+          <div class="draft-summary-item draft-summary-item--total"><span>جمع روزانه اقلام</span><strong>{{ formatCurrency(dailyTotal) }}</strong></div>
+          <div class="draft-summary-rule" :class="{ 'draft-summary-rule--active': form.nightBefore }">
+            {{ form.nightBefore ? 'محاسبه با قاعده شب قبل' : 'محاسبه عادی اجاره' }}
           </div>
-        </div>
+        </footer>
       </section>
 
       <p v-if="saveError" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -145,7 +167,7 @@
       </p>
     </div>
 
-    <ConfirmModal :is-open="showFinalizeConfirm" title="ثبت نهایی تحویل"
+    <ConfirmModal :is-open="isDraft && showFinalizeConfirm" title="ثبت نهایی تحویل"
       :message="finalizeConfirmMessage" :loading="finalizing"
       confirm-text="بله، تحویل ثبت شود" loading-text="در حال ثبت تحویل..."
       @confirm="confirmFinalize" @cancel="showFinalizeConfirm = false" />
@@ -161,7 +183,6 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
-import CustomSelect from '../CustomSelect.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
@@ -169,6 +190,11 @@ import { useInvoiceStore } from '../../stores/invoiceStore';
 import { useProductCatalogStore } from '../../stores/productCatalogStore';
 import { getCurrentPersianDate, toGregorianDate, toPersianDate } from '../../utils/dateConverter';
 
+const props = defineProps({
+  embedded: { type: Boolean, default: false },
+  initialList: { type: Object, default: null }
+});
+const emit = defineEmits(['saved', 'finalized']);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -181,11 +207,14 @@ const creating = ref(false);
 const finalizing = ref(false);
 const showFinalizeConfirm = ref(false);
 const showCustomerModal = ref(false);
-const selectedProductId = ref('');
+const customerSearchOpen = ref(false);
+const rowSearchState = reactive({});
 const saveStatus = ref('saved');
 const saveError = ref('');
 const lastSavedAt = ref('');
 const currentVersion = ref(1);
+const loadedStatus = ref('DRAFT');
+const loadedListNumber = ref('');
 const revision = ref(0);
 const persistedRevision = ref(0);
 const initialized = ref(false);
@@ -206,22 +235,35 @@ const form = reactive({
   items: []
 });
 
-const availableProductOptions = computed(() => {
-  const selectedIds = new Set(form.items.map((item) => Number(item.product_id)));
-  return productStore.products
-    .filter((product) => !selectedIds.has(Number(product.id)))
-    .map((product) => ({
-      value: product.id,
-      label: `${product.name} — ${formatCurrency(product.daily_price_toman)}`
-    }));
+const activeItems = computed(() => form.items.filter((item) => Number(item.product_id) > 0));
+const isDraft = computed(() => loadedStatus.value === 'DRAFT');
+const editorStatusMeta = computed(() => ({
+  DRAFT: { label: 'پیش‌نویس', className: 'bg-amber-100 text-amber-700' },
+  DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },
+  REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
+  NEEDS_FOLLOW_UP: { label: 'نیاز به پیگیری', className: 'bg-rose-100 text-rose-700' },
+  COMPLETED: { label: 'تکمیل', className: 'bg-emerald-100 text-emerald-700' }
+}[loadedStatus.value] || { label: loadedStatus.value, className: 'bg-slate-100 text-slate-700' }));
+
+const filteredCustomers = computed(() => {
+  const query = form.customerName.trim().toLowerCase();
+  return invoiceStore.customers
+    .filter((customerOption) => !query
+      || String(customerOption.name || '').toLowerCase().includes(query)
+      || String(customerOption.phone || '').includes(query))
+    .slice(0, 8);
 });
 
 const dailyTotal = computed(() => form.items.reduce((sum, item) => (
   sum + (Number(item.daily_price_toman) || 0) * (Number(item.delivered_quantity) || 0)
 ), 0));
 
+const totalQuantity = computed(() => activeItems.value.reduce((sum, item) => (
+  sum + Math.max(1, Math.round(Number(item.delivered_quantity) || 1))
+), 0));
+
 const finalizeConfirmMessage = computed(() => (
-  `تحویل ${formatNumber(form.items.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
+  `تحویل ${formatNumber(activeItems.value.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
   + 'پس از ثبت، پیش‌نویس به لیست تحویل‌شده تبدیل و پیش‌فاکتور خودکار ایجاد می‌شود.'
 ));
 
@@ -242,17 +284,18 @@ const saveStatusText = computed(() => {
 watch(form, scheduleAutosave, { deep: true });
 
 onMounted(async () => {
+  window.addEventListener('keydown', focusProductSearchShortcut);
   loading.value = true;
   try {
     const [draft] = await Promise.all([
-      draftStore.fetchDraft(draftId.value),
+      props.initialList ? Promise.resolve(props.initialList) : draftStore.fetchDraft(draftId.value),
       invoiceStore.customers.length ? Promise.resolve() : invoiceStore.fetchCustomers(),
       productStore.products.length ? Promise.resolve() : productStore.fetchCatalog()
     ]);
     await hydrateDraft(draft);
   } catch (_error) {
     toast.error(draftStore.error || 'آماده‌سازی پیش‌نویس انجام نشد');
-    router.replace('/lists');
+    if (!props.embedded) router.replace('/lists');
   } finally {
     loading.value = false;
   }
@@ -263,7 +306,10 @@ onBeforeRouteLeave(async () => {
   return saved || false;
 });
 
-onBeforeUnmount(() => clearTimeout(autosaveTimer));
+onBeforeUnmount(() => {
+  clearTimeout(autosaveTimer);
+  window.removeEventListener('keydown', focusProductSearchShortcut);
+});
 
 async function hydrateDraft(draft) {
   hydrating.value = true;
@@ -282,7 +328,10 @@ async function hydrateDraft(draft) {
   form.expectedReturnTime = draft.expected_return_at ? String(draft.expected_return_at).slice(11, 16) : '11:00';
   form.nightBefore = Boolean(draft.night_before);
   form.notes = draft.notes || '';
-  form.items = (draft.items || []).map((item) => ({ ...item, localKey: nextLocalKey() }));
+  form.items = (draft.items || []).map((item) => createItemRow(item));
+  if (form.items.length < 5) addRows(5 - form.items.length);
+  loadedStatus.value = draft.status || 'DRAFT';
+  loadedListNumber.value = draft.list_number || '';
   currentVersion.value = Number(draft.version) || 1;
   lastSavedAt.value = draft.last_autosaved_at || '';
   revision.value = 0;
@@ -322,10 +371,13 @@ async function persistDraft() {
       return false;
     }
     currentVersion.value = Number(result.data.version);
+    loadedStatus.value = result.data.status || loadedStatus.value;
+    loadedListNumber.value = result.data.list_number || loadedListNumber.value;
     persistedRevision.value = savingRevision;
     lastSavedAt.value = result.data.last_autosaved_at || new Date().toISOString();
     saveStatus.value = revision.value === savingRevision ? 'saved' : 'dirty';
     saveError.value = '';
+    emit('saved', result.data);
     return true;
   });
   const saved = await savePromise;
@@ -346,7 +398,8 @@ function buildPayload() {
     expected_return_at: combineDateTime(form.expectedReturnDate, form.expectedReturnTime),
     night_before: form.nightBefore,
     notes: form.notes || null,
-    items: form.items.map((item) => ({
+    items: activeItems.value.map((item) => ({
+      id: item.id || null,
       product_id: Number(item.product_id),
       daily_price_toman: Math.max(0, Math.round(Number(item.daily_price_toman) || 0)),
       delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
@@ -361,22 +414,107 @@ function syncCustomerId() {
   form.customerId = customer?.id || null;
 }
 
-function addProduct() {
-  const product = productStore.products.find((item) => Number(item.id) === Number(selectedProductId.value));
+function handleCustomerSearchInput() {
+  syncCustomerId();
+  customerSearchOpen.value = true;
+}
+
+function selectCustomer(customerOption) {
+  form.customerId = customerOption.id;
+  form.customerName = customerOption.name;
+  customerSearchOpen.value = false;
+}
+
+function closeCustomerSearch() {
+  window.setTimeout(() => { customerSearchOpen.value = false; }, 120);
+}
+
+function createItemRow(item = {}) {
+  const localKey = nextLocalKey();
+  rowSearchState[localKey] = {
+    query: item.product_name_snapshot || '',
+    open: false
+  };
+  return {
+    localKey,
+    id: item.id || null,
+    product_id: item.product_id || null,
+    product_name_snapshot: item.product_name_snapshot || '',
+    daily_price_toman: Number(item.daily_price_toman) || 0,
+    delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
+    notes: item.notes || ''
+  };
+}
+
+function addRows(count) {
+  const rows = Array.from({ length: Number(count) || 0 }, () => createItemRow());
+  form.items.push(...rows);
+}
+
+function searchableProductsForRow(item) {
+  const selectedIds = new Set(activeItems.value
+    .filter((selectedItem) => selectedItem.localKey !== item.localKey)
+    .map((selectedItem) => Number(selectedItem.product_id)));
+  const query = String(rowSearchState[item.localKey]?.query || '').trim().toLowerCase();
+  return productStore.products
+    .filter((product) => !selectedIds.has(Number(product.id)))
+    .filter((product) => !query || String(product.name || '').toLowerCase().includes(query))
+    .slice(0, 8);
+}
+
+function openRowSearch(item) {
+  rowSearchState[item.localKey].open = true;
+}
+
+function selectProductForRow(item, product) {
   if (!product) return;
-  form.items.push({
-    localKey: nextLocalKey(),
-    product_id: product.id,
-    product_name_snapshot: product.name,
-    daily_price_toman: Number(product.daily_price_toman) || 0,
-    delivered_quantity: 1,
-    notes: ''
-  });
-  selectedProductId.value = '';
+  item.product_id = product.id;
+  item.product_name_snapshot = product.name;
+  item.daily_price_toman = Number(product.daily_price_toman) || 0;
+  item.delivered_quantity = Math.max(1, Number(item.delivered_quantity) || 1);
+  rowSearchState[item.localKey].query = product.name;
+  rowSearchState[item.localKey].open = false;
+}
+
+function selectFirstRowResult(item) {
+  const [firstResult] = searchableProductsForRow(item);
+  if (firstResult) selectProductForRow(item, firstResult);
+}
+
+function closeRowSearch(item) {
+  window.setTimeout(() => {
+    rowSearchState[item.localKey].open = false;
+    rowSearchState[item.localKey].query = item.product_name_snapshot || '';
+  }, 120);
+}
+
+function focusProductSearchShortcut(event) {
+  if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable) return;
+  event.preventDefault();
+  document.querySelector('[data-product-search="0"]')?.focus();
+}
+
+function incrementQuantity(item) {
+  item.delivered_quantity = Math.max(1, Math.round(Number(item.delivered_quantity) || 1)) + 1;
+}
+
+function decrementQuantity(item) {
+  item.delivered_quantity = Math.max(1, Math.round(Number(item.delivered_quantity) || 1) - 1);
+}
+
+function itemDailyTotal(item) {
+  return (Number(item.daily_price_toman) || 0) * (Number(item.delivered_quantity) || 0);
 }
 
 function removeProduct(localKey) {
-  form.items = form.items.filter((item) => item.localKey !== localKey);
+  const index = form.items.findIndex((item) => item.localKey === localKey);
+  if (index < 0) return;
+  const oldKey = form.items[index].localKey;
+  delete rowSearchState[oldKey];
+  if (form.items.length > 5) form.items.splice(index, 1);
+  else form.items.splice(index, 1, createItemRow());
 }
 
 async function createAnotherDraft() {
@@ -393,6 +531,14 @@ async function openFinalizeConfirm() {
   syncCustomerId();
   const validationMessage = validateForFinalization();
   if (validationMessage) return toast.error(validationMessage);
+  if (!isDraft.value) {
+    finalizing.value = true;
+    const saved = await persistDraft();
+    finalizing.value = false;
+    if (!saved) return toast.error('ذخیره تغییرات لیست انجام نشد');
+    toast.success('تغییرات لیست ذخیره شد');
+    return;
+  }
   if (!(await persistDraft())) return toast.error('ذخیره تغییرات پیش از ثبت تحویل انجام نشد');
   showFinalizeConfirm.value = true;
 }
@@ -406,6 +552,7 @@ async function confirmFinalize() {
   showFinalizeConfirm.value = false;
   initialized.value = false;
   toast.success(`تحویل با شماره ${result.data.list_number} ثبت و پیش‌فاکتور ایجاد شد`);
+  emit('finalized', result.data);
   router.replace(`/lists/${result.data.id}`);
 }
 
@@ -413,7 +560,7 @@ function validateForFinalization() {
   if (!form.customerId) return 'مشتری را از فهرست انتخاب کنید یا ابتدا مشتری جدید بسازید';
   if (!form.deliveryDate || !form.deliveryTime) return 'تاریخ و ساعت تحویل الزامی است';
   if (!form.expectedReturnDate || !form.expectedReturnTime) return 'تاریخ و ساعت تقریبی برگشت الزامی است';
-  if (!form.items.length) return 'حداقل یک محصول به لیست اضافه کنید';
+  if (!activeItems.value.length) return 'حداقل یک محصول به لیست اضافه کنید';
   const deliveredAt = Date.parse(combineDateTime(form.deliveryDate, form.deliveryTime));
   const expectedReturnAt = Date.parse(combineDateTime(form.expectedReturnDate, form.expectedReturnTime));
   if (expectedReturnAt < deliveredAt) return 'زمان تقریبی برگشت نمی‌تواند قبل از زمان تحویل باشد';
@@ -452,3 +599,428 @@ function formatSavedTime(value) {
   return text.length >= 16 ? text.slice(11, 16) : 'اکنون';
 }
 </script>
+
+<style scoped>
+.draft-workspace {
+  --draft-green: #0f5f4c;
+  --draft-green-dark: #0b493b;
+  --draft-sage: #edf6f0;
+  --draft-cream: #fffdf8;
+  --draft-border: #ded7c8;
+  background: var(--draft-cream);
+  border-color: #e4dccd;
+}
+
+.draft-workspace__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #ebe4d7;
+}
+.draft-id-badge {
+  border: 1px solid #b8ddce;
+  border-radius: 999px;
+  background: #eaf7f0;
+  padding: .3rem .65rem;
+  color: #0f6b53;
+  font-size: .7rem;
+  font-weight: 900;
+}
+
+.draft-information-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: .9rem;
+  padding: 1.25rem;
+  border-bottom: 1px solid #ebe4d7;
+}
+
+.draft-field {
+  position: relative;
+  grid-column: span 2;
+  min-width: 0;
+  height: 3.25rem;
+  border: 1px solid var(--draft-border);
+  border-radius: .7rem;
+  background: #fff;
+}
+
+.draft-field--customer { z-index: 40; grid-column: span 3; }
+.draft-field--notes { grid-column: span 4; }
+.draft-field--readonly {
+  display: flex;
+  align-items: center;
+  padding: 0 .9rem;
+  color: #475569;
+  font-size: .8rem;
+  font-weight: 700;
+  background: #faf8f2;
+}
+
+.draft-field__label {
+  position: absolute;
+  z-index: 2;
+  top: -.55rem;
+  right: .75rem;
+  padding-inline: .35rem;
+  background: var(--draft-cream);
+  color: #475569;
+  font-size: .7rem;
+  font-weight: 800;
+  line-height: 1rem;
+}
+
+.draft-field__control,
+.draft-field :deep(.draft-field__control),
+.draft-customer-control input {
+  width: 100%;
+  height: 100%;
+  border: 0 !important;
+  border-radius: .65rem;
+  background: transparent;
+  padding: 0 .9rem;
+  color: #1e293b;
+  font-size: .82rem;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.draft-field:focus-within {
+  border-color: #4c8c79;
+  box-shadow: 0 0 0 3px rgba(15, 95, 76, .08);
+}
+
+.draft-field > .draft-field__control,
+.draft-field :deep(input.draft-field__control) {
+  direction: ltr;
+  text-align: center;
+}
+.draft-field--notes > .draft-field__control { direction: rtl; text-align: right; }
+
+.draft-customer-control { display: flex; height: 100%; align-items: center; }
+.draft-customer-control button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-left: .45rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: .55rem;
+  background: var(--draft-sage);
+  color: var(--draft-green);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+.draft-customer-results {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + .4rem);
+  right: 0;
+  width: 100%;
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid #d9d3c7;
+  border-radius: .75rem;
+  background: #fff;
+  box-shadow: 0 18px 38px rgba(35, 48, 43, .2);
+}
+.draft-customer-results button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem .85rem;
+  border-bottom: 1px solid #eee9df;
+  text-align: right;
+}
+.draft-customer-results button:last-child { border-bottom: 0; }
+.draft-customer-results button:hover { background: var(--draft-sage); }
+.draft-customer-results strong { overflow: hidden; color: #1e293b; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.draft-customer-results span { color: #64748b; direction: ltr; font-size: .68rem; white-space: nowrap; }
+.draft-customer-results__empty { padding: 1rem; color: #94a3b8; font-size: .72rem; text-align: center; }
+
+.draft-night-before {
+  grid-column: span 4;
+  display: flex;
+  min-width: 0;
+  min-height: 3rem;
+  align-items: center;
+  gap: .65rem;
+  padding: .4rem .65rem;
+  border: 1px solid var(--draft-border);
+  border-radius: .7rem;
+  background: #faf8f2;
+  cursor: pointer;
+}
+.draft-night-before--active { border-color: #86b7a8; background: var(--draft-sage); }
+.draft-night-before > input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.draft-night-before__switch {
+  display: flex;
+  width: 2rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: .15rem;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background .2s;
+}
+.draft-night-before__switch span {
+  width: .8rem;
+  height: .8rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .2);
+  transition: transform .2s;
+}
+.draft-night-before--active .draft-night-before__switch { background: var(--draft-green); }
+.draft-night-before--active .draft-night-before__switch span { transform: translateX(-.9rem); }
+.draft-night-before strong { display: block; color: #334155; font-size: .72rem; }
+.draft-night-before small { display: block; margin-top: .1rem; color: #64748b; font-size: .6rem; }
+
+.draft-items-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+.draft-items-count {
+  border: 1px solid #cde2d8;
+  border-radius: 999px;
+  background: var(--draft-sage);
+  padding: .4rem .75rem;
+  color: var(--draft-green);
+  font-size: .75rem;
+  font-weight: 900;
+}
+.draft-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+.draft-row-actions > span:first-child { color: #64748b; font-size: .7rem; font-weight: 800; }
+.draft-row-actions > button {
+  min-width: 2.6rem;
+  height: 2rem;
+  border: 1px solid #bcd7cc;
+  border-radius: .5rem;
+  background: #fff;
+  color: var(--draft-green);
+  font-size: .7rem;
+  font-weight: 900;
+}
+.draft-row-actions > button:hover { background: var(--draft-sage); }
+
+.draft-table-wrap { position: relative; overflow: visible; padding-inline: 1.25rem; }
+.draft-items-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.draft-items-table th,
+.draft-items-table td {
+  height: 3.55rem;
+  padding: .45rem .5rem;
+  border-left: 1px solid #e7e1d6;
+  border-bottom: 1px solid #e7e1d6;
+  text-align: center;
+  vertical-align: middle;
+}
+.draft-items-table th:first-child,
+.draft-items-table td:first-child { border-right: 1px solid #e7e1d6; }
+.draft-items-table thead th {
+  height: 2.75rem;
+  border-top: 1px solid #e7e1d6;
+  background: #f3f7f3;
+  color: #365247;
+  font-size: .7rem;
+  font-weight: 900;
+}
+.draft-items-table thead th:first-child { border-top-right-radius: .65rem; }
+.draft-items-table thead th:last-child { border-top-left-radius: .65rem; }
+.draft-items-table th:nth-child(1) { width: 5%; }
+.draft-items-table th:nth-child(2) { width: 29%; }
+.draft-items-table th:nth-child(3) { width: 12%; }
+.draft-items-table th:nth-child(4) { width: 16%; }
+.draft-items-table th:nth-child(5) { width: 16%; }
+.draft-items-table th:nth-child(6) { width: 16%; }
+.draft-items-table th:nth-child(7) { width: 6%; }
+
+.draft-add-row td { position: relative; background: #f5f8f1; color: #64748b; font-size: .7rem; }
+.draft-add-row__number {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--draft-green);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+}
+.draft-add-row__hint { color: #94a3b8 !important; }
+.draft-add-row__action {
+  display: inline-block;
+  color: var(--draft-green);
+  font-size: .65rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.draft-product-search-cell { z-index: 20; overflow: visible; }
+.draft-product-search { position: relative; width: 100%; }
+.draft-product-search > input {
+  width: 100%;
+  height: 2.55rem;
+  border: 1px solid #99ad9f;
+  border-radius: .6rem;
+  background: #fff;
+  padding: 0 2.25rem 0 2.3rem;
+  color: #1e293b;
+  font-size: .76rem;
+  outline: none;
+}
+.draft-product-search > input:focus { border-color: var(--draft-green); box-shadow: 0 0 0 3px rgba(15, 95, 76, .09); }
+.draft-product-search__icon { position: absolute; z-index: 2; top: .73rem; right: .7rem; width: 1.05rem; color: var(--draft-green); }
+.draft-product-search kbd {
+  position: absolute;
+  z-index: 2;
+  top: .58rem;
+  left: .55rem;
+  min-width: 1.45rem;
+  border: 1px solid #d8d3c8;
+  border-radius: .35rem;
+  background: #f6f3eb;
+  padding: .12rem .3rem;
+  color: #64748b;
+  font-size: .65rem;
+}
+.draft-product-results {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + .35rem);
+  right: 0;
+  width: min(34rem, 70vw);
+  overflow: hidden;
+  border: 1px solid #d9d3c7;
+  border-radius: .75rem;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(35, 48, 43, .18);
+}
+.draft-product-result {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .75rem;
+  padding: .7rem .8rem;
+  border-bottom: 1px solid #eee9df;
+  text-align: right;
+  transition: background .15s;
+}
+.draft-product-result:last-child { border-bottom: 0; }
+.draft-product-result:hover { background: var(--draft-sage); }
+.draft-product-result span { overflow: hidden; color: #64748b; font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+.draft-product-result__name { color: #1e293b !important; font-size: .76rem !important; font-weight: 900; }
+.draft-product-result strong { color: var(--draft-green); font-size: .72rem; white-space: nowrap; }
+.draft-product-results__empty { padding: 1rem; color: #94a3b8; font-size: .75rem; text-align: center; }
+
+.draft-item-row td { background: #fff; color: #334155; font-size: .75rem; }
+.draft-item-row:nth-child(odd) td { background: #fffdfa; }
+.draft-item-row--empty td { background: #fbfcf8 !important; }
+.draft-item-row--empty .draft-table-input,
+.draft-item-row--empty .draft-stepper { opacity: .55; }
+.draft-table-input:disabled,
+.draft-stepper button:disabled,
+.draft-stepper input:disabled { cursor: not-allowed; }
+.draft-row-number { color: #64748b !important; font-weight: 800; }
+.draft-product-name { text-align: right !important; font-weight: 900; }
+.draft-product-category { color: #64748b !important; }
+.draft-stepper {
+  display: grid;
+  height: 2.25rem;
+  grid-template-columns: 1.8rem minmax(2rem, 1fr) 1.8rem;
+  overflow: hidden;
+  border: 1px solid #dcd7cc;
+  border-radius: .5rem;
+  background: #fff;
+}
+.draft-stepper button { color: var(--draft-green); font-size: 1rem; font-weight: 900; }
+.draft-stepper input { min-width: 0; border-inline: 1px solid #e7e1d6; text-align: center; outline: none; }
+.draft-table-input {
+  width: 100%;
+  height: 2.25rem;
+  min-width: 0;
+  border: 1px solid #dcd7cc;
+  border-radius: .5rem;
+  background: #fff;
+  padding: 0 .55rem;
+  color: #334155;
+  font-size: .72rem;
+  outline: none;
+}
+.draft-table-input:focus { border-color: #6f9e8f; box-shadow: 0 0 0 2px rgba(15, 95, 76, .07); }
+.draft-price-input { text-align: center; }
+.draft-line-total { color: var(--draft-green) !important; font-weight: 900; }
+.draft-delete-button {
+  display: inline-grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border: 1px solid #fecdd3;
+  border-radius: .55rem;
+  background: #fff1f2;
+  color: #e11d48;
+}
+.draft-delete-button svg { width: 1rem; }
+.draft-empty-row td { height: 4.5rem; color: #94a3b8; font-size: .75rem; text-align: center; }
+
+.draft-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 1.25rem;
+  border-top: 1px solid #e5dfd3;
+  background: #faf8f2;
+}
+.draft-summary-item {
+  display: flex;
+  min-height: 4.5rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: .35rem;
+  padding: .75rem 1.25rem;
+  border-left: 1px solid #e5dfd3;
+}
+.draft-summary-item span { color: #64748b; font-size: .7rem; }
+.draft-summary-item strong { color: #1e293b; font-size: .95rem; }
+.draft-summary-item--total strong { color: var(--draft-green); font-size: 1.05rem; }
+.draft-summary-rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 11rem;
+  padding: .75rem 1rem;
+  color: #64748b;
+  font-size: .72rem;
+  font-weight: 800;
+}
+.draft-summary-rule--active { background: #e6f3eb; color: var(--draft-green); }
+
+@media (max-width: 1279px) {
+  .draft-field, .draft-field--customer { grid-column: span 3; }
+  .draft-field--notes, .draft-night-before { grid-column: span 6; }
+  .draft-items-table th:nth-child(6), .draft-items-table td:nth-child(6) { display: none; }
+  .draft-items-table th:nth-child(2) { width: 35%; }
+  .draft-items-table th:nth-child(7) { width: 8%; }
+}
+
+@media (max-width: 767px) {
+  .draft-workspace__header { align-items: flex-start; flex-direction: column; }
+  .draft-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1rem; }
+  .draft-field, .draft-field--customer, .draft-field--notes, .draft-night-before { grid-column: span 1; }
+  .draft-field--customer, .draft-field--notes, .draft-night-before { grid-column: span 2; }
+  .draft-table-wrap { padding-inline: .75rem; overflow-x: auto; }
+  .draft-items-table { min-width: 48rem; }
+  .draft-summary-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .draft-summary-item { border-bottom: 1px solid #e5dfd3; }
+  .draft-summary-rule { min-width: 0; }
+}
+</style>

@@ -92,7 +92,8 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       try {
         const draft = (await deliveryListService.saveDraft(id, payload)).data;
         this.currentDraft = draft;
-        replaceDraft(this.drafts, draft);
+        if (draft.status === 'DRAFT') replaceDraft(this.drafts, draft);
+        else this.drafts = this.drafts.filter((item) => Number(item.id) !== Number(draft.id));
         replaceDraft(this.lists, draft);
         return { success: true, data: draft };
       } catch (error) {

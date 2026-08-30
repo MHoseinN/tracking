@@ -384,6 +384,55 @@ test('finalizes a complete draft and creates exactly one linked proforma', () =>
   }
 });
 
+test('edits a finalized list without recreating its proforma', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
+    });
+    const finalized = service.finalizeDraft(draft.id, saved.version, 1);
+    const originalProformaId = finalized.proforma.id;
+
+    const edited = service.saveDraft(finalized.id, {
+      version: finalized.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T19:00:00+03:30',
+      expected_return_at: '2026-08-27T11:00:00+03:30',
+      night_before: true,
+      notes: 'ویرایش پس از ثبت',
+      items: [
+        {
+          id: finalized.items[0].id,
+          product_id: 1,
+          daily_price_toman: 1600000,
+          delivered_quantity: 3
+        },
+        { product_id: 2, daily_price_toman: 800000, delivered_quantity: 1 }
+      ]
+    }, 1);
+
+    assert.equal(edited.status, 'DELIVERED');
+    assert.equal(edited.night_before, true);
+    assert.equal(edited.items.length, 2);
+    assert.equal(edited.items[0].daily_price_toman, 1600000);
+    assert.equal(edited.items[0].delivered_quantity, 3);
+    assert.equal(edited.proforma.id, originalProformaId);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
+    assert.equal(
+      db.prepare('SELECT action FROM audit_logs ORDER BY id DESC LIMIT 1').get().action,
+      'UPDATE_DELIVERY_LIST'
+    );
+  } finally {
+    db.close();
+  }
+});
+
 test('does not finalize incomplete drafts or create orphan proformas', () => {
   const db = createDatabase();
   try {
