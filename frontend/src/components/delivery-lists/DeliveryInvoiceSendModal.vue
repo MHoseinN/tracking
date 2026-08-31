@@ -33,10 +33,12 @@
                       <option value="OTHER">سایر</option>
                     </select>
                   </td>
-                  <th class="w-40 border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">زمان ارسال</th>
+                  <th class="w-40 border border-slate-300 bg-slate-100 px-4 py-3 text-right text-xs">تاریخ و ساعت ارسال</th>
                   <td class="border border-slate-300 p-2">
-                    <input v-model="form.sent_at" type="datetime-local" required
-                      class="h-11 w-full rounded-lg border border-stone-300 px-3 text-center text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" />
+                    <div class="grid grid-cols-2 gap-2">
+                      <JalaliDatePicker v-model="form.sent_date" input-class="h-11 bg-white" />
+                      <TimePicker24 v-model="form.sent_time" input-class="h-11" />
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -102,7 +104,9 @@
 
 <script setup>
 import { reactive, watch } from 'vue';
-import { toPersianDate } from '../../utils/dateConverter';
+import JalaliDatePicker from '../JalaliDatePicker.vue';
+import TimePicker24 from '../TimePicker24.vue';
+import { getCurrentPersianDate, toGregorianDate, toPersianDate } from '../../utils/dateConverter';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -111,26 +115,25 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'save', 'request-unsent']);
-const form = reactive({ channel: 'EITA', sent_at: '', recipient: '', notes: '' });
+const form = reactive({ channel: 'EITA', sent_date: '', sent_time: '', recipient: '', notes: '' });
 
 watch(() => props.isOpen, (isOpen) => {
   if (!isOpen) return;
+  const now = new Date();
+  const today = getCurrentPersianDate();
   form.channel = 'EITA';
-  form.sent_at = localDateTimeValue(new Date());
+  form.sent_date = `${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`;
+  form.sent_time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   form.recipient = '';
   form.notes = '';
 }, { immediate: true });
 
-function localDateTimeValue(date) {
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-
 function submit() {
+  if (!form.sent_date || !form.sent_time) return;
   emit('save', {
     send_status: 'SENT',
     channel: form.channel,
-    sent_at: new Date(form.sent_at).toISOString(),
+    sent_at: `${toGregorianDate(form.sent_date)}T${form.sent_time}:00+03:30`,
     recipient: form.recipient || null,
     notes: form.notes || null
   });

@@ -55,7 +55,7 @@
           </label>
           <label class="draft-field">
             <span class="draft-field__label">ساعت تحویل</span>
-            <input v-model="form.deliveryTime" class="draft-field__control" type="time" />
+            <TimePicker24 v-model="form.deliveryTime" input-class="draft-field__control" />
           </label>
           <label class="draft-field">
             <span class="draft-field__label">تاریخ تقریبی برگشت</span>
@@ -63,7 +63,7 @@
           </label>
           <label class="draft-field">
             <span class="draft-field__label">ساعت تقریبی برگشت</span>
-            <input v-model="form.expectedReturnTime" class="draft-field__control" type="time" />
+            <TimePicker24 v-model="form.expectedReturnTime" input-class="draft-field__control" />
           </label>
           <label class="draft-night-before" :class="{ 'draft-night-before--active': form.nightBefore }">
             <input v-model="form.nightBefore" type="checkbox" />
@@ -185,6 +185,7 @@ import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
+import TimePicker24 from '../TimePicker24.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import { useProductCatalogStore } from '../../stores/productCatalogStore';

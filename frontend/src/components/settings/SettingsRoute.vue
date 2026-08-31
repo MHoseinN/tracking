@@ -23,8 +23,8 @@
         </label>
         <label class="block max-w-xs space-y-2">
           <span class="text-sm font-bold text-emerald-950">ساعت مرزی</span>
-          <input v-model="billingCutoffTime" type="time"
-            class="h-12 w-full rounded-lg border border-emerald-200 bg-white px-4 text-lg font-bold text-emerald-950" />
+          <TimePicker24 v-model="billingCutoffTime"
+            input-class="h-12 border-emerald-200 bg-white text-lg font-bold text-emerald-950" />
         </label>
       </div>
 
@@ -52,6 +52,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
+import TimePicker24 from '../TimePicker24.vue';
 import { settingsService } from '../../modules/settings/api/settings.service';
 import { systemService } from '../../modules/system/api/system.service';
 import { getApiErrorMessage } from '../../utils/apiError';

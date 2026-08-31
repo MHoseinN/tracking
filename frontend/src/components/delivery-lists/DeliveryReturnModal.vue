@@ -19,7 +19,7 @@
               </label>
               <label class="space-y-2">
                 <span class="text-sm font-semibold text-slate-700">ساعت برگشت</span>
-                <input v-model="returnedTime" type="time" class="h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm" />
+                <TimePicker24 v-model="returnedTime" input-class="h-12 bg-white" />
               </label>
               <div class="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-center">
                 <p class="text-xs text-indigo-600">روز محاسبه‌شده سیستم</p>
@@ -72,6 +72,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
+import TimePicker24 from '../TimePicker24.vue';
 import { calculateBillingDays } from '../../utils/billingDays';
 import { getCurrentPersianDate, toGregorianDate } from '../../utils/dateConverter';
 

@@ -47,7 +47,7 @@
               <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">اتصال به فاکتور</span><select v-model="form.invoice_id" class="h-11 w-full rounded border border-slate-300 px-3 text-sm"><option value="">کل لیست / بیعانه</option><option v-for="invoice in summary?.invoices" :key="invoice.id" :value="invoice.id">{{ invoice.invoice_number }}</option></select></label>
               <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">شماره پیگیری</span><input v-model.trim="form.reference_number" type="text" maxlength="255" class="h-11 w-full rounded border border-slate-300 px-3" /></label>
               <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">تاریخ پرداخت</span><JalaliDatePicker v-model="form.paid_date" input-class="h-11 bg-white" /></label>
-              <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">ساعت پرداخت</span><input v-model="form.paid_time" type="time" class="h-11 w-full rounded border border-slate-300 px-3" /></label>
+              <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">ساعت پرداخت</span><TimePicker24 v-model="form.paid_time" input-class="h-11" /></label>
               <label class="space-y-2 md:col-span-2"><span class="text-sm font-semibold text-slate-700">توضیحات</span><input v-model.trim="form.notes" type="text" maxlength="2000" class="h-11 w-full rounded border border-slate-300 px-3" /></label>
             </div>
             <div class="flex justify-end border-t border-slate-300 px-5 py-4"><button type="button" class="app-button-primary" :disabled="saving" @click="prepareRecord">ثبت پرداخت</button></div>
@@ -85,6 +85,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
+import TimePicker24 from '../TimePicker24.vue';
 import { getCurrentPersianDate, toGregorianDate, toPersianDate } from '../../utils/dateConverter';
 
 const props = defineProps({
