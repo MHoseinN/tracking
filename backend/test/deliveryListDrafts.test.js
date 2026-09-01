@@ -139,7 +139,6 @@ function createDatabase() {
       delivery_list_item_id INTEGER NOT NULL,
       healthy_quantity INTEGER NOT NULL DEFAULT 0,
       damaged_quantity INTEGER NOT NULL DEFAULT 0,
-      lost_quantity INTEGER NOT NULL DEFAULT 0,
       system_calculated_days INTEGER NOT NULL,
       final_charged_days INTEGER NOT NULL,
       day_override_reason TEXT,

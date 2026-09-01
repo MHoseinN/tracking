@@ -46,13 +46,13 @@
         <div class="border-b border-slate-100 p-5"><h3 class="text-base font-black text-slate-800">تاریخچه مرجوعی‌ها</h3></div>
         <div class="p-5">
           <table class="w-full table-fixed border-collapse border border-slate-300">
-            <thead class="bg-slate-100"><tr><th v-for="heading in ['تاریخ برگشت','تحویل‌گیرنده','محصول','سالم','خسارت/مفقودی','روز نهایی','فاکتور','توضیحات']" :key="heading" class="border border-slate-300 px-2 py-3 text-right text-xs text-slate-600">{{ heading }}</th></tr></thead>
+            <thead class="bg-slate-100"><tr><th v-for="heading in ['تاریخ برگشت','تحویل‌گیرنده','محصول','سالم','خسارت','روز نهایی','فاکتور','توضیحات']" :key="heading" class="border border-slate-300 px-2 py-3 text-right text-xs text-slate-600">{{ heading }}</th></tr></thead>
             <tbody><tr v-for="row in returnRows" :key="row.id">
               <td class="border border-slate-300 px-2 py-3 text-xs">{{ formatDateTime(row.returned_at) }}</td>
               <td class="border border-slate-300 px-2 py-3 text-sm">{{ row.received_by_name || '—' }}</td>
               <td class="border border-slate-300 px-2 py-3 text-sm font-bold">{{ row.product_name_snapshot }}</td>
               <td class="border border-slate-300 px-2 py-3">{{ formatNumber(row.healthy_quantity) }}</td>
-              <td class="border border-slate-300 px-2 py-3 text-rose-700">{{ formatNumber(Number(row.damaged_quantity) + Number(row.lost_quantity)) }}</td>
+              <td class="border border-slate-300 px-2 py-3 text-rose-700">{{ formatNumber(row.damaged_quantity) }}</td>
               <td class="border border-slate-300 px-2 py-3 font-bold">{{ formatNumber(row.final_charged_days) }}</td>
               <td class="border border-slate-300 px-2 py-3"><span class="app-badge px-2 text-[11px]" :class="row.rental_invoice_id ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">{{ row.rental_invoice_id ? 'فاکتور شده' : 'آماده صدور' }}</span></td>
               <td class="border border-slate-300 px-2 py-3 text-xs">{{ row.damage_notes || row.day_override_reason || '—' }}</td>

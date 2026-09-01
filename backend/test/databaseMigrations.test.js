@@ -122,7 +122,7 @@ test('migrates legacy data and is idempotent', () => {
 
     assert.equal(
       db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
-      6
+      7
     );
     assert.equal(db.prepare('SELECT role FROM users WHERE id = 1').get().role, 'MANAGER');
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name = 'phone'").get().count, 1);
@@ -186,6 +186,14 @@ test('migrates legacy data and is idempotent', () => {
     assert.equal(db.prepare('SELECT COUNT(*) count FROM invoice_lines WHERE invoice_id = 1').get().count, 1);
     assert.equal(db.prepare('SELECT amount_toman FROM payments WHERE invoice_id = 1').get().amount_toman, 1250000);
     assert.equal(db.prepare('SELECT COUNT(*) count FROM invoice_send_logs WHERE invoice_id = 1').get().count, 1);
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('return_event_items') WHERE name = 'lost_quantity'").get().count,
+      0
+    );
+    assert.doesNotMatch(
+      db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'invoice_adjustments'").get().sql,
+      /'LOSS'/
+    );
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   } finally {
     db.close();

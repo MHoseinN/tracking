@@ -69,9 +69,9 @@ const migration = {
     const insertReturnItem = db.prepare(`
       INSERT INTO return_event_items (
         return_event_id, delivery_list_item_id, healthy_quantity,
-        damaged_quantity, lost_quantity, system_calculated_days,
+        damaged_quantity, system_calculated_days,
         final_charged_days, day_override_reason, created_at, updated_at
-      ) VALUES (?, ?, 1, 0, 0, 1, 1, ?, ?, ?)
+      ) VALUES (?, ?, 1, 0, 1, 1, ?, ?, ?)
     `);
     const updateInvoice = db.prepare(`
       UPDATE invoices

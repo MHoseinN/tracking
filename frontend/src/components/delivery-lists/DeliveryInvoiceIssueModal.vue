@@ -71,7 +71,6 @@
                     <td class="border border-slate-300 p-2"><select v-model="extra.type"
                         class="h-10 w-full rounded border border-slate-300 px-2 text-sm">
                         <option value="DAMAGE">خسارت</option>
-                        <option value="LOSS">مفقودی</option>
                         <option value="TRANSPORT">حمل‌ونقل</option>
                         <option value="OTHER">سایر</option>
                       </select></td>

@@ -98,14 +98,13 @@ function createDeliveryListDraftService(db) {
              delivery_list_items.notes, delivery_list_items.created_at, delivery_list_items.updated_at,
              COALESCE(SUM(return_event_items.healthy_quantity), 0) AS healthy_returned_quantity,
              COALESCE(SUM(return_event_items.damaged_quantity), 0) AS damaged_quantity,
-             COALESCE(SUM(return_event_items.lost_quantity), 0) AS lost_quantity,
              delivery_list_items.delivered_quantity - COALESCE(SUM(
-               return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+               return_event_items.healthy_quantity + return_event_items.damaged_quantity
              ), 0) AS remaining_quantity,
              COALESCE(SUM(CASE
                WHEN return_event_items.issue_resolved_at IS NULL
-                AND (return_event_items.damaged_quantity + return_event_items.lost_quantity) > 0
-               THEN return_event_items.damaged_quantity + return_event_items.lost_quantity
+                AND return_event_items.damaged_quantity > 0
+               THEN return_event_items.damaged_quantity
                ELSE 0 END), 0) AS unresolved_issue_quantity
       FROM delivery_list_items
       LEFT JOIN return_event_items
@@ -133,7 +132,6 @@ function createDeliveryListDraftService(db) {
              delivery_list_items.product_name_snapshot,
              return_event_items.healthy_quantity,
              return_event_items.damaged_quantity,
-             return_event_items.lost_quantity,
              return_event_items.system_calculated_days,
              return_event_items.final_charged_days,
              return_event_items.day_override_reason,
@@ -172,7 +170,6 @@ function createDeliveryListDraftService(db) {
         product_name_snapshot: row.product_name_snapshot,
         healthy_quantity: row.healthy_quantity,
         damaged_quantity: row.damaged_quantity,
-        lost_quantity: row.lost_quantity,
         system_calculated_days: row.system_calculated_days,
         final_charged_days: row.final_charged_days,
         day_override_reason: row.day_override_reason,
@@ -445,7 +442,7 @@ function createDeliveryListDraftService(db) {
             throw new DeliveryListDraftError('یکی از اقلام این لیست معتبر نیست', 409);
           }
           const returned = db.prepare(`
-            SELECT COALESCE(SUM(healthy_quantity + damaged_quantity + lost_quantity), 0) AS quantity
+            SELECT COALESCE(SUM(healthy_quantity + damaged_quantity), 0) AS quantity
             FROM return_event_items
             WHERE delivery_list_item_id = ? AND deleted_at IS NULL
           `).get(existingItemId);
@@ -482,7 +479,7 @@ function createDeliveryListDraftService(db) {
                FROM delivery_list_items
               WHERE delivery_list_id = ? AND deleted_at IS NULL) AS total_delivered,
             (SELECT COALESCE(SUM(
-               return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+               return_event_items.healthy_quantity + return_event_items.damaged_quantity
              ), 0)
                FROM return_event_items
                JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
@@ -490,7 +487,7 @@ function createDeliveryListDraftService(db) {
                 AND delivery_list_items.deleted_at IS NULL
                 AND return_event_items.deleted_at IS NULL) AS total_returned,
             (SELECT COALESCE(SUM(
-               return_event_items.damaged_quantity + return_event_items.lost_quantity
+               return_event_items.damaged_quantity
              ), 0)
                FROM return_event_items
                JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
@@ -705,7 +702,7 @@ function createDeliveryListDraftService(db) {
         SELECT delivery_list_items.id, delivery_list_items.delivered_quantity,
                delivery_list_items.product_name_snapshot,
                delivery_list_items.delivered_quantity - COALESCE(SUM(
-                 return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+                 return_event_items.healthy_quantity + return_event_items.damaged_quantity
                ), 0) AS remaining_quantity
         FROM delivery_list_items
         LEFT JOIN return_event_items
@@ -719,18 +716,17 @@ function createDeliveryListDraftService(db) {
 
       const healthy = Number(item.healthy_quantity) || 0;
       const damaged = Number(item.damaged_quantity) || 0;
-      const lost = Number(item.lost_quantity) || 0;
-      if (![healthy, damaged, lost].every((value) => Number.isInteger(value) && value >= 0)) {
+      if (![healthy, damaged].every((value) => Number.isInteger(value) && value >= 0)) {
         throw new DeliveryListDraftError('تعداد مرجوعی نامعتبر است');
       }
-      const total = healthy + damaged + lost;
+      const total = healthy + damaged;
       if (total < 1) throw new DeliveryListDraftError('تعداد برگشتی هر ردیف باید بیشتر از صفر باشد');
       if (total > Number(listItem.remaining_quantity)) {
         throw new DeliveryListDraftError(`تعداد برگشتی «${listItem.product_name_snapshot}» از مانده بیشتر است`);
       }
       const damageNotes = nullableText(item.damage_notes);
-      if ((damaged > 0 || lost > 0) && !damageNotes) {
-        throw new DeliveryListDraftError('برای خسارت یا مفقودی توضیحات الزامی است');
+      if (damaged > 0 && !damageNotes) {
+        throw new DeliveryListDraftError('برای خسارت توضیحات الزامی است');
       }
       const finalDays = item.final_charged_days === null || item.final_charged_days === undefined
         ? systemDays
@@ -742,7 +738,7 @@ function createDeliveryListDraftService(db) {
       if (finalDays !== systemDays && !overrideReason) {
         throw new DeliveryListDraftError('برای تغییر دستی تعداد روز، دلیل را وارد کنید');
       }
-      return { itemId, healthy, damaged, lost, finalDays, overrideReason, damageNotes };
+      return { itemId, healthy, damaged, finalDays, overrideReason, damageNotes };
     });
 
     const saveReturn = db.transaction(() => {
@@ -755,10 +751,10 @@ function createDeliveryListDraftService(db) {
       const insertItem = db.prepare(`
         INSERT INTO return_event_items (
           return_event_id, delivery_list_item_id,
-          healthy_quantity, damaged_quantity, lost_quantity,
+          healthy_quantity, damaged_quantity,
           system_calculated_days, final_charged_days,
           day_override_reason, damage_notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
       normalizedItems.forEach((item) => {
         insertItem.run(
@@ -766,7 +762,6 @@ function createDeliveryListDraftService(db) {
           item.itemId,
           item.healthy,
           item.damaged,
-          item.lost,
           systemDays,
           item.finalDays,
           item.overrideReason,
@@ -780,7 +775,7 @@ function createDeliveryListDraftService(db) {
              FROM delivery_list_items
             WHERE delivery_list_id = ? AND deleted_at IS NULL) AS total_delivered,
           (SELECT COALESCE(SUM(
-             return_event_items.healthy_quantity + return_event_items.damaged_quantity + return_event_items.lost_quantity
+             return_event_items.healthy_quantity + return_event_items.damaged_quantity
            ), 0)
              FROM return_event_items
              JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
@@ -788,7 +783,7 @@ function createDeliveryListDraftService(db) {
               AND delivery_list_items.deleted_at IS NULL
               AND return_event_items.deleted_at IS NULL) AS total_returned,
           (SELECT COALESCE(SUM(
-             return_event_items.damaged_quantity + return_event_items.lost_quantity
+             return_event_items.damaged_quantity
            ), 0)
              FROM return_event_items
              JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id

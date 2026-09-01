@@ -26,7 +26,7 @@ export const STATUS_GROUPS = Object.freeze({
     DELIVERED: { label: 'تحویل', tone: 'info' },
     RETURNED: { label: 'برگشت', tone: 'success' },
     REMAINING: { label: 'مانده', tone: 'warning' },
-    DAMAGE: { label: 'خسارت / مفقودی', tone: 'danger' }
+    DAMAGE: { label: 'خسارت', tone: 'danger' }
   }),
   active: Object.freeze({
     true: { label: 'فعال', tone: 'success' },

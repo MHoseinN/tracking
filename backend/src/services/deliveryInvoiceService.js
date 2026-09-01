@@ -63,14 +63,12 @@ function createDeliveryInvoiceService(db) {
       SELECT return_event_items.id AS return_event_item_id,
              delivery_list_items.id AS delivery_list_item_id,
              delivery_list_items.product_name_snapshot AS description,
-             return_event_items.healthy_quantity + return_event_items.damaged_quantity
-               + return_event_items.lost_quantity AS quantity,
+             return_event_items.healthy_quantity + return_event_items.damaged_quantity AS quantity,
              delivery_lists.delivered_at AS billing_from_at,
              return_events.returned_at AS billing_to_at,
              return_event_items.final_charged_days AS charged_days,
              delivery_list_items.daily_price_toman AS unit_price_toman,
-             (return_event_items.healthy_quantity + return_event_items.damaged_quantity
-               + return_event_items.lost_quantity)
+             (return_event_items.healthy_quantity + return_event_items.damaged_quantity)
                * return_event_items.final_charged_days
                * delivery_list_items.daily_price_toman AS line_total_toman
       FROM return_event_items
@@ -135,7 +133,7 @@ function createDeliveryInvoiceService(db) {
 
   function normalizeExtras(extras) {
     if (!Array.isArray(extras)) return [];
-    const allowedTypes = new Set(['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER']);
+    const allowedTypes = new Set(['DAMAGE', 'TRANSPORT', 'OTHER']);
     return extras.map((extra) => {
       const type = String(extra.type || '').toUpperCase();
       if (!allowedTypes.has(type)) throw new DeliveryListDraftError('نوع هزینه اضافی نامعتبر است');
@@ -176,7 +174,7 @@ function createDeliveryInvoiceService(db) {
       ORDER BY sort_order, id
     `).all(invoice.id);
     invoice.extras = adjustments
-      .filter((item) => ['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type))
+      .filter((item) => ['DAMAGE', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type))
       .map((item) => ({
         id: item.id,
         type: item.adjustment_type,
@@ -485,7 +483,7 @@ function createDeliveryInvoiceService(db) {
       const remaining = db.prepare(`
         SELECT COALESCE(SUM(delivery_list_items.delivered_quantity), 0) -
           COALESCE(SUM((SELECT SUM(return_event_items.healthy_quantity
-            + return_event_items.damaged_quantity + return_event_items.lost_quantity)
+            + return_event_items.damaged_quantity)
             FROM return_event_items
             WHERE return_event_items.delivery_list_item_id = delivery_list_items.id
               AND return_event_items.deleted_at IS NULL)), 0) AS quantity

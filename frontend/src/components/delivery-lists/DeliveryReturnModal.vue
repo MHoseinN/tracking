@@ -37,7 +37,7 @@
               <div class="table-wrap">
                 <table class="return-table">
                   <thead><tr>
-                    <th>محصول</th><th>تحویل</th><th>برگشت قبلی</th><th>سالم این نوبت</th><th>خسارت</th><th>مفقودی</th><th>مانده بعد</th><th>روز</th><th>قیمت روزانه</th><th>مبلغ برآوردی</th><th>جزئیات</th>
+                    <th>محصول</th><th>تحویل</th><th>برگشت قبلی</th><th>سالم این نوبت</th><th>خسارت</th><th>مانده بعد</th><th>روز</th><th>قیمت روزانه</th><th>مبلغ برآوردی</th><th>جزئیات</th>
                   </tr></thead>
                   <tbody>
                     <template v-for="row in rows" :key="row.delivery_list_item_id">
@@ -47,16 +47,15 @@
                         <td class="static-number text-sky-700">{{ formatNumber(row.previously_returned_quantity) }}</td>
                         <td><NumberStepper v-model="row.healthy_quantity" :max="row.remaining_quantity" /></td>
                         <td><NumberStepper v-model="row.damaged_quantity" :max="row.remaining_quantity" /></td>
-                        <td><NumberStepper v-model="row.lost_quantity" :max="row.remaining_quantity" /></td>
                         <td class="remaining" :class="remainingAfter(row) ? 'text-amber-700' : 'text-emerald-700'">{{ formatNumber(remainingAfter(row)) }}</td>
                         <td><input v-model.number="row.final_charged_days" class="days-input" type="number" min="1" /></td>
                         <td class="money">{{ formatCurrency(row.daily_price_toman) }}</td>
                         <td class="money total-money">{{ formatCurrency(rowEstimatedAmount(row)) }}</td>
                         <td><button type="button" class="detail-button" :class="{ active: row.detailsOpen || rowNeedsDetails(row) }" @click="row.detailsOpen = !row.detailsOpen">{{ rowNeedsDetails(row) ? 'تکمیل' : 'توضیحات' }}</button></td>
                       </tr>
-                      <tr v-if="row.detailsOpen || rowNeedsDetails(row)" class="detail-row"><td colspan="11"><div class="detail-fields">
+                      <tr v-if="row.detailsOpen || rowNeedsDetails(row)" class="detail-row"><td colspan="10"><div class="detail-fields">
                         <label><span>دلیل تغییر تعداد روز</span><input v-model.trim="row.day_override_reason" maxlength="1000" :disabled="Number(row.final_charged_days) === systemDays" placeholder="در صورت تغییر روز وارد کنید" /></label>
-                        <label><span>شرح خسارت یا مفقودی</span><input v-model.trim="row.damage_notes" maxlength="2000" :disabled="!hasIssue(row)" placeholder="در صورت خسارت یا مفقودی توضیح دهید" /></label>
+                        <label><span>شرح خسارت</span><input v-model.trim="row.damage_notes" maxlength="2000" :disabled="!hasIssue(row)" placeholder="در صورت خسارت توضیح دهید" /></label>
                       </div></td></tr>
                     </template>
                   </tbody>
@@ -117,18 +116,18 @@ function resetForm() {
   const now = new Date(); const today = getCurrentPersianDate();
   returnedDate.value = `${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`;
   returnedTime.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; notes.value = ''; errorMessage.value = '';
-  rows.value = (props.list?.items || []).filter((i) => Number(i.remaining_quantity) > 0).map((i) => ({ delivery_list_item_id:i.id, product_name_snapshot:i.product_name_snapshot, delivered_quantity:Number(i.delivered_quantity), previously_returned_quantity:Number(i.delivered_quantity)-Number(i.remaining_quantity), remaining_quantity:Number(i.remaining_quantity), daily_price_toman:Number(i.daily_price_toman), healthy_quantity:0, damaged_quantity:0, lost_quantity:0, final_charged_days:systemDays.value, day_override_reason:'', damage_notes:'', detailsOpen:false }));
+  rows.value = (props.list?.items || []).filter((i) => Number(i.remaining_quantity) > 0).map((i) => ({ delivery_list_item_id:i.id, product_name_snapshot:i.product_name_snapshot, delivered_quantity:Number(i.delivered_quantity), previously_returned_quantity:Number(i.delivered_quantity)-Number(i.remaining_quantity), remaining_quantity:Number(i.remaining_quantity), daily_price_toman:Number(i.daily_price_toman), healthy_quantity:0, damaged_quantity:0, final_charged_days:systemDays.value, day_override_reason:'', damage_notes:'', detailsOpen:false }));
 }
 function submitReturn() {
   errorMessage.value = '';
   if (!returnedDate.value || !returnedTime.value) return setError('تاریخ و ساعت برگشت الزامی است');
   if (Date.parse(returnedAt.value) < Date.parse(props.list?.delivered_at)) return setError('زمان برگشت نمی‌تواند قبل از زمان تحویل باشد');
   if (!selectedRows.value.length) return setError('حداقل تعداد برگشتی یک قلم را وارد کنید');
-  for (const r of selectedRows.value) { if (totalReturned(r)>r.remaining_quantity) return setError(`تعداد «${r.product_name_snapshot}» از مانده بیشتر است`); if (hasIssue(r)&&!r.damage_notes) return setError(`شرح خسارت یا مفقودی «${r.product_name_snapshot}» را وارد کنید`); if (Number(r.final_charged_days)!==systemDays.value&&!r.day_override_reason) return setError(`دلیل تغییر تعداد روز «${r.product_name_snapshot}» را وارد کنید`); }
-  emit('save', { returned_at:returnedAt.value, notes:notes.value||null, items:selectedRows.value.map((r)=>({ delivery_list_item_id:r.delivery_list_item_id, healthy_quantity:Number(r.healthy_quantity)||0, damaged_quantity:Number(r.damaged_quantity)||0, lost_quantity:Number(r.lost_quantity)||0, final_charged_days:Math.max(1,Math.round(Number(r.final_charged_days)||systemDays.value)), day_override_reason:r.day_override_reason||null, damage_notes:r.damage_notes||null })) });
+  for (const r of selectedRows.value) { if (totalReturned(r)>r.remaining_quantity) return setError(`تعداد «${r.product_name_snapshot}» از مانده بیشتر است`); if (hasIssue(r)&&!r.damage_notes) return setError(`شرح خسارت «${r.product_name_snapshot}» را وارد کنید`); if (Number(r.final_charged_days)!==systemDays.value&&!r.day_override_reason) return setError(`دلیل تغییر تعداد روز «${r.product_name_snapshot}» را وارد کنید`); }
+  emit('save', { returned_at:returnedAt.value, notes:notes.value||null, items:selectedRows.value.map((r)=>({ delivery_list_item_id:r.delivery_list_item_id, healthy_quantity:Number(r.healthy_quantity)||0, damaged_quantity:Number(r.damaged_quantity)||0, final_charged_days:Math.max(1,Math.round(Number(r.final_charged_days)||systemDays.value)), day_override_reason:r.day_override_reason||null, damage_notes:r.damage_notes||null })) });
 }
-function totalReturned(r){return (Number(r.healthy_quantity)||0)+(Number(r.damaged_quantity)||0)+(Number(r.lost_quantity)||0)}
-function remainingAfter(r){return Math.max(0,Number(r.remaining_quantity)-totalReturned(r))} function hasIssue(r){return Number(r.damaged_quantity)>0||Number(r.lost_quantity)>0} function rowNeedsDetails(r){return hasIssue(r)||Number(r.final_charged_days)!==systemDays.value} function rowEstimatedAmount(r){return totalReturned(r)*Math.max(1,Number(r.final_charged_days)||1)*Number(r.daily_price_toman||0)}
+function totalReturned(r){return (Number(r.healthy_quantity)||0)+(Number(r.damaged_quantity)||0)}
+function remainingAfter(r){return Math.max(0,Number(r.remaining_quantity)-totalReturned(r))} function hasIssue(r){return Number(r.damaged_quantity)>0} function rowNeedsDetails(r){return hasIssue(r)||Number(r.final_charged_days)!==systemDays.value} function rowEstimatedAmount(r){return totalReturned(r)*Math.max(1,Number(r.final_charged_days)||1)*Number(r.daily_price_toman||0)}
 function setError(m){errorMessage.value=m} function combineDateTime(d,t){return d&&t?`${toGregorianDate(d)}T${t}:00+03:30`:null} function formatNumber(v){return Number(v||0).toLocaleString('fa-IR')} function formatCurrency(v){return `${formatNumber(v)} تومان`}
 </script>
 

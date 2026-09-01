@@ -4,6 +4,7 @@ const convertLegacyAccountsMigration = require('./003-convert-legacy-accounts');
 const internalUserProfilesMigration = require('./004-internal-user-profiles');
 const internalUserNamesMigration = require('./005-internal-user-names');
 const productPriceVersionsMigration = require('./006-product-price-versions');
+const removeLostItemConceptMigration = require('./007-remove-lost-item-concept');
 
 const migrations = [
   deliveryWorkflowMigration,
@@ -11,7 +12,8 @@ const migrations = [
   convertLegacyAccountsMigration,
   internalUserProfilesMigration,
   internalUserNamesMigration,
-  productPriceVersionsMigration
+  productPriceVersionsMigration,
+  removeLostItemConceptMigration
 ];
 
 function ensureMigrationTable(db) {
@@ -39,7 +41,16 @@ function runMigrations(db) {
       db.prepare('INSERT INTO schema_migrations (id) VALUES (?)').run(migration.id);
     });
 
-    apply();
+    if (migration.foreignKeysOff) {
+      db.pragma('foreign_keys = OFF');
+      try {
+        apply();
+      } finally {
+        db.pragma('foreign_keys = ON');
+      }
+    } else {
+      apply();
+    }
     console.log(`[database] Applied migration ${migration.id}`);
   });
 

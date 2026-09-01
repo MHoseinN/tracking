@@ -294,7 +294,6 @@ function createDeliveryWorkflow(db) {
       delivery_list_item_id INTEGER NOT NULL,
       healthy_quantity INTEGER NOT NULL DEFAULT 0 CHECK (healthy_quantity >= 0),
       damaged_quantity INTEGER NOT NULL DEFAULT 0 CHECK (damaged_quantity >= 0),
-      lost_quantity INTEGER NOT NULL DEFAULT 0 CHECK (lost_quantity >= 0),
       system_calculated_days INTEGER NOT NULL CHECK (system_calculated_days >= 1),
       final_charged_days INTEGER NOT NULL CHECK (final_charged_days >= 1),
       day_override_reason TEXT,
@@ -307,9 +306,9 @@ function createDeliveryWorkflow(db) {
       FOREIGN KEY (return_event_id) REFERENCES return_events(id) ON DELETE RESTRICT,
       FOREIGN KEY (delivery_list_item_id) REFERENCES delivery_list_items(id) ON DELETE RESTRICT,
       FOREIGN KEY (issue_resolved_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
-      CHECK (healthy_quantity + damaged_quantity + lost_quantity > 0),
+      CHECK (healthy_quantity + damaged_quantity > 0),
       CHECK (
-        (damaged_quantity + lost_quantity = 0)
+        (damaged_quantity = 0)
         OR NULLIF(TRIM(damage_notes), '') IS NOT NULL
       ),
       UNIQUE (return_event_id, delivery_list_item_id)
@@ -343,12 +342,12 @@ function createDeliveryWorkflow(db) {
     FOR EACH ROW
     WHEN (
       SELECT COALESCE(SUM(
-        healthy_quantity + damaged_quantity + lost_quantity
+        healthy_quantity + damaged_quantity
       ), 0)
       FROM return_event_items
       WHERE delivery_list_item_id = NEW.delivery_list_item_id
         AND deleted_at IS NULL
-    ) + NEW.healthy_quantity + NEW.damaged_quantity + NEW.lost_quantity
+    ) + NEW.healthy_quantity + NEW.damaged_quantity
       > (
         SELECT delivered_quantity
         FROM delivery_list_items
@@ -359,18 +358,18 @@ function createDeliveryWorkflow(db) {
     END;
 
     CREATE TRIGGER IF NOT EXISTS trg_return_item_quantity_update
-    BEFORE UPDATE OF healthy_quantity, damaged_quantity, lost_quantity,
+    BEFORE UPDATE OF healthy_quantity, damaged_quantity,
       delivery_list_item_id, deleted_at ON return_event_items
     FOR EACH ROW
     WHEN NEW.deleted_at IS NULL AND (
       SELECT COALESCE(SUM(
-        healthy_quantity + damaged_quantity + lost_quantity
+        healthy_quantity + damaged_quantity
       ), 0)
       FROM return_event_items
       WHERE delivery_list_item_id = NEW.delivery_list_item_id
         AND id <> OLD.id
         AND deleted_at IS NULL
-    ) + NEW.healthy_quantity + NEW.damaged_quantity + NEW.lost_quantity
+    ) + NEW.healthy_quantity + NEW.damaged_quantity
       > (
         SELECT delivered_quantity
         FROM delivery_list_items
@@ -498,7 +497,7 @@ function createInvoiceDetails(db) {
       delivery_list_item_id INTEGER,
       return_event_item_id INTEGER,
       line_type TEXT NOT NULL DEFAULT 'RENTAL'
-        CHECK (line_type IN ('RENTAL', 'DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER')),
+        CHECK (line_type IN ('RENTAL', 'DAMAGE', 'TRANSPORT', 'OTHER')),
       description TEXT NOT NULL,
       quantity INTEGER NOT NULL CHECK (quantity > 0),
       billing_from_at TEXT,
@@ -539,7 +538,7 @@ function createInvoiceDetails(db) {
       adjustment_type TEXT NOT NULL
         CHECK (adjustment_type IN (
           'DISCOUNT_PERCENT', 'DISCOUNT_AMOUNT', 'ROUNDING',
-          'DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER'
+          'DAMAGE', 'TRANSPORT', 'OTHER'
         )),
       description TEXT NOT NULL,
       percent_basis_points INTEGER

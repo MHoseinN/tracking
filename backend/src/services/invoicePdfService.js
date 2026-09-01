@@ -41,7 +41,7 @@ function formatPersianDateTime(value) {
 
 function adjustmentLabel(type) {
   return ({
-    DAMAGE: 'خسارت', LOSS: 'مفقودی', TRANSPORT: 'حمل و نقل', OTHER: 'سایر'
+    DAMAGE: 'خسارت', TRANSPORT: 'حمل و نقل', OTHER: 'سایر'
   })[type] || type;
 }
 
@@ -380,7 +380,7 @@ function renderInvoicePdf(data) {
   y += TABLE_HEADER_HEIGHT;
 
   const extraAdjustments = adjustments.filter((item) => (
-    ['DAMAGE', 'LOSS', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type)
+    ['DAMAGE', 'TRANSPORT', 'OTHER'].includes(item.adjustment_type)
   ));
   const invoiceRows = [
     ...lines.map((line) => ({

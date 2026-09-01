@@ -62,7 +62,7 @@
                   <tbody>
                     <tr v-if="!extras.length"><td colspan="4" class="border border-slate-400 px-3 py-5 text-center text-sm text-slate-400">هزینه اضافی ثبت نشده است.</td></tr>
                     <tr v-for="(extra, index) in extras" :key="extra.key">
-                      <td class="border border-slate-400 p-2"><select v-model="extra.type" class="h-10 w-full rounded border border-slate-300 px-2 text-sm"><option value="DAMAGE">خسارت</option><option value="LOSS">مفقودی</option><option value="TRANSPORT">حمل‌ونقل</option><option value="OTHER">سایر</option></select></td>
+                      <td class="border border-slate-400 p-2"><select v-model="extra.type" class="h-10 w-full rounded border border-slate-300 px-2 text-sm"><option value="DAMAGE">خسارت</option><option value="TRANSPORT">حمل‌ونقل</option><option value="OTHER">سایر</option></select></td>
                       <td class="border border-slate-400 p-2"><input v-model.trim="extra.description" maxlength="1000" class="h-10 w-full rounded border border-slate-300 px-3 text-sm" /></td>
                       <td class="border border-slate-400 p-2"><input v-model.number="extra.amount_toman" type="number" min="1" class="h-10 w-44 rounded border border-slate-300 px-2" /></td>
                       <td class="border border-slate-400 p-2"><button type="button" class="text-xs font-bold text-rose-700" @click="extras.splice(index, 1)">حذف</button></td>
