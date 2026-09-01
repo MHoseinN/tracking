@@ -196,6 +196,7 @@ const props = defineProps({
   initialList: { type: Object, default: null }
 });
 const emit = defineEmits(['saved', 'finalized']);
+defineExpose({ openFinalizeConfirm });
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -365,12 +366,19 @@ async function persistDraft() {
   saveStatus.value = 'saving';
   syncCustomerId();
   const payload = buildPayload();
-  savePromise = draftStore.saveDraft(draftId.value, payload).then((result) => {
+  savePromise = draftStore.saveDraft(draftId.value, payload).then(async (result) => {
     if (!result.success) {
       saveStatus.value = 'error';
       saveError.value = result.message;
       return false;
     }
+    // Keep local rows linked to the records created by the first autosave.
+    // Without this, the next autosave sends the same products with id=null and
+    // the backend correctly rejects the duplicate active products.
+    hydrating.value = true;
+    syncPersistedItemIds(result.data.items || []);
+    await nextTick();
+    hydrating.value = false;
     currentVersion.value = Number(result.data.version);
     loadedStatus.value = result.data.status || loadedStatus.value;
     loadedListNumber.value = result.data.list_number || loadedListNumber.value;
@@ -388,6 +396,17 @@ async function persistDraft() {
     autosaveTimer = setTimeout(() => persistDraft(), 300);
   }
   return saved;
+}
+
+function syncPersistedItemIds(savedItems) {
+  const idByProductId = new Map(savedItems.map((item) => [
+    Number(item.product_id),
+    Number(item.id)
+  ]));
+  form.items.forEach((item) => {
+    const persistedId = idByProductId.get(Number(item.product_id));
+    if (persistedId) item.id = persistedId;
+  });
 }
 
 function buildPayload() {

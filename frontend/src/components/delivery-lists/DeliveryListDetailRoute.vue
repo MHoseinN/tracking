@@ -1,6 +1,9 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
+      <button v-if="list?.status === 'DRAFT'" type="button"
+        class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
+        @click="requestFinalizeDelivery">ثبت نهایی تحویل</button>
       <button v-if="list?.proforma" type="button" class="app-button-secondary w-full border-violet-300 text-violet-700"
         :disabled="loadingProforma" @click="openProforma">
         {{ loadingProforma ? 'در حال ساخت...' : 'مشاهده پیش‌فاکتور' }}
@@ -19,6 +22,7 @@
 
     <div v-else-if="list" class="space-y-5">
       <DeliveryListDraftEditorRoute
+        ref="editorRef"
         embedded
         :initial-list="list"
         @saved="handleEmbeddedListSaved"
@@ -130,6 +134,7 @@ const router = useRouter();
 const toast = useToast();
 const listStore = useDeliveryListStore();
 const list = ref(null);
+const editorRef = ref(null);
 const loading = ref(true);
 const showReturnModal = ref(false);
 const returning = ref(false);
@@ -199,6 +204,10 @@ onBeforeUnmount(() => {
 
 function handleEmbeddedListSaved(updatedList) {
   if (updatedList) list.value = updatedList;
+}
+
+function requestFinalizeDelivery() {
+  editorRef.value?.openFinalizeConfirm();
 }
 
 async function openProforma() {

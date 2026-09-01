@@ -412,11 +412,15 @@ function createDeliveryListDraftService(db) {
       }
 
       const existingItems = db.prepare(`
-        SELECT id
+        SELECT id, product_id
         FROM delivery_list_items
         WHERE delivery_list_id = ? AND deleted_at IS NULL
       `).all(id);
       const existingIds = new Set(existingItems.map((item) => Number(item.id)));
+      const existingIdByProductId = new Map(existingItems.map((item) => [
+        Number(item.product_id),
+        Number(item.id)
+      ]));
       const retainedIds = new Set();
       const updateItem = db.prepare(`
         UPDATE delivery_list_items
@@ -432,23 +436,27 @@ function createDeliveryListDraftService(db) {
         ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
       items.forEach((item) => {
-        if (item.itemId) {
-          if (!existingIds.has(item.itemId)) {
+        // A newly-added row may be autosaved again before the client has received
+        // its database id. Reuse the active row with the same product instead of
+        // trying to insert it twice and violating the active-product unique index.
+        const existingItemId = item.itemId || existingIdByProductId.get(item.productId);
+        if (existingItemId) {
+          if (!existingIds.has(existingItemId)) {
             throw new DeliveryListDraftError('یکی از اقلام این لیست معتبر نیست', 409);
           }
           const returned = db.prepare(`
             SELECT COALESCE(SUM(healthy_quantity + damaged_quantity + lost_quantity), 0) AS quantity
             FROM return_event_items
             WHERE delivery_list_item_id = ? AND deleted_at IS NULL
-          `).get(item.itemId);
+          `).get(existingItemId);
           if (item.quantity < Number(returned.quantity || 0)) {
             throw new DeliveryListDraftError(`تعداد «${item.productName}» نمی‌تواند کمتر از تعداد برگشت‌خورده باشد`);
           }
           updateItem.run(
             item.productId, item.productName, item.dailyPrice,
-            item.quantity, item.notes, item.itemId, id
+            item.quantity, item.notes, existingItemId, id
           );
-          retainedIds.add(item.itemId);
+          retainedIds.add(existingItemId);
         } else {
           const result = insertItem.run(
             id, item.productId, item.productName,

@@ -290,6 +290,35 @@ test('creates multiple drafts and autosaves customer, dates and items', () => {
   }
 });
 
+test('reuses an active item when a repeated autosave omits its generated id', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const firstSave = service.saveDraft(draft.id, {
+      version: draft.version,
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+    });
+
+    const secondSave = service.saveDraft(draft.id, {
+      version: firstSave.version,
+      items: [{ product_id: 1, daily_price_toman: 1250000, delivered_quantity: 2 }]
+    });
+
+    assert.equal(secondSave.items.length, 1);
+    assert.equal(secondSave.items[0].id, firstSave.items[0].id);
+    assert.equal(secondSave.items[0].daily_price_toman, 1250000);
+    assert.equal(secondSave.items[0].delivered_quantity, 2);
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS count FROM delivery_list_items WHERE delivery_list_id = ? AND deleted_at IS NULL')
+        .get(draft.id).count,
+      1
+    );
+  } finally {
+    db.close();
+  }
+});
+
 test('archives a finalized list while preserving its invoices and audit history', () => {
   const db = createDatabase();
   try {
