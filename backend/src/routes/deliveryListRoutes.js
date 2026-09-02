@@ -64,6 +64,7 @@ router.post('/:id/returns', [
   body('items.*.delivery_list_item_id').isInt({ min: 1 }),
   body('items.*.healthy_quantity').optional().isInt({ min: 0 }),
   body('items.*.damaged_quantity').optional().isInt({ min: 0 }),
+  body('items.*.remaining_expected_return_at').optional({ nullable: true }).isISO8601(),
   body('items.*.final_charged_days').optional({ nullable: true }).isInt({ min: 1 }),
   body('items.*.day_override_reason').optional({ nullable: true }).isString().isLength({ max: 1000 }),
   body('items.*.damage_notes').optional({ nullable: true }).isString().isLength({ max: 2000 })

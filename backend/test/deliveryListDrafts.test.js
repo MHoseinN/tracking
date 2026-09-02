@@ -83,6 +83,7 @@ function createDatabase() {
       product_name_snapshot TEXT NOT NULL,
       daily_price_toman INTEGER NOT NULL,
       delivered_quantity INTEGER NOT NULL,
+      remaining_expected_return_at TEXT,
       notes TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -532,12 +533,22 @@ test('records partial and complete healthy returns with independent charged days
     const finalized = service.finalizeDraft(draft.id, saved.version, 1);
     const itemId = finalized.items[0].id;
 
-    const partial = service.recordReturn(draft.id, {
+    assert.throws(() => service.recordReturn(draft.id, {
       returned_at: '2026-08-25T11:00:00+03:30',
       items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
+    }, 1), /تاریخ پیگیری مانده/);
+
+    const partial = service.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{
+        delivery_list_item_id: itemId,
+        healthy_quantity: 1,
+        remaining_expected_return_at: '2026-08-26T11:00:00+03:30'
+      }]
     }, 1);
     assert.equal(partial.status, 'REMAINING');
     assert.equal(partial.items[0].remaining_quantity, 2);
+    assert.equal(partial.items[0].remaining_expected_return_at, '2026-08-26T11:00:00+03:30');
     assert.equal(partial.return_events[0].items[0].system_calculated_days, 1);
 
     const completed = service.recordReturn(draft.id, {
@@ -546,6 +557,7 @@ test('records partial and complete healthy returns with independent charged days
     }, 1);
     assert.equal(completed.status, 'COMPLETED');
     assert.equal(completed.items[0].remaining_quantity, 0);
+    assert.equal(completed.items[0].remaining_expected_return_at, null);
     assert.equal(completed.items[0].item_status, 'RETURNED');
     assert.equal(completed.return_events.length, 2);
     assert.equal(completed.return_events[0].items[0].final_charged_days, 2);
@@ -585,7 +597,8 @@ test('marks damage for follow-up and requires reasons for issues and day overrid
         damaged_quantity: 1,
         final_charged_days: 3,
         day_override_reason: 'توافق با مشتری',
-        damage_notes: 'خط روی بدنه'
+        damage_notes: 'خط روی بدنه',
+        remaining_expected_return_at: '2026-08-27T11:00:00+03:30'
       }]
     }, 1);
     assert.equal(result.status, 'NEEDS_FOLLOW_UP');
@@ -640,6 +653,33 @@ test('uses unique Jalali year prefixes for list and invoice numbers', () => {
   }
 });
 
+test('does not reuse a delivery-list number after the original list is archived', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const createAndFinalize = () => {
+      const draft = service.createDraft(1);
+      const saved = service.saveDraft(draft.id, {
+        version: draft.version,
+        customer_id: 1,
+        delivered_at: '2026-08-24T18:00:00+03:30',
+        expected_return_at: '2026-08-26T11:00:00+03:30',
+        items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+      });
+      return service.finalizeDraft(draft.id, saved.version, 1);
+    };
+
+    const first = createAndFinalize();
+    service.archiveList(first.id, 1);
+    const second = createAndFinalize();
+
+    assert.equal(first.list_number, '051000');
+    assert.equal(second.list_number, '051001');
+  } finally {
+    db.close();
+  }
+});
+
 test('issues a primary invoice for returned items and a supplement after the remaining return', () => {
   const db = createDatabase();
   try {
@@ -658,7 +698,11 @@ test('issues a primary invoice for returned items and a supplement after the rem
 
     listService.recordReturn(draft.id, {
       returned_at: '2026-08-25T11:00:00+03:30',
-      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
+      items: [{
+        delivery_list_item_id: itemId,
+        healthy_quantity: 1,
+        remaining_expected_return_at: '2026-08-26T11:00:00+03:30'
+      }]
     }, 1);
     const firstPreview = invoiceService.getPreview(draft.id);
     assert.equal(firstPreview.lines.length, 1);

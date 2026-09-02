@@ -1,4 +1,5 @@
 const { initDatabase } = require('../src/db/init');
+const { migrations } = require('../src/db/migrations');
 const db = require('../src/db/database');
 
 const requiredTables = [
@@ -68,8 +69,14 @@ try {
   }
 
   const migrationCount = db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count;
-  if (migrationCount !== 6) {
+  if (migrationCount !== migrations.length) {
     throw new Error(`Unexpected migration count: ${migrationCount}`);
+  }
+  const deliveryItemColumns = new Set(
+    db.prepare("SELECT name FROM pragma_table_info('delivery_list_items')").all().map((row) => row.name)
+  );
+  if (!deliveryItemColumns.has('remaining_expected_return_at')) {
+    throw new Error('Missing delivery_list_items.remaining_expected_return_at');
   }
 
   console.log(JSON.stringify({

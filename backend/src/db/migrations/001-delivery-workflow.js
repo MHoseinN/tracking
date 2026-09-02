@@ -258,6 +258,7 @@ function createDeliveryWorkflow(db) {
       product_name_snapshot TEXT NOT NULL,
       daily_price_toman INTEGER NOT NULL CHECK (daily_price_toman >= 0),
       delivered_quantity INTEGER NOT NULL CHECK (delivered_quantity > 0),
+      remaining_expected_return_at TEXT,
       notes TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -271,6 +272,9 @@ function createDeliveryWorkflow(db) {
       WHERE product_id IS NOT NULL AND deleted_at IS NULL;
     CREATE INDEX IF NOT EXISTS ix_delivery_list_items_list
       ON delivery_list_items(delivery_list_id, id);
+    CREATE INDEX IF NOT EXISTS ix_delivery_list_items_remaining_expected_return
+      ON delivery_list_items(remaining_expected_return_at, delivery_list_id)
+      WHERE remaining_expected_return_at IS NOT NULL AND deleted_at IS NULL;
 
     CREATE TABLE IF NOT EXISTS return_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

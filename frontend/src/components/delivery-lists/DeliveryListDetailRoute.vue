@@ -9,7 +9,7 @@
         {{ loadingProforma ? 'در حال ساخت...' : 'مشاهده پیش‌فاکتور' }}
       </button>
       <button v-if="canRecordReturn" type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
-        @click="showReturnModal = true">ثبت مرجوعی</button>
+        @click="requestReturnEntry">ثبت برگشت اقلام</button>
       <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full"
         :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
       <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
@@ -42,25 +42,6 @@
         </div>
       </section>
 
-      <section v-if="list.return_events?.length" class="app-panel overflow-hidden">
-        <div class="border-b border-slate-100 p-5"><h3 class="text-base font-black text-slate-800">تاریخچه مرجوعی‌ها</h3></div>
-        <div class="p-5">
-          <table class="w-full table-fixed border-collapse border border-slate-300">
-            <thead class="bg-slate-100"><tr><th v-for="heading in ['تاریخ برگشت','تحویل‌گیرنده','محصول','سالم','خسارت','روز نهایی','فاکتور','توضیحات']" :key="heading" class="border border-slate-300 px-2 py-3 text-right text-xs text-slate-600">{{ heading }}</th></tr></thead>
-            <tbody><tr v-for="row in returnRows" :key="row.id">
-              <td class="border border-slate-300 px-2 py-3 text-xs">{{ formatDateTime(row.returned_at) }}</td>
-              <td class="border border-slate-300 px-2 py-3 text-sm">{{ row.received_by_name || '—' }}</td>
-              <td class="border border-slate-300 px-2 py-3 text-sm font-bold">{{ row.product_name_snapshot }}</td>
-              <td class="border border-slate-300 px-2 py-3">{{ formatNumber(row.healthy_quantity) }}</td>
-              <td class="border border-slate-300 px-2 py-3 text-rose-700">{{ formatNumber(row.damaged_quantity) }}</td>
-              <td class="border border-slate-300 px-2 py-3 font-bold">{{ formatNumber(row.final_charged_days) }}</td>
-              <td class="border border-slate-300 px-2 py-3"><span class="app-badge px-2 text-[11px]" :class="row.rental_invoice_id ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">{{ row.rental_invoice_id ? 'فاکتور شده' : 'آماده صدور' }}</span></td>
-              <td class="border border-slate-300 px-2 py-3 text-xs">{{ row.damage_notes || row.day_override_reason || '—' }}</td>
-            </tr></tbody>
-          </table>
-        </div>
-      </section>
-
       <section v-if="list.invoices?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-300 p-5"><h3 class="text-base font-black text-slate-800">فاکتورهای صادرشده این لیست</h3></div>
         <div class="p-5">
@@ -89,8 +70,6 @@
       </section>
     </div>
 
-    <DeliveryReturnModal :is-open="showReturnModal" :list="list" :saving="returning"
-      @close="showReturnModal = false" @save="handleReturn" />
     <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
       @close="showInvoiceModal = false" @issue="handleIssueInvoice" />
     <DeliveryProformaPreviewModal :is-open="showProformaModal" :list-number="list?.list_number"
@@ -119,7 +98,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
-import DeliveryReturnModal from './DeliveryReturnModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryProformaPreviewModal from './DeliveryProformaPreviewModal.vue';
 import DeliveryInvoicePreviewModal from './DeliveryInvoicePreviewModal.vue';
@@ -136,8 +114,6 @@ const listStore = useDeliveryListStore();
 const list = ref(null);
 const editorRef = ref(null);
 const loading = ref(true);
-const showReturnModal = ref(false);
-const returning = ref(false);
 const loadingInvoicePreview = ref(false);
 const issuingInvoice = ref(false);
 const showInvoiceModal = ref(false);
@@ -210,6 +186,10 @@ function requestFinalizeDelivery() {
   editorRef.value?.openFinalizeConfirm();
 }
 
+function requestReturnEntry() {
+  editorRef.value?.openReturnEntry();
+}
+
 async function openProforma() {
   if (loadingProforma.value || !list.value?.proforma) return;
   showProformaModal.value = true;
@@ -256,17 +236,6 @@ async function createNewDraft() {
   const result = await listStore.createDraft();
   if (!result.success) return toast.error(result.message);
   router.push(`/lists/${result.data.id}/edit`);
-}
-
-async function handleReturn(payload) {
-  if (returning.value) return;
-  returning.value = true;
-  const result = await listStore.recordReturn(list.value.id, payload);
-  returning.value = false;
-  if (!result.success) return toast.error(result.message);
-  list.value = result.data;
-  showReturnModal.value = false;
-  toast.success(result.data.status === 'COMPLETED' ? 'برگشت کامل ثبت و لیست تکمیل شد' : 'مرجوعی اقلام ثبت شد');
 }
 
 async function openInvoiceModal() {

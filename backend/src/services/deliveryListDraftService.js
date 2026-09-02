@@ -95,6 +95,7 @@ function createDeliveryListDraftService(db) {
       SELECT delivery_list_items.id, delivery_list_items.delivery_list_id,
              delivery_list_items.product_id, delivery_list_items.product_name_snapshot,
              delivery_list_items.daily_price_toman, delivery_list_items.delivered_quantity,
+             delivery_list_items.remaining_expected_return_at,
              delivery_list_items.notes, delivery_list_items.created_at, delivery_list_items.updated_at,
              COALESCE(SUM(return_event_items.healthy_quantity), 0) AS healthy_returned_quantity,
              COALESCE(SUM(return_event_items.damaged_quantity), 0) AS damaged_quantity,
@@ -360,6 +361,7 @@ function createDeliveryListDraftService(db) {
         productName: product.name,
         dailyPrice,
         quantity,
+        remainingExpectedReturnAt: nullableText(item.remaining_expected_return_at),
         notes: nullableText(item.notes)
       };
     });
@@ -422,15 +424,16 @@ function createDeliveryListDraftService(db) {
       const updateItem = db.prepare(`
         UPDATE delivery_list_items
         SET product_id = ?, product_name_snapshot = ?, daily_price_toman = ?,
-            delivered_quantity = ?, notes = ?, deleted_at = NULL,
+            delivered_quantity = ?, remaining_expected_return_at = ?, notes = ?, deleted_at = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND delivery_list_id = ?
       `);
       const insertItem = db.prepare(`
         INSERT INTO delivery_list_items (
           delivery_list_id, product_id, product_name_snapshot,
-          daily_price_toman, delivered_quantity, notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          daily_price_toman, delivered_quantity, remaining_expected_return_at,
+          notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
       items.forEach((item) => {
         // A newly-added row may be autosaved again before the client has received
@@ -451,13 +454,13 @@ function createDeliveryListDraftService(db) {
           }
           updateItem.run(
             item.productId, item.productName, item.dailyPrice,
-            item.quantity, item.notes, existingItemId, id
+            item.quantity, item.remainingExpectedReturnAt, item.notes, existingItemId, id
           );
           retainedIds.add(existingItemId);
         } else {
           const result = insertItem.run(
             id, item.productId, item.productName,
-            item.dailyPrice, item.quantity, item.notes
+            item.dailyPrice, item.quantity, item.remainingExpectedReturnAt, item.notes
           );
           retainedIds.add(Number(result.lastInsertRowid));
         }
@@ -619,13 +622,15 @@ function createDeliveryListDraftService(db) {
     `).get(draft.customer_id);
     if (!customer) throw new DeliveryListDraftError('مشتری انتخاب‌شده فعال نیست', 409);
 
-    const listNumber = nextDeliveryListNumber(db, draft.delivered_at);
     const deliveryDate = String(draft.delivered_at).slice(0, 10);
     const dailyRateTotal = items.reduce((sum, item) => (
       sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
     ), 0);
 
     const finalize = db.transaction(() => {
+      // Generate the number only after acquiring the write transaction. This
+      // prevents two app processes from choosing the same next number.
+      const listNumber = nextDeliveryListNumber(db, draft.delivered_at);
       const update = db.prepare(`
         UPDATE delivery_lists
         SET list_number = ?, customer_name_snapshot = ?, status = 'DELIVERED',
@@ -670,7 +675,7 @@ function createDeliveryListDraftService(db) {
       );
     });
 
-    finalize();
+    finalize.immediate();
     return getList(id);
   }
 
@@ -738,7 +743,26 @@ function createDeliveryListDraftService(db) {
       if (finalDays !== systemDays && !overrideReason) {
         throw new DeliveryListDraftError('برای تغییر دستی تعداد روز، دلیل را وارد کنید');
       }
-      return { itemId, healthy, damaged, finalDays, overrideReason, damageNotes };
+      const remainingAfterReturn = Number(listItem.remaining_quantity) - total;
+      const remainingExpectedReturnAt = nullableText(item.remaining_expected_return_at);
+      if (remainingAfterReturn > 0 && !remainingExpectedReturnAt) {
+        throw new DeliveryListDraftError(`تاریخ پیگیری مانده «${listItem.product_name_snapshot}» الزامی است`);
+      }
+      if (remainingExpectedReturnAt) {
+        const followUpTime = Date.parse(remainingExpectedReturnAt);
+        if (!Number.isFinite(followUpTime) || followUpTime < Date.parse(returnedAt)) {
+          throw new DeliveryListDraftError(`تاریخ پیگیری مانده «${listItem.product_name_snapshot}» نامعتبر است`);
+        }
+      }
+      return {
+        itemId,
+        healthy,
+        damaged,
+        finalDays,
+        overrideReason,
+        damageNotes,
+        remainingExpectedReturnAt: remainingAfterReturn > 0 ? remainingExpectedReturnAt : null
+      };
     });
 
     const saveReturn = db.transaction(() => {
@@ -767,6 +791,11 @@ function createDeliveryListDraftService(db) {
           item.overrideReason,
           item.damageNotes
         );
+        db.prepare(`
+          UPDATE delivery_list_items
+          SET remaining_expected_return_at = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND delivery_list_id = ? AND deleted_at IS NULL
+        `).run(item.remainingExpectedReturnAt, item.itemId, id);
       });
 
       const state = db.prepare(`

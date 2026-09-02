@@ -97,8 +97,6 @@
       </template>
     </AppTablePanel>
 
-    <DeliveryReturnModal :is-open="Boolean(returnTargetList)" :list="returnTargetList" :saving="returning"
-      @close="returnTargetList = null" @save="handleReturn" />
     <DeliveryInvoiceIssueModal :is-open="showInvoiceIssueModal" :preview="invoicePreview" :saving="issuingInvoice"
       @close="closeInvoiceIssueModal" @issue="handleIssueInvoice" />
     <DeliveryInvoiceSendModal :is-open="showInvoiceSendModal" :invoice="sendInvoice" :saving="updatingSendStatus"
@@ -130,7 +128,6 @@ import AppStatusButton from '../ui/AppStatusButton.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
 import DeliveryInvoiceIssueModal from '../delivery-lists/DeliveryInvoiceIssueModal.vue';
 import DeliveryInvoiceSendModal from '../delivery-lists/DeliveryInvoiceSendModal.vue';
-import DeliveryReturnModal from '../delivery-lists/DeliveryReturnModal.vue';
 import DeliverySettlementModal from '../delivery-lists/DeliverySettlementModal.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
@@ -163,8 +160,6 @@ const settlementStatusFilter = ref('all');
 const listSorts = reactive({ deliveredAt: 'desc', invoiceAmount: 'desc' });
 const listSortPriority = ref(['deliveredAt', 'invoiceAmount']);
 const actionLoadingKey = ref('');
-const returnTargetList = ref(null);
-const returning = ref(false);
 const invoiceTargetList = ref(null);
 const invoicePreview = ref(null);
 const showInvoiceIssueModal = ref(false);
@@ -271,25 +266,7 @@ function isActionLoading(list, action) {
 
 async function manageListStatus(list) {
   if (list.status === 'DRAFT') return router.push(`/lists/${list.id}/edit`);
-  if (list.status === 'COMPLETED') return router.push(`/lists/${list.id}`);
-  setActionLoading(list, 'list');
-  const result = await deliveryListStore.getListDetails(list.id);
-  setActionLoading();
-  if (!result.success) return toast.error(result.message);
-  const hasRemaining = (result.data.items || []).some((item) => Number(item.remaining_quantity) > 0);
-  if (!hasRemaining) return router.push(`/lists/${list.id}`);
-  returnTargetList.value = result.data;
-}
-
-async function handleReturn(payload) {
-  if (!returnTargetList.value || returning.value) return;
-  returning.value = true;
-  const result = await deliveryListStore.recordReturn(returnTargetList.value.id, payload);
-  returning.value = false;
-  if (!result.success) return toast.error(result.message);
-  returnTargetList.value = null;
-  await loadWorkflow();
-  toast.success(result.data.status === 'COMPLETED' ? 'برگشت کامل ثبت و لیست تکمیل شد' : 'مرجوعی اقلام ثبت شد');
+  return router.push(`/lists/${list.id}`);
 }
 
 async function manageInvoice(list) {

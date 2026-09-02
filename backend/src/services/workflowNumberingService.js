@@ -15,7 +15,10 @@ function getPersianYear(dateValue) {
 function nextNumber(db, table, column, prefixLength, dateValue) {
   const year = String(getPersianYear(dateValue));
   const prefix = year.slice(-prefixLength);
-  const activeCondition = table === 'delivery_lists' ? 'archived_at IS NULL' : 'deleted_at IS NULL';
+  // Delivery-list numbers remain permanently unique, even after a list is
+  // archived.  Excluding archived rows here could therefore generate a number
+  // that still exists and make finalization fail with SQLITE_CONSTRAINT_UNIQUE.
+  const activeCondition = table === 'delivery_lists' ? '1 = 1' : 'deleted_at IS NULL';
   const rows = db.prepare(`
     SELECT ${column} AS number
     FROM ${table}

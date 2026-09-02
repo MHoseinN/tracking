@@ -27,7 +27,7 @@
         </header>
 
         <div class="draft-information-grid">
-          <label class="draft-field draft-field--customer">
+          <label class="draft-field draft-field--customer draft-field--row-one-customer">
             <span class="draft-field__label">مشتری</span>
             <div class="draft-customer-control">
               <input v-model.trim="form.customerName" type="text" maxlength="255"
@@ -49,71 +49,75 @@
             </div>
           </label>
 
-          <label class="draft-field">
+          <label class="draft-field draft-field--row-one-date">
             <span class="draft-field__label">تاریخ تحویل</span>
             <JalaliDatePicker v-model="form.deliveryDate" input-class="draft-field__control" />
           </label>
-          <label class="draft-field">
+          <label class="draft-field draft-field--row-one-time">
             <span class="draft-field__label">ساعت تحویل</span>
             <TimePicker24 v-model="form.deliveryTime" input-class="draft-field__control" />
           </label>
-          <label class="draft-field">
-            <span class="draft-field__label">تاریخ تقریبی برگشت</span>
-            <JalaliDatePicker v-model="form.expectedReturnDate" input-class="draft-field__control" />
-          </label>
-          <label class="draft-field">
-            <span class="draft-field__label">ساعت تقریبی برگشت</span>
-            <TimePicker24 v-model="form.expectedReturnTime" input-class="draft-field__control" />
-          </label>
-          <label class="draft-night-before" :class="{ 'draft-night-before--active': form.nightBefore }">
+          <label class="draft-night-before draft-night-before--compact" :class="{ 'draft-night-before--active': form.nightBefore }">
             <input v-model="form.nightBefore" type="checkbox" />
             <span class="draft-night-before__switch" aria-hidden="true"><span></span></span>
             <span><strong>شب قبل</strong><small>روز تحویل در محاسبه اجاره منظور نشود</small></span>
           </label>
-          <label class="draft-field draft-field--notes">
+          <label class="draft-field draft-field--row-two-date">
+            <span class="draft-field__label">تاریخ تقریبی برگشت</span>
+            <JalaliDatePicker v-model="form.expectedReturnDate" input-class="draft-field__control" />
+          </label>
+          <label class="draft-field draft-field--row-two-time">
+            <span class="draft-field__label">ساعت تقریبی برگشت</span>
+            <TimePicker24 v-model="form.expectedReturnTime" input-class="draft-field__control" />
+          </label>
+          <label class="draft-field draft-field--notes draft-field--row-two-notes">
             <span class="draft-field__label">توضیحات کلی لیست</span>
             <input v-model.trim="form.notes" class="draft-field__control" type="text" maxlength="5000"
               placeholder="یادداشت اختیاری برای این لیست" />
           </label>
         </div>
 
-        <div class="draft-items-toolbar">
+        <div ref="itemsSection" class="draft-items-toolbar">
           <div>
             <h3 class="text-base font-black text-slate-800">اقلام لیست</h3>
-            <p class="mt-1 text-xs text-slate-500">در هر ردیف نام محصول را جست‌وجو و انتخاب کنید.</p>
+            <p class="mt-1 text-xs text-slate-500">تحویل، دریافت و مانده هر محصول در یک ردیف مدیریت می‌شود.</p>
           </div>
-          <div class="draft-row-actions">
+          <div v-if="isDraft" class="draft-row-actions">
             <span>افزودن ردیف:</span>
-            <button v-for="count in [1, 5, 10]" :key="count" type="button" @click="addRows(count)">
-              +{{ formatNumber(count) }}
-            </button>
+            <button v-for="count in [1, 5, 10]" :key="count" type="button" @click="addRows(count)">+{{ formatNumber(count) }}</button>
             <span class="draft-items-count">{{ formatNumber(activeItems.length) }} قلم انتخاب‌شده</span>
+          </div>
+          <div v-else class="draft-row-actions draft-return-actions">
+            <span class="draft-items-count">{{ pendingReturnCount ? `${formatNumber(pendingReturnCount)} قلم در انتظار ثبت` : `${formatNumber(activeItems.length)} قلم` }}</span>
+            <button type="button" class="draft-register-return" :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
+              ثبت دریافت‌ها
+            </button>
           </div>
         </div>
 
         <div class="draft-table-wrap">
-          <table class="draft-items-table">
+          <table class="draft-items-table unified-list-table">
             <thead>
               <tr>
                 <th>ردیف</th>
                 <th>محصول</th>
-                <th>تعداد</th>
-                <th>قیمت روزانه</th>
-                <th>جمع روزانه</th>
+                <th>تعداد تحویل</th>
+                <th>دریافت (برگشت)</th>
+                <th>مانده</th>
                 <th>توضیحات</th>
+                <th>برگشت کامل</th>
                 <th>عملیات</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in form.items" :key="item.localKey" class="draft-item-row"
-                :class="{ 'draft-item-row--empty': !item.product_id }">
+              <tr v-for="(item, index) in displayItems" :key="item.localKey" class="draft-item-row"
+                :class="{ 'draft-item-row--empty': !item.product_id, 'unified-return-row--selected': !isDraft && returnEntryFor(item).returnQuantity > 0 }">
                 <td class="draft-row-number">{{ formatNumber(index + 1) }}</td>
                 <td class="draft-product-search-cell">
                   <div class="draft-product-search">
                     <svg class="draft-product-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-                    <input v-model.trim="rowSearchState[item.localKey].query" type="search"
-                      :data-product-search="index" placeholder="جست‌وجوی نام محصول..."
-                      @focus="openRowSearch(item)" @input="openRowSearch(item)"
+                    <input v-model.trim="rowSearchState[item.localKey].query" type="search" :data-product-search="index"
+                      placeholder="جست‌وجوی نام محصول..." @focus="openRowSearch(item)" @input="openRowSearch(item)"
                       @blur="closeRowSearch(item)" @keydown.escape="rowSearchState[item.localKey].open = false"
                       @keydown.enter.prevent="selectFirstRowResult(item)" />
                     <div v-if="rowSearchState[item.localKey].open" class="draft-product-results">
@@ -122,29 +126,44 @@
                         <span class="draft-product-result__name">{{ product.name }}</span>
                         <strong>{{ formatCurrency(product.daily_price_toman) }}</strong>
                       </button>
-                      <div v-if="!searchableProductsForRow(item).length" class="draft-product-results__empty">
-                        محصولی با این عبارت پیدا نشد.
-                      </div>
+                      <div v-if="!searchableProductsForRow(item).length" class="draft-product-results__empty">محصولی با این عبارت پیدا نشد.</div>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <div class="draft-stepper">
-                    <button type="button" aria-label="کاهش تعداد" :disabled="!item.product_id" @click="decrementQuantity(item)">−</button>
-                    <input v-model.number="item.delivered_quantity" type="number" min="1" step="1" :disabled="!item.product_id" />
-                    <button type="button" aria-label="افزایش تعداد" :disabled="!item.product_id" @click="incrementQuantity(item)">+</button>
+                  <div class="draft-stepper draft-stepper--compact">
+                    <button type="button" :disabled="!item.product_id" @click="decrementQuantity(item)">−</button>
+                    <input v-model.number="item.delivered_quantity" type="number" :min="aggregateReturned(item) || 1" step="1" :disabled="!item.product_id" />
+                    <button type="button" :disabled="!item.product_id" @click="incrementQuantity(item)">+</button>
                   </div>
                 </td>
-                <td><input v-model.number="item.daily_price_toman" class="draft-table-input draft-price-input"
-                  type="number" min="0" step="1000" :disabled="!item.product_id" /></td>
-                <td class="draft-line-total">{{ item.product_id ? formatCurrency(itemDailyTotal(item)) : '—' }}</td>
-                <td><input v-model.trim="item.notes" class="draft-table-input" type="text" maxlength="1000"
-                  placeholder="اختیاری" :disabled="!item.product_id" /></td>
                 <td>
-                  <button type="button" class="draft-delete-button" title="حذف قلم" aria-label="حذف قلم"
-                    :disabled="!item.product_id && form.items.length <= 5"
-                    @click="removeProduct(item.localKey)">
+                  <span v-if="isDraft || !item.product_id" class="return-stat">۰</span>
+                  <div v-else class="draft-stepper draft-stepper--compact">
+                    <button type="button" :disabled="displayReturnedQuantity(item) <= aggregateReturned(item)" @click="changeCumulativeReturned(item, -1)">−</button>
+                    <input :value="displayReturnedQuantity(item)" type="number" :min="aggregateReturned(item)" :max="item.delivered_quantity"
+                      @input="setCumulativeReturned(item, $event.target.value)" />
+                    <button type="button" :disabled="displayReturnedQuantity(item) >= item.delivered_quantity" @click="changeCumulativeReturned(item, 1)">+</button>
+                  </div>
+                </td>
+                <td><strong class="return-stat" :class="remainingAfterReturn(item) ? 'return-stat--remaining' : 'return-stat--complete'">{{ formatNumber(isDraft ? item.delivered_quantity : remainingAfterReturn(item)) }}</strong></td>
+                <td><input v-model.trim="item.notes" class="draft-table-input" type="text" maxlength="1000" placeholder="اختیاری" :disabled="!item.product_id" /></td>
+                <td>
+                  <label class="return-check" :class="{ 'return-check--active': !isDraft && isFullReturnSelected(item), 'return-check--done': !isDraft && currentRemaining(item) === 0 }">
+                    <input type="checkbox" :checked="!isDraft && (isFullReturnSelected(item) || currentRemaining(item) === 0)"
+                      :disabled="isDraft || currentRemaining(item) === 0" @change="toggleFullReturn(item, $event.target.checked)" />
+                    <span aria-hidden="true">✓</span>
+                  </label>
+                </td>
+                <td>
+                  <button v-if="isDraft" type="button" class="draft-delete-button" title="حذف قلم" aria-label="حذف قلم"
+                    :disabled="!item.product_id && form.items.length <= 5" @click="removeProduct(item.localKey)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                  </button>
+                  <button v-else type="button" class="damage-action-button"
+                    :class="{ 'damage-action-button--active': displayedDamageQuantity(item) > 0 }"
+                    :disabled="currentRemaining(item) === 0" @click="openDamageDialog(item)">
+                    {{ displayedDamageQuantity(item) ? `خسارت ${formatNumber(displayedDamageQuantity(item))}` : 'ثبت خسارت' }}
                   </button>
                 </td>
               </tr>
@@ -154,8 +173,9 @@
 
         <footer class="draft-summary-bar">
           <div class="draft-summary-item"><span>تعداد اقلام</span><strong>{{ formatNumber(activeItems.length) }}</strong></div>
-          <div class="draft-summary-item"><span>مجموع تعداد</span><strong>{{ formatNumber(totalQuantity) }}</strong></div>
-          <div class="draft-summary-item draft-summary-item--total"><span>جمع روزانه اقلام</span><strong>{{ formatCurrency(dailyTotal) }}</strong></div>
+          <div class="draft-summary-item"><span>مجموع تحویلی</span><strong>{{ formatNumber(totalQuantity) }}</strong></div>
+          <div v-if="!isDraft" class="draft-summary-item"><span>مجموع برگشته</span><strong class="text-emerald-700">{{ formatNumber(totalReturnedQuantity) }}</strong></div>
+          <div v-if="!isDraft" class="draft-summary-item draft-summary-item--total"><span>مجموع مانده</span><strong>{{ formatNumber(totalRemainingQuantity) }}</strong></div>
           <div class="draft-summary-rule" :class="{ 'draft-summary-rule--active': form.nightBefore }">
             {{ form.nightBefore ? 'محاسبه با قاعده شب قبل' : 'محاسبه عادی اجاره' }}
           </div>
@@ -174,6 +194,44 @@
 
     <CustomerFormModal :is-open="showCustomerModal" :existing-customers="invoiceStore.customers"
       @close="showCustomerModal = false" @saved="handleCustomerSaved" />
+
+    <AppModal :is-open="showReturnConfirm" title="ثبت دریافت اقلام" size="sm" :busy="returning" @close="showReturnConfirm = false">
+      <div class="return-confirm-form">
+        <p>مقادیر ستون «دریافت» برای {{ formatNumber(pendingReturnCount) }} قلم ثبت می‌شود.</p>
+        <div class="return-confirm-fields">
+          <label class="draft-field">
+            <span class="draft-field__label">تاریخ برگشت</span>
+            <JalaliDatePicker v-model="returnDate" input-class="draft-field__control" />
+          </label>
+          <label class="draft-field">
+            <span class="draft-field__label">ساعت برگشت</span>
+            <TimePicker24 v-model="returnTime" input-class="draft-field__control" />
+          </label>
+        </div>
+      </div>
+      <template #footer>
+        <button type="button" class="app-button-secondary" :disabled="returning" @click="showReturnConfirm = false">انصراف</button>
+        <button type="button" class="app-button-primary" :disabled="returning" @click="submitInlineReturn">{{ returning ? 'در حال ثبت...' : 'تأیید دریافت' }}</button>
+      </template>
+    </AppModal>
+
+    <AppModal :is-open="Boolean(damageTarget)" title="ثبت خسارت" :description="damageTarget?.product_name_snapshot || ''"
+      size="sm" @close="closeDamageDialog">
+      <div class="damage-dialog-form">
+        <label>
+          <span>تعداد خسارت</span>
+          <input v-model.number="damageQuantity" type="number" min="1" :max="damageTarget ? currentRemaining(damageTarget) : 1" />
+        </label>
+        <label>
+          <span>توضیح خسارت</span>
+          <textarea v-model.trim="damageDescription" rows="3" maxlength="2000" placeholder="نوع و شرح خسارت را بنویسید"></textarea>
+        </label>
+      </div>
+      <template #footer>
+        <button type="button" class="app-button-secondary" @click="closeDamageDialog">انصراف</button>
+        <button type="button" class="app-button-primary" @click="saveDamageDialog">ثبت خسارت</button>
+      </template>
+    </AppModal>
   </div>
 </template>
 
@@ -184,6 +242,7 @@ import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
+import AppModal from '../ui/AppModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import TimePicker24 from '../TimePicker24.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
@@ -196,7 +255,7 @@ const props = defineProps({
   initialList: { type: Object, default: null }
 });
 const emit = defineEmits(['saved', 'finalized']);
-defineExpose({ openFinalizeConfirm });
+defineExpose({ openFinalizeConfirm, openReturnEntry });
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -211,6 +270,15 @@ const showFinalizeConfirm = ref(false);
 const showCustomerModal = ref(false);
 const customerSearchOpen = ref(false);
 const rowSearchState = reactive({});
+const returnEntryState = reactive({});
+const itemsSection = ref(null);
+const returnDate = ref('');
+const returnTime = ref('');
+const returning = ref(false);
+const showReturnConfirm = ref(false);
+const damageTarget = ref(null);
+const damageQuantity = ref(1);
+const damageDescription = ref('');
 const saveStatus = ref('saved');
 const saveError = ref('');
 const lastSavedAt = ref('');
@@ -238,6 +306,7 @@ const form = reactive({
 });
 
 const activeItems = computed(() => form.items.filter((item) => Number(item.product_id) > 0));
+const displayItems = computed(() => (isDraft.value ? form.items : activeItems.value));
 const isDraft = computed(() => loadedStatus.value === 'DRAFT');
 const editorStatusMeta = computed(() => ({
   DRAFT: { label: 'پیش‌نویس', className: 'bg-amber-100 text-amber-700' },
@@ -256,13 +325,12 @@ const filteredCustomers = computed(() => {
     .slice(0, 8);
 });
 
-const dailyTotal = computed(() => form.items.reduce((sum, item) => (
-  sum + (Number(item.daily_price_toman) || 0) * (Number(item.delivered_quantity) || 0)
-), 0));
-
 const totalQuantity = computed(() => activeItems.value.reduce((sum, item) => (
   sum + Math.max(1, Math.round(Number(item.delivered_quantity) || 1))
 ), 0));
+const totalReturnedQuantity = computed(() => activeItems.value.reduce((sum, item) => sum + displayReturnedQuantity(item), 0));
+const totalRemainingQuantity = computed(() => activeItems.value.reduce((sum, item) => sum + remainingAfterReturn(item), 0));
+const pendingReturnCount = computed(() => activeItems.value.filter((item) => returnEntryFor(item).returnQuantity > 0).length);
 
 const finalizeConfirmMessage = computed(() => (
   `تحویل ${formatNumber(activeItems.value.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
@@ -330,14 +398,18 @@ async function hydrateDraft(draft) {
   form.expectedReturnTime = draft.expected_return_at ? String(draft.expected_return_at).slice(11, 16) : '11:00';
   form.nightBefore = Boolean(draft.night_before);
   form.notes = draft.notes || '';
-  form.items = (draft.items || []).map((item) => createItemRow(item));
-  if (form.items.length < 5) addRows(5 - form.items.length);
   loadedStatus.value = draft.status || 'DRAFT';
+  Object.keys(returnEntryState).forEach((key) => delete returnEntryState[key]);
+  form.items = (draft.items || []).map((item) => createItemRow(item));
+  form.items.forEach((item) => initializeReturnEntry(item));
+  if (loadedStatus.value === 'DRAFT' && form.items.length < 5) addRows(5 - form.items.length);
   loadedListNumber.value = draft.list_number || '';
   currentVersion.value = Number(draft.version) || 1;
   lastSavedAt.value = draft.last_autosaved_at || '';
   revision.value = 0;
   persistedRevision.value = 0;
+  returnDate.value = defaultDate;
+  returnTime.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   await nextTick();
   hydrating.value = false;
   initialized.value = true;
@@ -423,6 +495,9 @@ function buildPayload() {
       product_id: Number(item.product_id),
       daily_price_toman: Math.max(0, Math.round(Number(item.daily_price_toman) || 0)),
       delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
+      remaining_expected_return_at: !isDraft.value && aggregateReturned(item) > 0 && currentRemaining(item) > 0
+        ? combineDateTime(form.expectedReturnDate, form.expectedReturnTime || '11:00')
+        : null,
       notes: item.notes || null
     }))
   };
@@ -462,6 +537,8 @@ function createItemRow(item = {}) {
     product_name_snapshot: item.product_name_snapshot || '',
     daily_price_toman: Number(item.daily_price_toman) || 0,
     delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
+    healthy_returned_quantity: Math.max(0, Math.round(Number(item.healthy_returned_quantity) || 0)),
+    damaged_quantity: Math.max(0, Math.round(Number(item.damaged_quantity) || 0)),
     notes: item.notes || ''
   };
 }
@@ -521,11 +598,155 @@ function incrementQuantity(item) {
 }
 
 function decrementQuantity(item) {
-  item.delivered_quantity = Math.max(1, Math.round(Number(item.delivered_quantity) || 1) - 1);
+  item.delivered_quantity = Math.max(aggregateReturned(item) || 1, Math.round(Number(item.delivered_quantity) || 1) - 1);
 }
 
-function itemDailyTotal(item) {
-  return (Number(item.daily_price_toman) || 0) * (Number(item.delivered_quantity) || 0);
+function initializeReturnEntry(item) {
+  if (!returnEntryState[item.localKey]) {
+    returnEntryState[item.localKey] = {
+      returnQuantity: 0,
+      damagedQuantity: 0,
+      damageNotes: ''
+    };
+  }
+  return returnEntryState[item.localKey];
+}
+
+function returnEntryFor(item) {
+  return initializeReturnEntry(item);
+}
+
+function aggregateReturned(item) {
+  return Math.max(0,
+    Math.round(Number(item.healthy_returned_quantity) || 0)
+    + Math.round(Number(item.damaged_quantity) || 0));
+}
+
+function currentRemaining(item) {
+  return Math.max(0, Math.round(Number(item.delivered_quantity) || 0) - aggregateReturned(item));
+}
+
+function remainingAfterReturn(item) {
+  return Math.max(0, currentRemaining(item) - returnEntryFor(item).returnQuantity);
+}
+
+function displayReturnedQuantity(item) {
+  return aggregateReturned(item) + returnEntryFor(item).returnQuantity;
+}
+
+function displayedDamageQuantity(item) {
+  return Math.max(0, Math.round(Number(item.damaged_quantity) || 0)) + returnEntryFor(item).damagedQuantity;
+}
+
+function isFullReturnSelected(item) {
+  const remaining = currentRemaining(item);
+  return remaining > 0 && returnEntryFor(item).returnQuantity === remaining;
+}
+
+function toggleFullReturn(item, checked) {
+  setReturnQuantity(item, checked ? currentRemaining(item) : 0);
+}
+
+function setReturnQuantity(item, value) {
+  const state = returnEntryFor(item);
+  state.returnQuantity = Math.min(currentRemaining(item), Math.max(0, Math.round(Number(value) || 0)));
+  state.damagedQuantity = Math.min(state.damagedQuantity, state.returnQuantity);
+}
+
+function setCumulativeReturned(item, value) {
+  const normalized = Math.min(
+    Math.max(aggregateReturned(item), Math.round(Number(value) || 0)),
+    Math.max(aggregateReturned(item), Math.round(Number(item.delivered_quantity) || 0))
+  );
+  setReturnQuantity(item, normalized - aggregateReturned(item));
+}
+
+function changeCumulativeReturned(item, amount) {
+  setCumulativeReturned(item, displayReturnedQuantity(item) + amount);
+}
+
+async function openReturnEntry() {
+  await nextTick();
+  itemsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openReturnConfirm() {
+  if (!pendingReturnCount.value) return toast.info('ابتدا تعداد دریافت را در جدول وارد کنید');
+  showReturnConfirm.value = true;
+}
+
+function openDamageDialog(item) {
+  if (currentRemaining(item) <= 0) return;
+  const state = returnEntryFor(item);
+  damageTarget.value = item;
+  damageQuantity.value = state.damagedQuantity || 1;
+  damageDescription.value = state.damageNotes || '';
+}
+
+function closeDamageDialog() {
+  damageTarget.value = null;
+  damageQuantity.value = 1;
+  damageDescription.value = '';
+}
+
+function saveDamageDialog() {
+  const item = damageTarget.value;
+  if (!item) return;
+  const quantity = Math.min(currentRemaining(item), Math.max(1, Math.round(Number(damageQuantity.value) || 0)));
+  if (!damageDescription.value.trim()) return toast.error('توضیح خسارت را وارد کنید');
+  const state = returnEntryFor(item);
+  state.returnQuantity = Math.max(state.returnQuantity, quantity);
+  state.damagedQuantity = quantity;
+  state.damageNotes = damageDescription.value.trim();
+  closeDamageDialog();
+}
+
+async function submitInlineReturn() {
+  if (returning.value) return;
+  if (!returnDate.value || !returnTime.value) return toast.error('تاریخ و ساعت برگشت را وارد کنید');
+  const returnedAt = combineDateTime(returnDate.value, returnTime.value);
+  if (!returnedAt || Date.parse(returnedAt) < Date.parse(combineDateTime(form.deliveryDate, form.deliveryTime))) {
+    return toast.error('زمان برگشت نمی‌تواند قبل از زمان تحویل باشد');
+  }
+  const selectedItems = activeItems.value.filter((item) => returnEntryFor(item).returnQuantity > 0);
+  if (!selectedItems.length) return toast.error('حداقل یک قلم را برای برگشت انتخاب کنید');
+  const hasRemaining = selectedItems.some((item) => remainingAfterReturn(item) > 0);
+  const expectedReturnAt = combineDateTime(form.expectedReturnDate, form.expectedReturnTime);
+  if (hasRemaining && (!expectedReturnAt || Date.parse(expectedReturnAt) < Date.parse(returnedAt))) {
+    showReturnConfirm.value = false;
+    return toast.error('برای اقلام مانده، تاریخ برگشت تقریبی لیست را بعد از زمان این برگشت قرار دهید');
+  }
+  for (const item of selectedItems) {
+    const state = returnEntryFor(item);
+    if (state.damagedQuantity > 0 && !state.damageNotes.trim()) {
+      return toast.error(`شرح خسارت «${item.product_name_snapshot}» را وارد کنید`);
+    }
+  }
+  if (!(await persistDraft())) return toast.error('ابتدا ذخیره تغییرات لیست را کامل کنید');
+
+  returning.value = true;
+  const result = await draftStore.recordReturn(draftId.value, {
+    returned_at: returnedAt,
+    notes: null,
+    items: selectedItems.map((item) => {
+      const state = returnEntryFor(item);
+      return {
+        delivery_list_item_id: Number(item.id),
+        healthy_quantity: state.returnQuantity - state.damagedQuantity,
+        damaged_quantity: state.damagedQuantity,
+        remaining_expected_return_at: remainingAfterReturn(item) > 0
+          ? expectedReturnAt
+          : null,
+        damage_notes: state.damageNotes || null
+      };
+    })
+  });
+  returning.value = false;
+  if (!result.success) return toast.error(result.message);
+  showReturnConfirm.value = false;
+  await hydrateDraft(result.data);
+  emit('saved', result.data);
+  toast.success(result.data.status === 'COMPLETED' ? 'برگشت کامل ثبت و لیست تکمیل شد' : 'برگشت اقلام و مانده‌ها ثبت شد');
 }
 
 function removeProduct(localKey) {
@@ -618,6 +839,7 @@ function formatSavedTime(value) {
   const text = String(value || '');
   return text.length >= 16 ? text.slice(11, 16) : 'اکنون';
 }
+
 </script>
 
 <style scoped>
@@ -669,6 +891,13 @@ function formatSavedTime(value) {
 
 .draft-field--customer { z-index: 40; grid-column: span 3; }
 .draft-field--notes { grid-column: span 4; }
+.draft-field--row-one-customer { grid-column: span 4; }
+.draft-field--row-one-date,
+.draft-field--row-one-time,
+.draft-field--row-two-date,
+.draft-field--row-two-time { grid-column: span 2; }
+.draft-night-before--compact { grid-column: span 4; min-height: 3.25rem; }
+.draft-field--row-two-notes { grid-column: span 8; }
 .draft-field--readonly {
   display: flex;
   align-items: center;
@@ -788,6 +1017,9 @@ function formatSavedTime(value) {
   background: #cbd5e1;
   transition: background .2s;
 }
+.draft-night-before--compact .draft-night-before__switch { width: 1.65rem; height: .92rem; padding: .12rem; }
+.draft-night-before--compact .draft-night-before__switch span { width: .68rem; height: .68rem; }
+.draft-night-before--compact.draft-night-before--active .draft-night-before__switch span { transform: translateX(-.72rem); }
 .draft-night-before__switch span {
   width: .8rem;
   height: .8rem;
@@ -830,6 +1062,14 @@ function formatSavedTime(value) {
   font-weight: 900;
 }
 .draft-row-actions > button:hover { background: var(--draft-sage); }
+.draft-row-actions > .draft-register-return {
+  min-width: 7.5rem;
+  border-color: var(--draft-green);
+  background: var(--draft-green);
+  color: #fff;
+}
+.draft-row-actions > .draft-register-return:hover:not(:disabled) { background: var(--draft-green-dark); }
+.draft-row-actions > .draft-register-return:disabled { cursor: not-allowed; opacity: .45; }
 
 .draft-table-wrap { position: relative; overflow: visible; padding-inline: 1.25rem; }
 .draft-items-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
@@ -861,7 +1101,15 @@ function formatSavedTime(value) {
 .draft-items-table th:nth-child(5) { width: 16%; }
 .draft-items-table th:nth-child(6) { width: 16%; }
 .draft-items-table th:nth-child(7) { width: 6%; }
-
+.unified-list-table { min-width: 0; }
+.unified-list-table th:nth-child(1) { width: 4%; }
+.unified-list-table th:nth-child(2) { width: 27%; }
+.unified-list-table th:nth-child(3) { width: 12%; }
+.unified-list-table th:nth-child(4) { width: 14%; }
+.unified-list-table th:nth-child(5) { width: 8%; }
+.unified-list-table th:nth-child(6) { width: 21%; }
+.unified-list-table th:nth-child(7) { width: 7%; }
+.unified-list-table th:nth-child(8) { width: 7%; }
 .draft-add-row td { position: relative; background: #f5f8f1; color: #64748b; font-size: .7rem; }
 .draft-add-row__number {
   display: inline-grid;
@@ -963,6 +1211,83 @@ function formatSavedTime(value) {
 }
 .draft-stepper button { color: var(--draft-green); font-size: 1rem; font-weight: 900; }
 .draft-stepper input { min-width: 0; border-inline: 1px solid #e7e1d6; text-align: center; outline: none; }
+.draft-stepper--compact {
+  height: 2rem;
+  grid-template-columns: 1.55rem minmax(1.8rem, 1fr) 1.55rem;
+}
+.draft-stepper--compact button { font-size: .85rem; }
+.unified-return-row--selected td { background: #f2f9f5 !important; }
+.return-check { display: inline-grid; cursor: pointer; place-items: center; }
+.return-check input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.return-check span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #cfd8d3;
+  border-radius: .58rem;
+  background: #fff;
+  color: transparent;
+  font-size: .9rem;
+  font-weight: 900;
+  transition: .15s ease;
+}
+.return-check--active span,
+.return-check--done span { border-color: #8cc5ae; background: var(--draft-green); color: #fff; }
+.return-check--done { cursor: default; opacity: .65; }
+.return-stat {
+  display: inline-grid;
+  min-width: 2rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: .75rem;
+}
+.return-stat--returned { background: #e8f7ef; color: #087255; }
+.return-stat--remaining { background: #fff3dd; color: #b45309; }
+.return-stat--complete { background: #e8f7ef; color: #087255; }
+.damage-action-button {
+  min-height: 2rem;
+  border: 1px solid #f3c7b9;
+  border-radius: .5rem;
+  background: #fff7ed;
+  padding: .35rem .45rem;
+  color: #c2410c;
+  font-size: .62rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.damage-action-button--active { border-color: #fb7185; background: #fff1f2; color: #be123c; }
+.damage-action-button:disabled { cursor: not-allowed; opacity: .4; }
+.return-confirm-form,
+.damage-dialog-form {
+  --draft-green: #0f5f4c;
+  --draft-cream: #fffdf8;
+  --draft-border: #ded7c8;
+}
+.return-confirm-form { display: grid; gap: 1rem; }
+.return-confirm-form > p { color: #475569; font-size: .78rem; line-height: 1.8; }
+.return-confirm-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding-top: .35rem; }
+.return-confirm-fields .draft-field { grid-column: auto; width: 100%; }
+.damage-dialog-form { display: grid; gap: 1rem; }
+.damage-dialog-form label { display: grid; gap: .4rem; color: #475569; font-size: .72rem; font-weight: 800; }
+.damage-dialog-form input,
+.damage-dialog-form textarea {
+  width: 100%;
+  border: 1px solid #ded7c8;
+  border-radius: .65rem;
+  background: #fff;
+  padding: .7rem .8rem;
+  color: #1e293b;
+  font-size: .78rem;
+  outline: none;
+}
+.damage-dialog-form input { height: 2.8rem; text-align: center; }
+.damage-dialog-form textarea { resize: vertical; }
+.damage-dialog-form input:focus,
+.damage-dialog-form textarea:focus { border-color: var(--draft-green); box-shadow: 0 0 0 3px rgba(15, 95, 76, .08); }
 .draft-table-input {
   width: 100%;
   height: 2.25rem;
@@ -993,7 +1318,7 @@ function formatSavedTime(value) {
 
 .draft-summary-bar {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
   align-items: stretch;
   gap: 0;
   margin-top: 1.25rem;
@@ -1025,20 +1350,20 @@ function formatSavedTime(value) {
 .draft-summary-rule--active { background: #e6f3eb; color: var(--draft-green); }
 
 @media (max-width: 1279px) {
-  .draft-field, .draft-field--customer { grid-column: span 3; }
-  .draft-field--notes, .draft-night-before { grid-column: span 6; }
-  .draft-items-table th:nth-child(6), .draft-items-table td:nth-child(6) { display: none; }
-  .draft-items-table th:nth-child(2) { width: 35%; }
-  .draft-items-table th:nth-child(7) { width: 8%; }
+  .draft-field--row-one-customer { grid-column: span 4; }
+  .draft-field--row-one-date, .draft-field--row-one-time { grid-column: span 2; }
+  .draft-night-before--compact { grid-column: span 4; }
+  .draft-field--row-two-date, .draft-field--row-two-time { grid-column: span 2; }
+  .draft-field--row-two-notes { grid-column: span 8; }
 }
 
 @media (max-width: 767px) {
   .draft-workspace__header { align-items: flex-start; flex-direction: column; }
   .draft-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1rem; }
-  .draft-field, .draft-field--customer, .draft-field--notes, .draft-night-before { grid-column: span 1; }
-  .draft-field--customer, .draft-field--notes, .draft-night-before { grid-column: span 2; }
-  .draft-table-wrap { padding-inline: .75rem; overflow-x: auto; }
-  .draft-items-table { min-width: 48rem; }
+  .draft-field--row-one-customer, .draft-night-before--compact, .draft-field--row-two-notes { grid-column: span 2; }
+  .draft-field--row-one-date, .draft-field--row-one-time, .draft-field--row-two-date, .draft-field--row-two-time { grid-column: span 1; }
+  .draft-table-wrap { padding-inline: .35rem; overflow: visible; }
+  .unified-list-table { min-width: 0; }
   .draft-summary-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .draft-summary-item { border-bottom: 1px solid #e5dfd3; }
   .draft-summary-rule { min-width: 0; }
