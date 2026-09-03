@@ -32,16 +32,29 @@
             <div class="draft-customer-control">
               <input v-model.trim="form.customerName" type="text" maxlength="255"
                 placeholder="نام مشتری را وارد یا انتخاب کنید" autocomplete="off"
-                @focus="customerSearchOpen = true" @input="handleCustomerSearchInput"
-                @blur="closeCustomerSearch" @keydown.escape="customerSearchOpen = false" />
+                role="combobox" aria-autocomplete="list" aria-controls="customer-search-results"
+                :aria-expanded="customerSearchOpen" :aria-activedescendant="activeCustomerOptionId"
+                @focus="openCustomerSearch" @input="handleCustomerSearchInput"
+                @blur="closeCustomerSearch"
+                @keydown.down.prevent="moveCustomerSelection(1)"
+                @keydown.up.prevent="moveCustomerSelection(-1)"
+                @keydown.enter.prevent="selectHighlightedCustomer"
+                @keydown.escape.prevent="closeCustomerSearchImmediately" />
               <button type="button" title="ایجاد مشتری جدید" aria-label="ایجاد مشتری جدید"
                 @click="showCustomerModal = true">+</button>
             </div>
-            <div v-if="customerSearchOpen" class="draft-customer-results">
-              <button v-for="customerOption in filteredCustomers" :key="customerOption.id" type="button"
+            <div v-if="customerSearchOpen" id="customer-search-results" class="draft-customer-results" role="listbox">
+              <button v-for="(customerOption, customerIndex) in filteredCustomers" :id="customerOptionId(customerOption)"
+                :key="customerOption.id" type="button" role="option"
+                :class="{ 'draft-customer-result--active': customerActiveIndex === customerIndex }"
+                :aria-selected="customerActiveIndex === customerIndex"
+                @mouseenter="customerActiveIndex = customerIndex"
                 @mousedown.prevent="selectCustomer(customerOption)">
-                <strong>{{ customerOption.name }}</strong>
-                <span>{{ customerOption.phone || 'بدون شماره تماس' }}</span>
+                <span class="draft-customer-result__identity">
+                  <strong>{{ customerOption.name }}</strong>
+                  <small v-if="customerOption.referrer">معرف: {{ customerOption.referrer }}</small>
+                </span>
+                <span class="draft-customer-result__phone">{{ customerOption.phone || 'بدون شماره تماس' }}</span>
               </button>
               <div v-if="!filteredCustomers.length" class="draft-customer-results__empty">
                 مشتری‌ای با این عبارت پیدا نشد.
@@ -77,39 +90,7 @@
           </label>
         </div>
 
-        <div ref="itemsSection" class="draft-items-toolbar">
-          <div>
-            <h3 class="text-base font-black text-slate-800">اقلام لیست</h3>
-            <p class="mt-1 text-xs text-slate-500">تحویل، دریافت و مانده هر محصول در یک ردیف مدیریت می‌شود.</p>
-          </div>
-          <div v-if="isDraft" class="draft-row-actions">
-            <div ref="addRowsMenuRef" class="draft-add-rows-control" @keydown.escape.stop="addRowsMenuOpen = false">
-              <button type="button" class="draft-add-rows-control__main" @click="addRowsAndFocus(1)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" /></svg>
-                <span>افزودن ردیف</span>
-              </button>
-              <button type="button" class="draft-add-rows-control__toggle" aria-label="انتخاب تعداد ردیف"
-                :aria-expanded="addRowsMenuOpen" aria-haspopup="menu" @click="addRowsMenuOpen = !addRowsMenuOpen">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 10 5 5 5-5" /></svg>
-              </button>
-              <div v-if="addRowsMenuOpen" class="draft-add-rows-menu" role="menu">
-                <button v-for="count in [5, 10, 20]" :key="count" type="button" role="menuitem"
-                  @click="addRowsAndFocus(count)">
-                  افزودن {{ formatNumber(count) }} ردیف
-                </button>
-              </div>
-            </div>
-            <span class="draft-items-count">{{ formatNumber(activeItems.length) }} قلم انتخاب‌شده</span>
-          </div>
-          <div v-else class="draft-row-actions draft-return-actions">
-            <span class="draft-items-count">{{ pendingReturnCount ? `${formatNumber(pendingReturnCount)} قلم در انتظار ثبت` : `${formatNumber(activeItems.length)} قلم` }}</span>
-            <button type="button" class="draft-register-return" :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
-              ثبت دریافت‌ها
-            </button>
-          </div>
-        </div>
-
-        <div class="draft-table-wrap">
+        <div ref="itemsSection" class="draft-table-wrap">
           <table class="draft-items-table unified-list-table">
             <thead>
               <tr>
@@ -199,13 +180,35 @@
           </table>
         </div>
 
-        <footer class="draft-summary-bar">
-          <div class="draft-summary-item"><span>تعداد اقلام</span><strong>{{ formatNumber(activeItems.length) }}</strong></div>
-          <div class="draft-summary-item"><span>مجموع تحویلی</span><strong>{{ formatNumber(totalQuantity) }}</strong></div>
-          <div v-if="!isDraft" class="draft-summary-item"><span>مجموع برگشته</span><strong class="text-emerald-700">{{ formatNumber(totalReturnedQuantity) }}</strong></div>
-          <div v-if="!isDraft" class="draft-summary-item draft-summary-item--total"><span>مجموع مانده</span><strong>{{ formatNumber(totalRemainingQuantity) }}</strong></div>
-          <div class="draft-summary-rule" :class="{ 'draft-summary-rule--active': form.nightBefore }">
-            {{ form.nightBefore ? 'محاسبه با قاعده شب قبل' : 'محاسبه عادی اجاره' }}
+        <footer class="draft-table-footer">
+          <div v-if="isDraft" ref="addRowsMenuRef" class="draft-add-rows-control" @keydown.escape.stop="addRowsMenuOpen = false">
+            <button type="button" class="draft-add-rows-control__main" @click="addRowsAndFocus(1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" /></svg>
+              <span>افزودن ردیف</span>
+            </button>
+            <button type="button" class="draft-add-rows-control__toggle" aria-label="انتخاب تعداد ردیف"
+              :aria-expanded="addRowsMenuOpen" aria-haspopup="menu" @click="addRowsMenuOpen = !addRowsMenuOpen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 10 5 5 5-5" /></svg>
+            </button>
+            <div v-if="addRowsMenuOpen" class="draft-add-rows-menu" role="menu">
+              <button v-for="count in [5, 10, 20]" :key="count" type="button" role="menuitem"
+                @click="addRowsAndFocus(count)">
+                افزودن {{ formatNumber(count) }} ردیف
+              </button>
+            </div>
+          </div>
+          <button v-else type="button" class="draft-register-return" :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
+            ثبت دریافت‌ها
+          </button>
+          <div class="draft-price-summary">
+            <div class="draft-estimated-price">
+              <span>قیمت روزانه لیست</span>
+              <strong>{{ formatCurrency(dailyListPrice) }}</strong>
+            </div>
+            <div class="draft-estimated-price draft-estimated-price--total">
+              <span>قیمت براساس {{ formatNumber(estimatedBillingDays) }} روز (تقریبی)</span>
+              <strong>{{ formatCurrency(estimatedListPrice) }}</strong>
+            </div>
           </div>
         </footer>
       </section>
@@ -290,6 +293,7 @@ import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import { useProductCatalogStore } from '../../stores/productCatalogStore';
 import { getCurrentPersianDate, toGregorianDate, toPersianDate } from '../../utils/dateConverter';
+import { calculateBillingDays } from '../../utils/billingDays';
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -310,6 +314,7 @@ const finalizing = ref(false);
 const showFinalizeConfirm = ref(false);
 const showCustomerModal = ref(false);
 const customerSearchOpen = ref(false);
+const customerActiveIndex = ref(-1);
 const addRowsMenuOpen = ref(false);
 const addRowsMenuRef = ref(null);
 const rowSearchState = reactive({});
@@ -333,6 +338,7 @@ const revision = ref(0);
 const persistedRevision = ref(0);
 const initialized = ref(false);
 const hydrating = ref(false);
+const billingCutoffMinutes = ref(660);
 let autosaveTimer = null;
 let savePromise = null;
 let localItemCounter = 0;
@@ -365,15 +371,29 @@ const filteredCustomers = computed(() => {
   return invoiceStore.customers
     .filter((customerOption) => !query
       || String(customerOption.name || '').toLowerCase().includes(query)
-      || String(customerOption.phone || '').includes(query))
+      || String(customerOption.phone || '').includes(query)
+      || String(customerOption.referrer || '').toLowerCase().includes(query))
     .slice(0, 8);
 });
 
-const totalQuantity = computed(() => activeItems.value.reduce((sum, item) => (
-  sum + Math.max(1, Math.round(Number(item.delivered_quantity) || 1))
+const activeCustomerOptionId = computed(() => {
+  if (!customerSearchOpen.value || customerActiveIndex.value < 0) return undefined;
+  const customer = filteredCustomers.value[customerActiveIndex.value];
+  return customer ? customerOptionId(customer) : undefined;
+});
+
+const estimatedBillingDays = computed(() => calculateBillingDays({
+  deliveredAt: combineDateTime(form.deliveryDate, form.deliveryTime),
+  returnedAt: combineDateTime(form.expectedReturnDate, form.expectedReturnTime),
+  cutoffMinutes: billingCutoffMinutes.value,
+  nightBefore: form.nightBefore
+}));
+const dailyListPrice = computed(() => activeItems.value.reduce((sum, item) => (
+  sum
+  + Math.max(1, Math.round(Number(item.delivered_quantity) || 1))
+    * Math.max(0, Math.round(Number(item.daily_price_toman) || 0))
 ), 0));
-const totalReturnedQuantity = computed(() => activeItems.value.reduce((sum, item) => sum + displayReturnedQuantity(item), 0));
-const totalRemainingQuantity = computed(() => activeItems.value.reduce((sum, item) => sum + remainingAfterReturn(item), 0));
+const estimatedListPrice = computed(() => dailyListPrice.value * estimatedBillingDays.value);
 const pendingReturnCount = computed(() => activeItems.value.filter((item) => returnEntryFor(item).returnQuantity > 0).length);
 
 const finalizeConfirmMessage = computed(() => (
@@ -443,6 +463,9 @@ async function hydrateDraft(draft) {
   form.expectedReturnDate = draft.expected_return_at ? toPersianDate(String(draft.expected_return_at).slice(0, 10)) : '';
   form.expectedReturnTime = draft.expected_return_at ? String(draft.expected_return_at).slice(11, 16) : '11:00';
   form.nightBefore = Boolean(draft.night_before);
+  billingCutoffMinutes.value = Number.isFinite(Number(draft.billing_cutoff_minutes_snapshot))
+    ? Number(draft.billing_cutoff_minutes_snapshot)
+    : 660;
   form.notes = draft.notes || '';
   loadedStatus.value = draft.status || 'DRAFT';
   registeredReturnEvents.value = Array.isArray(draft.return_events) ? draft.return_events : [];
@@ -552,23 +575,65 @@ function buildPayload() {
 
 function syncCustomerId() {
   const normalized = form.customerName.trim().toLowerCase();
-  const customer = invoiceStore.customers.find((item) => String(item.name || '').trim().toLowerCase() === normalized);
-  form.customerId = customer?.id || null;
+  const exactMatches = invoiceStore.customers.filter((item) => (
+    String(item.name || '').trim().toLowerCase() === normalized
+  ));
+  form.customerId = exactMatches.length === 1 ? exactMatches[0].id : null;
+}
+
+function openCustomerSearch() {
+  customerSearchOpen.value = true;
+  if (customerActiveIndex.value >= filteredCustomers.value.length) customerActiveIndex.value = -1;
 }
 
 function handleCustomerSearchInput() {
   syncCustomerId();
+  customerActiveIndex.value = -1;
+  openCustomerSearch();
+}
+
+function customerOptionId(customerOption) {
+  return `customer-option-${customerOption.id}`;
+}
+
+function moveCustomerSelection(direction) {
+  const results = filteredCustomers.value;
   customerSearchOpen.value = true;
+  if (!results.length) {
+    customerActiveIndex.value = -1;
+    return;
+  }
+  const current = Number(customerActiveIndex.value);
+  if (!Number.isInteger(current) || current < 0 || current >= results.length) {
+    customerActiveIndex.value = direction > 0 ? 0 : results.length - 1;
+  } else {
+    customerActiveIndex.value = (current + direction + results.length) % results.length;
+  }
+  nextTick(() => {
+    document.getElementById(activeCustomerOptionId.value)?.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function selectHighlightedCustomer() {
+  if (!customerSearchOpen.value) return;
+  const selected = filteredCustomers.value[customerActiveIndex.value] || filteredCustomers.value[0];
+  if (selected) selectCustomer(selected);
 }
 
 function selectCustomer(customerOption) {
   form.customerId = customerOption.id;
   form.customerName = customerOption.name;
   customerSearchOpen.value = false;
+  customerActiveIndex.value = -1;
+}
+
+function closeCustomerSearchImmediately() {
+  customerSearchOpen.value = false;
+  customerActiveIndex.value = -1;
 }
 
 function closeCustomerSearch() {
-  window.setTimeout(() => { customerSearchOpen.value = false; }, 120);
+  window.setTimeout(closeCustomerSearchImmediately, 120);
 }
 
 function createItemRow(item = {}) {
@@ -1120,9 +1185,39 @@ function formatSavedTime(value) {
   text-align: right;
 }
 .draft-customer-results button:last-child { border-bottom: 0; }
-.draft-customer-results button:hover { background: var(--draft-sage); }
-.draft-customer-results strong { overflow: hidden; color: #1e293b; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
-.draft-customer-results span { color: #64748b; direction: ltr; font-size: .68rem; white-space: nowrap; }
+.draft-customer-results button:hover,
+.draft-customer-results .draft-customer-result--active {
+  background: var(--draft-sage);
+}
+.draft-customer-results .draft-customer-result--active { box-shadow: inset -3px 0 0 var(--draft-green); }
+.draft-customer-result__identity {
+  display: grid;
+  min-width: 0;
+  gap: .15rem;
+  text-align: right;
+}
+.draft-customer-result__identity strong {
+  overflow: hidden;
+  color: #1e293b;
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.draft-customer-result__identity small {
+  overflow: hidden;
+  color: #7c6f57;
+  font-size: .62rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.draft-customer-result__phone {
+  flex: 0 0 auto;
+  color: #64748b;
+  direction: ltr;
+  font-size: .68rem;
+  white-space: nowrap;
+}
 .draft-customer-results__empty { padding: 1rem; color: #94a3b8; font-size: .72rem; text-align: center; }
 
 .draft-night-before {
@@ -1167,22 +1262,6 @@ function formatSavedTime(value) {
 .draft-night-before strong { display: block; color: #334155; font-size: .72rem; }
 .draft-night-before small { display: block; margin-top: .1rem; color: #64748b; font-size: .6rem; }
 
-.draft-items-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-}
-.draft-items-count {
-  border: 1px solid #cde2d8;
-  border-radius: 999px;
-  background: var(--draft-sage);
-  padding: .4rem .75rem;
-  color: var(--draft-green);
-  font-size: .75rem;
-  font-weight: 900;
-}
 .draft-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
 .draft-row-actions > span:first-child { color: #64748b; font-size: .7rem; font-weight: 800; }
 .draft-row-actions > button {
@@ -1196,14 +1275,20 @@ function formatSavedTime(value) {
   font-weight: 900;
 }
 .draft-row-actions > button:hover { background: var(--draft-sage); }
-.draft-row-actions > .draft-register-return {
+.draft-register-return {
   min-width: 7.5rem;
+  height: 2.35rem;
+  border: 1px solid var(--draft-green);
+  border-radius: .55rem;
   border-color: var(--draft-green);
   background: var(--draft-green);
+  padding: 0 1rem;
   color: #fff;
+  font-size: .75rem;
+  font-weight: 900;
 }
-.draft-row-actions > .draft-register-return:hover:not(:disabled) { background: var(--draft-green-dark); }
-.draft-row-actions > .draft-register-return:disabled { cursor: not-allowed; opacity: .45; }
+.draft-register-return:hover:not(:disabled) { background: var(--draft-green-dark); }
+.draft-register-return:disabled { cursor: not-allowed; opacity: .45; }
 .draft-add-rows-control {
   position: relative;
   z-index: 40;
@@ -1266,7 +1351,7 @@ function formatSavedTime(value) {
 .draft-add-rows-menu button:hover,
 .draft-add-rows-menu button:focus-visible { background: var(--draft-sage); outline: none; }
 
-.draft-table-wrap { position: relative; overflow: visible; padding-inline: 1.25rem; }
+.draft-table-wrap { position: relative; overflow: visible; padding: 1.25rem 1.25rem 0; }
 .draft-items-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
 .draft-items-table th,
 .draft-items-table td {
@@ -1585,38 +1670,42 @@ function formatSavedTime(value) {
 .draft-delete-button:disabled { cursor: not-allowed; opacity: .4; }
 .draft-empty-row td { height: 4.5rem; color: #94a3b8; font-size: .75rem; text-align: center; }
 
-.draft-summary-bar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  align-items: stretch;
-  gap: 0;
+.draft-table-footer {
+  display: flex;
+  min-height: 4.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-top: 1.25rem;
   border-top: 1px solid #e5dfd3;
   background: #faf8f2;
-}
-.draft-summary-item {
-  display: flex;
-  min-height: 4.5rem;
-  flex-direction: column;
-  justify-content: center;
-  gap: .35rem;
   padding: .75rem 1.25rem;
-  border-left: 1px solid #e5dfd3;
 }
-.draft-summary-item span { color: #64748b; font-size: .7rem; }
-.draft-summary-item strong { color: #1e293b; font-size: .95rem; }
-.draft-summary-item--total strong { color: var(--draft-green); font-size: 1.05rem; }
-.draft-summary-rule {
+.draft-table-footer .draft-add-rows-menu {
+  top: auto;
+  bottom: calc(100% + .35rem);
+}
+.draft-price-summary {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 11rem;
-  padding: .75rem 1rem;
-  color: #64748b;
-  font-size: .72rem;
-  font-weight: 800;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #ddd5c7;
+  border-radius: .7rem;
+  background: #fff;
 }
-.draft-summary-rule--active { background: #e6f3eb; color: var(--draft-green); }
+.draft-estimated-price {
+  display: flex;
+  min-width: 11rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .25rem;
+  padding: .55rem .85rem;
+}
+.draft-estimated-price + .draft-estimated-price { border-right: 1px solid #e5dfd3; }
+.draft-estimated-price span { color: #64748b; font-size: .7rem; font-weight: 800; }
+.draft-estimated-price strong { color: #334155; font-size: .95rem; font-weight: 900; }
+.draft-estimated-price--total { background: var(--draft-sage); }
+.draft-estimated-price--total strong { color: var(--draft-green); font-size: 1.05rem; }
 
 @media (max-width: 1279px) {
   .draft-field--row-one-customer { grid-column: span 4; }
@@ -1631,10 +1720,11 @@ function formatSavedTime(value) {
   .draft-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1rem; }
   .draft-field--row-one-customer, .draft-night-before--compact, .draft-field--row-two-notes { grid-column: span 2; }
   .draft-field--row-one-date, .draft-field--row-one-time, .draft-field--row-two-date, .draft-field--row-two-time { grid-column: span 1; }
-  .draft-table-wrap { padding-inline: .35rem; overflow: visible; }
+  .draft-table-wrap { padding: .5rem .35rem 0; overflow: visible; }
   .unified-list-table { min-width: 0; }
-  .draft-summary-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .draft-summary-item { border-bottom: 1px solid #e5dfd3; }
-  .draft-summary-rule { min-width: 0; }
+  .draft-table-footer { align-items: stretch; flex-direction: column-reverse; }
+  .draft-price-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .draft-estimated-price { min-width: 0; }
+  .draft-estimated-price { align-items: center; }
 }
 </style>
