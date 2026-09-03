@@ -516,6 +516,10 @@ test('calculates cutoff boundaries and night-before exactly', () => {
   assert.equal(calculateChargedDays({ ...normal, returnedAt: '2026-11-23T11:00:00+03:30' }), 2);
   assert.equal(calculateChargedDays({ ...normal, nightBefore: true, returnedAt: '2026-11-23T11:00:00+03:30' }), 1);
   assert.equal(calculateChargedDays({ ...normal, nightBefore: true, returnedAt: '2026-11-23T11:01:00+03:30' }), 2);
+
+  const tenAmCutoff = { ...normal, cutoffMinutes: 600 };
+  assert.equal(calculateChargedDays({ ...tenAmCutoff, returnedAt: '2026-11-23T11:00:00+03:30' }), 3);
+  assert.equal(calculateChargedDays({ ...tenAmCutoff, returnedAt: '2026-11-23T08:00:00+03:30' }), 2);
 });
 
 test('records partial and complete healthy returns with independent charged days', () => {
