@@ -83,8 +83,22 @@
             <p class="mt-1 text-xs text-slate-500">تحویل، دریافت و مانده هر محصول در یک ردیف مدیریت می‌شود.</p>
           </div>
           <div v-if="isDraft" class="draft-row-actions">
-            <span>افزودن ردیف:</span>
-            <button v-for="count in [1, 5, 10]" :key="count" type="button" @click="addRows(count)">+{{ formatNumber(count) }}</button>
+            <div ref="addRowsMenuRef" class="draft-add-rows-control" @keydown.escape.stop="addRowsMenuOpen = false">
+              <button type="button" class="draft-add-rows-control__main" @click="addRowsAndFocus(1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" /></svg>
+                <span>افزودن ردیف</span>
+              </button>
+              <button type="button" class="draft-add-rows-control__toggle" aria-label="انتخاب تعداد ردیف"
+                :aria-expanded="addRowsMenuOpen" aria-haspopup="menu" @click="addRowsMenuOpen = !addRowsMenuOpen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 10 5 5 5-5" /></svg>
+              </button>
+              <div v-if="addRowsMenuOpen" class="draft-add-rows-menu" role="menu">
+                <button v-for="count in [5, 10, 20]" :key="count" type="button" role="menuitem"
+                  @click="addRowsAndFocus(count)">
+                  افزودن {{ formatNumber(count) }} ردیف
+                </button>
+              </div>
+            </div>
             <span class="draft-items-count">{{ formatNumber(activeItems.length) }} قلم انتخاب‌شده</span>
           </div>
           <div v-else class="draft-row-actions draft-return-actions">
@@ -277,6 +291,8 @@ const finalizing = ref(false);
 const showFinalizeConfirm = ref(false);
 const showCustomerModal = ref(false);
 const customerSearchOpen = ref(false);
+const addRowsMenuOpen = ref(false);
+const addRowsMenuRef = ref(null);
 const rowSearchState = reactive({});
 const returnEntryState = reactive({});
 const itemsSection = ref(null);
@@ -363,6 +379,7 @@ watch(form, scheduleAutosave, { deep: true });
 
 onMounted(async () => {
   window.addEventListener('keydown', focusProductSearchShortcut);
+  document.addEventListener('pointerdown', closeAddRowsMenuOnOutside);
   loading.value = true;
   try {
     const [draft] = await Promise.all([
@@ -387,6 +404,7 @@ onBeforeRouteLeave(async () => {
 onBeforeUnmount(() => {
   clearTimeout(autosaveTimer);
   window.removeEventListener('keydown', focusProductSearchShortcut);
+  document.removeEventListener('pointerdown', closeAddRowsMenuOnOutside);
 });
 
 async function hydrateDraft(draft) {
@@ -555,6 +573,20 @@ function createItemRow(item = {}) {
 function addRows(count) {
   const rows = Array.from({ length: Number(count) || 0 }, () => createItemRow());
   form.items.push(...rows);
+}
+
+function addRowsAndFocus(count) {
+  const firstNewRowIndex = form.items.length;
+  addRows(count);
+  addRowsMenuOpen.value = false;
+  nextTick(() => {
+    document.querySelector(`[data-product-search="${firstNewRowIndex}"]`)?.focus();
+  });
+}
+
+function closeAddRowsMenuOnOutside(event) {
+  if (!addRowsMenuOpen.value || addRowsMenuRef.value?.contains(event.target)) return;
+  addRowsMenuOpen.value = false;
 }
 
 function searchableProductsForRow(item) {
@@ -1125,6 +1157,67 @@ function formatSavedTime(value) {
 }
 .draft-row-actions > .draft-register-return:hover:not(:disabled) { background: var(--draft-green-dark); }
 .draft-row-actions > .draft-register-return:disabled { cursor: not-allowed; opacity: .45; }
+.draft-add-rows-control {
+  position: relative;
+  z-index: 40;
+  display: inline-flex;
+  align-items: stretch;
+  direction: rtl;
+}
+.draft-add-rows-control__main,
+.draft-add-rows-control__toggle {
+  display: inline-flex;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: var(--draft-green);
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 900;
+  transition: background .15s ease;
+}
+.draft-add-rows-control__main {
+  gap: .45rem;
+  border-radius: 0 .55rem .55rem 0;
+  padding: 0 .85rem;
+}
+.draft-add-rows-control__toggle {
+  width: 2.15rem;
+  border-right: 1px solid rgba(255, 255, 255, .3);
+  border-radius: .55rem 0 0 .55rem;
+  background: #2f8d63;
+}
+.draft-add-rows-control__main:hover,
+.draft-add-rows-control__toggle:hover { background: var(--draft-green-dark); }
+.draft-add-rows-control__main svg { width: 1.05rem; }
+.draft-add-rows-control__toggle svg { width: .95rem; }
+.draft-add-rows-menu {
+  position: absolute;
+  z-index: 150;
+  top: calc(100% + .35rem);
+  right: 0;
+  width: 100%;
+  min-width: 9.5rem;
+  overflow: hidden;
+  border: 1px solid #d9d3c7;
+  border-radius: .6rem;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(35, 48, 43, .18);
+}
+.draft-add-rows-menu button {
+  display: block;
+  width: 100%;
+  padding: .65rem .75rem;
+  border-bottom: 1px solid #eee9df;
+  color: #234238;
+  font-size: .72rem;
+  font-weight: 800;
+  text-align: right;
+}
+.draft-add-rows-menu button:last-child { border-bottom: 0; }
+.draft-add-rows-menu button:hover,
+.draft-add-rows-menu button:focus-visible { background: var(--draft-sage); outline: none; }
 
 .draft-table-wrap { position: relative; overflow: visible; padding-inline: 1.25rem; }
 .draft-items-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
