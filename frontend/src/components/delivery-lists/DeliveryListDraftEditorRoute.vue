@@ -117,12 +117,20 @@
                   <div class="draft-product-search">
                     <svg class="draft-product-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
                     <input v-model.trim="rowSearchState[item.localKey].query" type="search" :data-product-search="index"
-                      placeholder="جست‌وجوی نام محصول..." @focus="openRowSearch(item)" @input="openRowSearch(item)"
+                      role="combobox" aria-autocomplete="list" :aria-expanded="rowSearchState[item.localKey].open"
+                      :aria-controls="`product-results-${item.localKey}`" :aria-activedescendant="activeProductOptionId(item)"
+                      placeholder="جست‌وجوی نام محصول..." @focus="openRowSearch(item)" @input="handleRowSearchInput(item)"
                       @blur="closeRowSearch(item)" @keydown.escape="rowSearchState[item.localKey].open = false"
-                      @keydown.enter.prevent="selectFirstRowResult(item)" />
-                    <div v-if="rowSearchState[item.localKey].open" class="draft-product-results">
-                      <button v-for="product in searchableProductsForRow(item)" :key="product.id" type="button"
-                        class="draft-product-result" @mousedown.prevent="selectProductForRow(item, product)">
+                      @keydown.down.prevent="moveRowSearchSelection(item, 1)"
+                      @keydown.up.prevent="moveRowSearchSelection(item, -1)"
+                      @keydown.enter.prevent="selectHighlightedRowResult(item)" />
+                    <div v-if="rowSearchState[item.localKey].open" :id="`product-results-${item.localKey}`"
+                      class="draft-product-results" role="listbox">
+                      <button v-for="(product, resultIndex) in searchableProductsForRow(item)" :id="productOptionId(item, product)"
+                        :key="product.id" type="button" class="draft-product-result"
+                        :class="{ 'draft-product-result--active': rowSearchState[item.localKey].activeIndex === resultIndex }"
+                        role="option" :aria-selected="rowSearchState[item.localKey].activeIndex === resultIndex"
+                        @mouseenter="setRowSearchSelection(item, resultIndex)" @mousedown.prevent="selectProductForRow(item, product)">
                         <span class="draft-product-result__name">{{ product.name }}</span>
                         <strong>{{ formatCurrency(product.daily_price_toman) }}</strong>
                       </button>
@@ -528,7 +536,8 @@ function createItemRow(item = {}) {
   const localKey = nextLocalKey();
   rowSearchState[localKey] = {
     query: item.product_name_snapshot || '',
-    open: false
+    open: false,
+    activeIndex: -1
   };
   return {
     localKey,
@@ -560,7 +569,16 @@ function searchableProductsForRow(item) {
 }
 
 function openRowSearch(item) {
-  rowSearchState[item.localKey].open = true;
+  const state = rowSearchState[item.localKey];
+  state.open = true;
+  const resultCount = searchableProductsForRow(item).length;
+  if (!resultCount) state.activeIndex = -1;
+  else if (state.activeIndex >= resultCount) state.activeIndex = -1;
+}
+
+function handleRowSearchInput(item) {
+  rowSearchState[item.localKey].activeIndex = -1;
+  openRowSearch(item);
 }
 
 function selectProductForRow(item, product) {
@@ -571,11 +589,48 @@ function selectProductForRow(item, product) {
   item.delivered_quantity = Math.max(1, Number(item.delivered_quantity) || 1);
   rowSearchState[item.localKey].query = product.name;
   rowSearchState[item.localKey].open = false;
+  rowSearchState[item.localKey].activeIndex = -1;
 }
 
-function selectFirstRowResult(item) {
-  const [firstResult] = searchableProductsForRow(item);
-  if (firstResult) selectProductForRow(item, firstResult);
+function productOptionId(item, product) {
+  return `product-option-${item.localKey}-${product.id}`;
+}
+
+function activeProductOptionId(item) {
+  const state = rowSearchState[item.localKey];
+  if (!state?.open || state.activeIndex < 0) return undefined;
+  const product = searchableProductsForRow(item)[state.activeIndex];
+  return product ? productOptionId(item, product) : undefined;
+}
+
+function setRowSearchSelection(item, index) {
+  rowSearchState[item.localKey].activeIndex = index;
+}
+
+function moveRowSearchSelection(item, direction) {
+  const results = searchableProductsForRow(item);
+  const state = rowSearchState[item.localKey];
+  state.open = true;
+  if (!results.length) {
+    state.activeIndex = -1;
+    return;
+  }
+  const current = Number(state.activeIndex);
+  if (!Number.isInteger(current) || current < 0 || current >= results.length) {
+    state.activeIndex = direction > 0 ? 0 : results.length - 1;
+  } else {
+    state.activeIndex = (current + direction + results.length) % results.length;
+  }
+  nextTick(() => {
+    document.getElementById(activeProductOptionId(item))?.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function selectHighlightedRowResult(item) {
+  const results = searchableProductsForRow(item);
+  const state = rowSearchState[item.localKey];
+  const selected = results[state.activeIndex] || results[0];
+  if (selected) selectProductForRow(item, selected);
 }
 
 function closeRowSearch(item) {
@@ -1131,21 +1186,45 @@ function formatSavedTime(value) {
   white-space: nowrap;
 }
 
-.draft-product-search-cell { z-index: 20; overflow: visible; }
-.draft-product-search { position: relative; width: 100%; }
+.draft-product-search-cell {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  padding: 0 !important;
+}
+.draft-product-search-cell:focus-within {
+  z-index: 100;
+  background: #f5faf6 !important;
+}
+.draft-product-search {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 3.55rem;
+}
 .draft-product-search > input {
   width: 100%;
-  height: 2.55rem;
-  border: 1px solid #99ad9f;
-  border-radius: .6rem;
-  background: #fff;
+  height: 100%;
+  min-height: 3.55rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   padding: 0 2.25rem 0 2.3rem;
   color: #1e293b;
   font-size: .76rem;
   outline: none;
 }
-.draft-product-search > input:focus { border-color: var(--draft-green); box-shadow: 0 0 0 3px rgba(15, 95, 76, .09); }
-.draft-product-search__icon { position: absolute; z-index: 2; top: .73rem; right: .7rem; width: 1.05rem; color: var(--draft-green); }
+.draft-product-search > input:focus { box-shadow: none; }
+.draft-product-search__icon {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: .7rem;
+  width: 1.05rem;
+  color: var(--draft-green);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
 .draft-product-search kbd {
   position: absolute;
   z-index: 2;
@@ -1161,13 +1240,18 @@ function formatSavedTime(value) {
 }
 .draft-product-results {
   position: absolute;
-  z-index: 50;
-  top: calc(100% + .35rem);
+  z-index: 110;
+  top: 100%;
   right: 0;
-  width: min(34rem, 70vw);
-  overflow: hidden;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  max-height: 18rem;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid #d9d3c7;
-  border-radius: .75rem;
+  border-radius: 0 0 .7rem .7rem;
   background: #fff;
   box-shadow: 0 18px 40px rgba(35, 48, 43, .18);
 }
@@ -1184,6 +1268,10 @@ function formatSavedTime(value) {
 }
 .draft-product-result:last-child { border-bottom: 0; }
 .draft-product-result:hover { background: var(--draft-sage); }
+.draft-product-result--active {
+  background: var(--draft-sage);
+  box-shadow: inset -3px 0 0 var(--draft-green);
+}
 .draft-product-result span { overflow: hidden; color: #64748b; font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
 .draft-product-result__name { color: #1e293b !important; font-size: .76rem !important; font-weight: 900; }
 .draft-product-result strong { color: var(--draft-green); font-size: .72rem; white-space: nowrap; }
