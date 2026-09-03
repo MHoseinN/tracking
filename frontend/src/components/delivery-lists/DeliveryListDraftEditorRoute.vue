@@ -178,15 +178,21 @@
                   </label>
                 </td>
                 <td>
-                  <button v-if="isDraft" type="button" class="draft-delete-button" title="حذف قلم" aria-label="حذف قلم"
-                    :disabled="!item.product_id && form.items.length <= 5" @click="removeProduct(item.localKey)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
-                  </button>
-                  <button v-else type="button" class="damage-action-button"
-                    :class="{ 'damage-action-button--active': displayedDamageQuantity(item) > 0 }"
-                    :disabled="currentRemaining(item) === 0" @click="openDamageDialog(item)">
-                    {{ displayedDamageQuantity(item) ? `خسارت ${formatNumber(displayedDamageQuantity(item))}` : 'ثبت خسارت' }}
-                  </button>
+                  <div class="draft-row-operations">
+                    <button type="button" class="draft-delete-button" :title="deleteButtonTitle(item)" aria-label="حذف قلم"
+                      :disabled="!canDeleteItem(item)" @click="removeProduct(item.localKey)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                    </button>
+                    <button type="button" class="damage-action-button" title="ثبت و پیگیری خسارت" aria-label="ثبت و پیگیری خسارت"
+                      :class="{ 'damage-action-button--active': displayedDamageQuantity(item) > 0 }"
+                      :disabled="isDraft || !item.product_id || (currentRemaining(item) === 0 && displayedDamageQuantity(item) === 0)"
+                      @click="openDamageDialog(item)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-8 8l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 8-8z" />
+                      </svg>
+                      <span v-if="displayedDamageQuantity(item)" class="damage-action-button__badge">{{ formatNumber(displayedDamageQuantity(item)) }}</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -237,21 +243,34 @@
       </template>
     </AppModal>
 
-    <AppModal :is-open="Boolean(damageTarget)" title="ثبت خسارت" :description="damageTarget?.product_name_snapshot || ''"
+    <AppModal :is-open="Boolean(damageTarget)" title="ثبت و پیگیری خسارت" :description="damageTarget?.product_name_snapshot || ''"
       size="sm" @close="closeDamageDialog">
       <div class="damage-dialog-form">
-        <label>
-          <span>تعداد خسارت</span>
-          <input v-model.number="damageQuantity" type="number" min="1" :max="damageTarget ? currentRemaining(damageTarget) : 1" />
-        </label>
-        <label>
-          <span>توضیح خسارت</span>
-          <textarea v-model.trim="damageDescription" rows="3" maxlength="2000" placeholder="نوع و شرح خسارت را بنویسید"></textarea>
-        </label>
+        <div v-if="damageHistoryFor(damageTarget).length" class="damage-history">
+          <strong>سوابق خسارت ثبت‌شده</strong>
+          <div v-for="record in damageHistoryFor(damageTarget)" :key="record.id" class="damage-history__item">
+            <div>
+              <b>{{ formatNumber(record.damaged_quantity) }} عدد</b>
+              <span>{{ formatReturnEventDate(record.returned_at) }}</span>
+            </div>
+            <p>{{ record.damage_notes }}</p>
+          </div>
+        </div>
+        <template v-if="damageTarget && currentRemaining(damageTarget) > 0">
+          <label>
+            <span>تعداد خسارت</span>
+            <input v-model.number="damageQuantity" type="number" min="1" :max="currentRemaining(damageTarget)" />
+          </label>
+          <label>
+            <span>شرح خسارت</span>
+            <textarea v-model.trim="damageDescription" rows="3" maxlength="2000" placeholder="نوع و شرح خسارت را بنویسید"></textarea>
+          </label>
+          <p class="damage-dialog-hint">پس از تأیید، تاریخ و ساعت دریافت مشخص می‌شود و خسارت در سابقه این قلم ثبت خواهد شد.</p>
+        </template>
       </div>
       <template #footer>
-        <button type="button" class="app-button-secondary" @click="closeDamageDialog">انصراف</button>
-        <button type="button" class="app-button-primary" @click="saveDamageDialog">ثبت خسارت</button>
+        <button type="button" class="app-button-secondary" @click="closeDamageDialog">{{ damageTarget && currentRemaining(damageTarget) > 0 ? 'انصراف' : 'بستن' }}</button>
+        <button v-if="damageTarget && currentRemaining(damageTarget) > 0" type="button" class="app-button-primary" @click="saveDamageDialog">ادامه ثبت خسارت</button>
       </template>
     </AppModal>
   </div>
@@ -295,6 +314,7 @@ const addRowsMenuOpen = ref(false);
 const addRowsMenuRef = ref(null);
 const rowSearchState = reactive({});
 const returnEntryState = reactive({});
+const registeredReturnEvents = ref([]);
 const itemsSection = ref(null);
 const returnDate = ref('');
 const returnTime = ref('');
@@ -425,6 +445,7 @@ async function hydrateDraft(draft) {
   form.nightBefore = Boolean(draft.night_before);
   form.notes = draft.notes || '';
   loadedStatus.value = draft.status || 'DRAFT';
+  registeredReturnEvents.value = Array.isArray(draft.return_events) ? draft.return_events : [];
   Object.keys(returnEntryState).forEach((key) => delete returnEntryState[key]);
   form.items = (draft.items || []).map((item) => createItemRow(item));
   form.items.forEach((item) => initializeReturnEntry(item));
@@ -725,6 +746,31 @@ function displayedDamageQuantity(item) {
   return Math.max(0, Math.round(Number(item.damaged_quantity) || 0)) + returnEntryFor(item).damagedQuantity;
 }
 
+function damageHistoryFor(item) {
+  if (!item?.id) return [];
+  return registeredReturnEvents.value.flatMap((event) => (event.items || [])
+    .filter((record) => Number(record.delivery_list_item_id) === Number(item.id) && Number(record.damaged_quantity) > 0)
+    .map((record) => ({ ...record, returned_at: event.returned_at })));
+}
+
+function formatReturnEventDate(value) {
+  if (!value) return '';
+  const text = String(value);
+  const date = toPersianDate(text.slice(0, 10));
+  const time = text.slice(11, 16);
+  return `${date}${time ? ` - ${time}` : ''}`;
+}
+
+function canDeleteItem(item) {
+  if (aggregateReturned(item) > 0) return false;
+  return Boolean(item.product_id) || form.items.length > 5;
+}
+
+function deleteButtonTitle(item) {
+  if (aggregateReturned(item) > 0) return 'قلم دارای سابقه برگشت یا خسارت قابل حذف نیست';
+  return 'حذف قلم';
+}
+
 function isFullReturnSelected(item) {
   const remaining = currentRemaining(item);
   return remaining > 0 && returnEntryFor(item).returnQuantity === remaining;
@@ -786,6 +832,7 @@ function saveDamageDialog() {
   state.damagedQuantity = quantity;
   state.damageNotes = damageDescription.value.trim();
   closeDamageDialog();
+  showReturnConfirm.value = true;
 }
 
 async function submitInlineReturn() {
@@ -1429,19 +1476,43 @@ function formatSavedTime(value) {
 .return-stat--returned { background: #e8f7ef; color: #087255; }
 .return-stat--remaining { background: #fff3dd; color: #b45309; }
 .return-stat--complete { background: #e8f7ef; color: #087255; }
-.damage-action-button {
-  min-height: 2rem;
-  border: 1px solid #f3c7b9;
-  border-radius: .5rem;
-  background: #fff7ed;
-  padding: .35rem .45rem;
-  color: #c2410c;
-  font-size: .62rem;
-  font-weight: 900;
-  white-space: nowrap;
+.draft-row-operations {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
 }
+.damage-action-button {
+  position: relative;
+  display: inline-grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border: 1px solid #f3c7b9;
+  border-radius: .55rem;
+  background: #fff7ed;
+  padding: 0;
+  color: #c2410c;
+}
+.damage-action-button svg { width: 1rem; }
 .damage-action-button--active { border-color: #fb7185; background: #fff1f2; color: #be123c; }
 .damage-action-button:disabled { cursor: not-allowed; opacity: .4; }
+.damage-action-button__badge {
+  position: absolute;
+  top: -.38rem;
+  left: -.38rem;
+  display: grid;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e11d48;
+  padding: 0 .2rem;
+  color: #fff;
+  font-size: .55rem;
+  font-weight: 900;
+}
 .return-confirm-form,
 .damage-dialog-form {
   --draft-green: #0f5f4c;
@@ -1453,6 +1524,22 @@ function formatSavedTime(value) {
 .return-confirm-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding-top: .35rem; }
 .return-confirm-fields .draft-field { grid-column: auto; width: 100%; }
 .damage-dialog-form { display: grid; gap: 1rem; }
+.damage-history {
+  display: grid;
+  gap: .55rem;
+  border: 1px solid #f4d1c4;
+  border-radius: .7rem;
+  background: #fff8f4;
+  padding: .75rem;
+}
+.damage-history > strong { color: #9a3412; font-size: .75rem; }
+.damage-history__item { border-top: 1px solid #f5ddd4; padding-top: .55rem; }
+.damage-history__item:first-of-type { border-top: 0; padding-top: 0; }
+.damage-history__item > div { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.damage-history__item b { color: #be123c; font-size: .72rem; }
+.damage-history__item span { color: #64748b; font-size: .66rem; }
+.damage-history__item p { margin-top: .3rem; color: #475569; font-size: .72rem; line-height: 1.7; }
+.damage-dialog-hint { color: #64748b; font-size: .68rem; line-height: 1.7; }
 .damage-dialog-form label { display: grid; gap: .4rem; color: #475569; font-size: .72rem; font-weight: 800; }
 .damage-dialog-form input,
 .damage-dialog-form textarea {
@@ -1495,6 +1582,7 @@ function formatSavedTime(value) {
   color: #e11d48;
 }
 .draft-delete-button svg { width: 1rem; }
+.draft-delete-button:disabled { cursor: not-allowed; opacity: .4; }
 .draft-empty-row td { height: 4.5rem; color: #94a3b8; font-size: .75rem; text-align: center; }
 
 .draft-summary-bar {

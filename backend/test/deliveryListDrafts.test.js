@@ -605,6 +605,13 @@ test('marks damage for follow-up and requires reasons for issues and day overrid
     assert.equal(result.items[0].item_status, 'DAMAGE');
     assert.equal(result.items[0].remaining_quantity, 1);
     assert.equal(result.return_events[0].items[0].final_charged_days, 3);
+    assert.throws(() => service.saveDraft(draft.id, {
+      version: result.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-27T11:00:00+03:30',
+      items: []
+    }, 1), /سابقه برگشت یا خسارت/);
   } finally {
     db.close();
   }

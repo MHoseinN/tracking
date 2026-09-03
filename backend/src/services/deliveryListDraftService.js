@@ -411,7 +411,11 @@ function createDeliveryListDraftService(db) {
       }
 
       const existingItems = db.prepare(`
-        SELECT id, product_id
+        SELECT id, product_id,
+               (SELECT COALESCE(SUM(healthy_quantity + damaged_quantity), 0)
+                  FROM return_event_items
+                 WHERE delivery_list_item_id = delivery_list_items.id
+                   AND deleted_at IS NULL) AS returned_quantity
         FROM delivery_list_items
         WHERE delivery_list_id = ? AND deleted_at IS NULL
       `).all(id);
@@ -468,6 +472,9 @@ function createDeliveryListDraftService(db) {
 
       existingItems.forEach((item) => {
         if (retainedIds.has(Number(item.id))) return;
+        if (Number(item.returned_quantity) > 0) {
+          throw new DeliveryListDraftError('قلم دارای سابقه برگشت یا خسارت قابل حذف نیست');
+        }
         db.prepare(`
           UPDATE delivery_list_items
           SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
