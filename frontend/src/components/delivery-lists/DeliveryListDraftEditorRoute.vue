@@ -96,8 +96,12 @@
               <tr>
                 <th>ردیف</th>
                 <th>محصول</th>
-                <th>تعداد تحویل</th>
-                <th>دریافت (برگشت)</th>
+                <th class="quantity-column-heading">
+                  <span class="quantity-heading quantity-heading--delivered">تحویلی</span>
+                </th>
+                <th class="quantity-column-heading">
+                  <span class="quantity-heading quantity-heading--returned">برگشتی</span>
+                </th>
                 <th>مانده</th>
                 <th>توضیحات</th>
                 <th>برگشت کامل</th>
@@ -133,16 +137,16 @@
                     </div>
                   </div>
                 </td>
-                <td>
-                  <div class="draft-stepper draft-stepper--compact">
+                <td class="quantity-cell">
+                  <div class="draft-stepper draft-stepper--compact draft-stepper--delivered">
                     <button type="button" :disabled="!item.product_id" @click="decrementQuantity(item)">−</button>
                     <input v-model.number="item.delivered_quantity" type="number" :min="aggregateReturned(item) || 1" step="1" :disabled="!item.product_id" />
                     <button type="button" :disabled="!item.product_id" @click="incrementQuantity(item)">+</button>
                   </div>
                 </td>
-                <td>
-                  <span v-if="isDraft || !item.product_id" class="return-stat">۰</span>
-                  <div v-else class="draft-stepper draft-stepper--compact">
+                <td class="quantity-cell">
+                  <span v-if="isDraft || !item.product_id" class="return-stat return-stat--returned">۰</span>
+                  <div v-else class="draft-stepper draft-stepper--compact draft-stepper--returned">
                     <button type="button" :disabled="displayReturnedQuantity(item) <= aggregateReturned(item)" @click="changeCumulativeReturned(item, -1)">−</button>
                     <input :value="displayReturnedQuantity(item)" type="number" :min="aggregateReturned(item)" :max="item.delivered_quantity"
                       @input="setCumulativeReturned(item, $event.target.value)" />
@@ -1385,11 +1389,11 @@ function formatSavedTime(value) {
 .draft-items-table th:nth-child(7) { width: 6%; }
 .unified-list-table { min-width: 0; }
 .unified-list-table th:nth-child(1) { width: 4%; }
-.unified-list-table th:nth-child(2) { width: 27%; }
-.unified-list-table th:nth-child(3) { width: 12%; }
-.unified-list-table th:nth-child(4) { width: 14%; }
+.unified-list-table th:nth-child(2) { width: 29%; }
+.unified-list-table th:nth-child(3) { width: 10%; }
+.unified-list-table th:nth-child(4) { width: 11%; }
 .unified-list-table th:nth-child(5) { width: 8%; }
-.unified-list-table th:nth-child(6) { width: 21%; }
+.unified-list-table th:nth-child(6) { width: 24%; }
 .unified-list-table th:nth-child(7) { width: 7%; }
 .unified-list-table th:nth-child(8) { width: 7%; }
 .draft-add-row td { position: relative; background: #f5f8f1; color: #64748b; font-size: .7rem; }
@@ -1527,10 +1531,47 @@ function formatSavedTime(value) {
 .draft-stepper button { color: var(--draft-green); font-size: 1rem; font-weight: 900; }
 .draft-stepper input { min-width: 0; border-inline: 1px solid #e7e1d6; text-align: center; outline: none; }
 .draft-stepper--compact {
+  width: min(100%, 5.75rem);
   height: 2rem;
-  grid-template-columns: 1.55rem minmax(1.8rem, 1fr) 1.55rem;
+  margin-inline: auto;
+  grid-template-columns: 1.5rem minmax(1.65rem, 1fr) 1.5rem;
+  border-radius: 999px;
 }
 .draft-stepper--compact button { font-size: .85rem; }
+.draft-stepper--compact input {
+  appearance: textfield;
+  background: rgba(255, 255, 255, .82);
+  font-size: .76rem;
+  font-weight: 900;
+}
+.draft-stepper--compact input::-webkit-inner-spin-button,
+.draft-stepper--compact input::-webkit-outer-spin-button { margin: 0; appearance: none; }
+.draft-stepper--compact button { transition: background-color .15s ease, color .15s ease; }
+.draft-stepper--delivered { border-color: #b7d9cc; background: #edf8f3; }
+.draft-stepper--delivered button { color: #087255; }
+.draft-stepper--delivered button:not(:disabled):hover { background: #d8f0e6; }
+.draft-stepper--returned { border-color: #f1cca2; background: #fff7e8; }
+.draft-stepper--returned button { color: #b45309; }
+.draft-stepper--returned button:not(:disabled):hover { background: #ffebc7; }
+.quantity-cell { padding-inline: .3rem !important; }
+.quantity-heading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  white-space: nowrap;
+}
+.quantity-heading::before {
+  width: .42rem;
+  height: .42rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  content: '';
+}
+.quantity-heading--delivered { color: #087255; }
+.quantity-heading--delivered::before { background: #21a179; box-shadow: 0 0 0 3px #dff3eb; }
+.quantity-heading--returned { color: #a4510a; }
+.quantity-heading--returned::before { background: #e59435; box-shadow: 0 0 0 3px #fff0d8; }
 .unified-return-row--selected td { background: #f2f9f5 !important; }
 .return-check { display: inline-grid; cursor: pointer; place-items: center; }
 .return-check input { position: absolute; width: 1px; height: 1px; opacity: 0; }
