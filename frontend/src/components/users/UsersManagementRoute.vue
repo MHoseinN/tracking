@@ -20,6 +20,7 @@
             <label class="app-filter-field"><span class="app-filter-label">وضعیت شماره تماس</span>
               <CustomSelect v-model="phoneFilter" :options="phoneFilterOptions" trigger-class="app-filter-control" /></label>
           </template>
+          <template #actions><AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
         </AppFilterBar>
       </template>
       <AppDataTable class="customers-table" :column-count="8" :loading="loading" :empty="!sortedRows.length"
@@ -89,7 +90,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppPagination from '../AppPagination.vue';
@@ -119,8 +120,12 @@ const searchQuery = ref('');
 const filtersExpanded = ref(false);
 const statusFilter = ref('all');
 const phoneFilter = ref('all');
-const sortKey = ref('total_invoices_amount');
-const sortDirection = ref('desc');
+const defaultSorts = { list_count: 'desc', total_invoices_amount: 'desc' };
+const defaultSortPriority = ['total_invoices_amount', 'list_count'];
+const sortStorageKey = 'customers-table-sorts-v1';
+const savedSortState = loadSortState();
+const sorts = reactive({ ...defaultSorts, ...savedSortState.sorts });
+const sortPriority = ref(savedSortState.priority);
 const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
 const accountStatusSelectOptions = computed(() => [{ label: 'بدون وضعیت', value: '' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
 const accountStatusFilterOptions = computed(() => [{ label: 'همه وضعیت‌ها', value: 'all' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
@@ -148,16 +153,22 @@ const filteredRows = computed(() => rows.value.filter((row) => {
       || (phoneFilter.value === 'with-phone' && hasPhone)
       || (phoneFilter.value === 'without-phone' && !hasPhone));
 }));
-const sortedRows = computed(() => [...filteredRows.value].sort((left, right) => {
-  const difference = (Number(left[sortKey.value]) || 0) - (Number(right[sortKey.value]) || 0);
-  if (difference !== 0) return sortDirection.value === 'asc' ? difference : -difference;
-  return String(left.name || '').localeCompare(String(right.name || ''), 'fa');
-}));
+const sortedRows = computed(() => filteredRows.value
+  .map((row, originalIndex) => ({ row, originalIndex }))
+  .sort((leftEntry, rightEntry) => {
+    for (const key of sortPriority.value) {
+      const difference = (Number(leftEntry.row[key]) || 0) - (Number(rightEntry.row[key]) || 0);
+      if (difference !== 0) return sorts[key] === 'asc' ? difference : -difference;
+    }
+    const nameDifference = String(leftEntry.row.name || '').localeCompare(String(rightEntry.row.name || ''), 'fa');
+    return nameDifference || leftEntry.originalIndex - rightEntry.originalIndex;
+  })
+  .map(({ row }) => row));
 
 const { currentPage, pageSize, pageSizeOptions: pageSizeSelectOptions, totalRows, totalPages, rowStartIndex,
   paginatedItems: paginatedRows, visiblePageNumbers, goToPage } = usePaginatedList(sortedRows, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, statusFilter, phoneFilter, sortKey, sortDirection], scrollTarget: tableSectionRef
+  resetSources: [searchQuery, statusFilter, phoneFilter], scrollTarget: tableSectionRef
 });
 const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({ onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد') });
 const { statusSavingId, showForm, selectedCustomer, showDeleteConfirm, deletingCustomer, deleteConfirmMessage,
@@ -169,15 +180,40 @@ function formatCurrency(value) { return `${formatNumber(value)} تومان`; }
 function statusTriggerClass(status) { return ['customers-status-control', status ? getAccountStatusTone(status) : 'border-slate-300 bg-white text-slate-500']; }
 function navigateToCustomer(id) { router.push({ name: 'CustomerDetail', params: { id } }); }
 function toggleSort(key) {
-  if (sortKey.value === key) sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  else { sortKey.value = key; sortDirection.value = 'asc'; }
+  sorts[key] = sorts[key] === 'desc' ? 'asc' : 'desc';
+  sortPriority.value = [key, ...sortPriority.value.filter((item) => item !== key)];
+  saveSortState();
 }
-function sortIcon(key) { return sortKey.value === key ? (sortDirection.value === 'asc' ? '↑' : '↓') : '↕'; }
-function sortAriaValue(key) {
-  if (sortKey.value !== key) return 'none';
-  return sortDirection.value === 'asc' ? 'ascending' : 'descending';
+function sortIcon(key) { return sorts[key] === 'asc' ? '↑' : '↓'; }
+function sortAriaValue(key) { return sorts[key] === 'asc' ? 'ascending' : 'descending'; }
+function loadSortState() {
+  const fallback = { sorts: { ...defaultSorts }, priority: [...defaultSortPriority] };
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const stored = JSON.parse(window.sessionStorage.getItem(sortStorageKey));
+    const hasValidSorts = Object.keys(defaultSorts)
+      .every((key) => stored?.sorts?.[key] === 'asc' || stored?.sorts?.[key] === 'desc');
+    const validPriority = Array.isArray(stored?.priority)
+      ? stored.priority.filter((key) => Object.hasOwn(defaultSorts, key))
+      : [];
+    if (!hasValidSorts || validPriority.length !== defaultSortPriority.length) return fallback;
+    return { sorts: stored.sorts, priority: validPriority };
+  } catch { return fallback; }
 }
-function clearFilters() { searchQuery.value = ''; statusFilter.value = 'all'; phoneFilter.value = 'all'; }
+function saveSortState() {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(sortStorageKey, JSON.stringify({ sorts: { ...sorts }, priority: sortPriority.value }));
+}
+function resetSorts() {
+  Object.assign(sorts, defaultSorts);
+  sortPriority.value = [...defaultSortPriority];
+  saveSortState();
+}
+function clearFilters() {
+  searchQuery.value = ''; statusFilter.value = 'all'; phoneFilter.value = 'all';
+  resetSorts();
+  currentPage.value = 1;
+}
 
 async function loadOverview() {
   loading.value = true; errorMessage.value = '';

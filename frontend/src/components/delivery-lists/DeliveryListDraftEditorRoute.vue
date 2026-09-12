@@ -181,25 +181,27 @@
         </div>
 
         <footer class="draft-table-footer">
-          <div v-if="isDraft" ref="addRowsMenuRef" class="draft-add-rows-control" @keydown.escape.stop="addRowsMenuOpen = false">
-            <button type="button" class="draft-add-rows-control__main" @click="addRowsAndFocus(1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" /></svg>
-              <span>افزودن ردیف</span>
-            </button>
-            <button type="button" class="draft-add-rows-control__toggle" aria-label="انتخاب تعداد ردیف"
-              :aria-expanded="addRowsMenuOpen" aria-haspopup="menu" @click="addRowsMenuOpen = !addRowsMenuOpen">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 10 5 5 5-5" /></svg>
-            </button>
-            <div v-if="addRowsMenuOpen" class="draft-add-rows-menu" role="menu">
-              <button v-for="count in [5, 10, 20]" :key="count" type="button" role="menuitem"
-                @click="addRowsAndFocus(count)">
-                افزودن {{ formatNumber(count) }} ردیف
+          <div class="draft-table-footer__actions">
+            <div ref="addRowsMenuRef" class="draft-add-rows-control" @keydown.escape.stop="addRowsMenuOpen = false">
+              <button type="button" class="draft-add-rows-control__main" @click="addRowsAndFocus(1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" /></svg>
+                <span>افزودن ردیف</span>
               </button>
+              <button type="button" class="draft-add-rows-control__toggle" aria-label="انتخاب تعداد ردیف"
+                :aria-expanded="addRowsMenuOpen" aria-haspopup="menu" @click="addRowsMenuOpen = !addRowsMenuOpen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 10 5 5 5-5" /></svg>
+              </button>
+              <div v-if="addRowsMenuOpen" class="draft-add-rows-menu" role="menu">
+                <button v-for="count in [5, 10, 20]" :key="count" type="button" role="menuitem"
+                  @click="addRowsAndFocus(count)">
+                  افزودن {{ formatNumber(count) }} ردیف
+                </button>
+              </div>
             </div>
+            <button v-if="!isDraft" type="button" class="draft-register-return" :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
+              ثبت دریافت‌ها
+            </button>
           </div>
-          <button v-else type="button" class="draft-register-return" :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
-            ثبت دریافت‌ها
-          </button>
           <div class="draft-price-summary">
             <div class="draft-estimated-price">
               <span>قیمت روزانه لیست</span>
@@ -356,7 +358,7 @@ const form = reactive({
 });
 
 const activeItems = computed(() => form.items.filter((item) => Number(item.product_id) > 0));
-const displayItems = computed(() => (isDraft.value ? form.items : activeItems.value));
+const displayItems = computed(() => form.items);
 const isDraft = computed(() => loadedStatus.value === 'DRAFT');
 const editorStatusMeta = computed(() => ({
   DRAFT: { label: 'پیش‌نویس', className: 'bg-amber-100 text-amber-700' },
@@ -1685,6 +1687,12 @@ function formatSavedTime(value) {
   top: auto;
   bottom: calc(100% + .35rem);
 }
+.draft-table-footer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem;
+}
 .draft-price-summary {
   display: flex;
   align-items: stretch;
@@ -1723,6 +1731,7 @@ function formatSavedTime(value) {
   .draft-table-wrap { padding: .5rem .35rem 0; overflow: visible; }
   .unified-list-table { min-width: 0; }
   .draft-table-footer { align-items: stretch; flex-direction: column-reverse; }
+  .draft-table-footer__actions { justify-content: center; }
   .draft-price-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .draft-estimated-price { min-width: 0; }
   .draft-estimated-price { align-items: center; }
