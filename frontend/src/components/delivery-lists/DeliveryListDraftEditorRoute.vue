@@ -355,7 +355,7 @@ const form = reactive({
   deliveryDate: '',
   deliveryTime: '',
   expectedReturnDate: '',
-  expectedReturnTime: '11:00',
+  expectedReturnTime: '',
   nightBefore: false,
   notes: '',
   items: []
@@ -466,12 +466,14 @@ async function hydrateDraft(draft) {
   form.customerName = draft.customer_name || draft.customer_name_snapshot || requestedCustomer?.name || '';
   form.deliveryDate = draft.delivered_at ? toPersianDate(String(draft.delivered_at).slice(0, 10)) : defaultDate;
   form.deliveryTime = draft.delivered_at ? String(draft.delivered_at).slice(11, 16) : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  form.expectedReturnDate = draft.expected_return_at ? toPersianDate(String(draft.expected_return_at).slice(0, 10)) : '';
-  form.expectedReturnTime = draft.expected_return_at ? String(draft.expected_return_at).slice(11, 16) : '11:00';
-  form.nightBefore = Boolean(draft.night_before);
   billingCutoffMinutes.value = Number.isFinite(Number(draft.billing_cutoff_minutes_snapshot))
     ? Number(draft.billing_cutoff_minutes_snapshot)
     : 660;
+  form.expectedReturnDate = draft.expected_return_at ? toPersianDate(String(draft.expected_return_at).slice(0, 10)) : '';
+  form.expectedReturnTime = draft.expected_return_at
+    ? String(draft.expected_return_at).slice(11, 16)
+    : timeFromMinutes(billingCutoffMinutes.value);
+  form.nightBefore = Boolean(draft.night_before);
   form.notes = draft.notes || '';
   loadedStatus.value = draft.status || 'DRAFT';
   registeredReturnEvents.value = Array.isArray(draft.return_events) ? draft.return_events : [];
@@ -572,7 +574,7 @@ function buildPayload() {
       daily_price_toman: Math.max(0, Math.round(Number(item.daily_price_toman) || 0)),
       delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
       remaining_expected_return_at: !isDraft.value && aggregateReturned(item) > 0 && currentRemaining(item) > 0
-        ? combineDateTime(form.expectedReturnDate, form.expectedReturnTime || '11:00')
+        ? combineDateTime(form.expectedReturnDate, form.expectedReturnTime || timeFromMinutes(billingCutoffMinutes.value))
         : null,
       notes: item.notes || null
     }))
@@ -1030,6 +1032,11 @@ function combineDateTime(persianDate, time) {
 function nextLocalKey() {
   localItemCounter += 1;
   return `draft-item-${localItemCounter}`;
+}
+
+function timeFromMinutes(value) {
+  const minutes = Math.min(1439, Math.max(0, Math.round(Number(value) || 0)));
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
 function formatNumber(value) {

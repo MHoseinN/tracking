@@ -77,7 +77,7 @@ const selectedMinute = ref('00');
 const panelStyle = ref({ top: '0px', left: '0px', zIndex: 230 });
 const hours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
 const minutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
-const quickTimes = ['08:00', '12:00', '18:00'];
+const quickTimes = ['13:00', '17:00', '21:00'];
 const normalizedValue = computed(() => normalizeTime(props.modelValue));
 
 watch(() => props.modelValue, syncFromModel, { immediate: true });
