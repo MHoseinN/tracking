@@ -119,6 +119,12 @@
                   <circle cx="19" cy="12" r="1.7" />
                 </svg>
               </AppIconButton>
+              <AppIconButton v-if="draft.status !== 'DRAFT'" label="ویرایش لیست" size="sm" variant="primary"
+                @click="router.push(`/lists/${draft.id}`)">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" />
+                </svg>
+              </AppIconButton>
               <AppIconButton
                 label="حذف رکورد"
                 size="sm"

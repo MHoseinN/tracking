@@ -160,6 +160,20 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       }
     },
 
+    async updateReturnEvent(id, returnEventId, payload) {
+      this.saving = true;
+      try {
+        const list = (await deliveryListService.updateReturnEvent(id, returnEventId, payload)).data;
+        this.currentDraft = list;
+        replaceDraft(this.lists, list);
+        return { success: true, data: list };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ویرایش سابقه برگشت انجام نشد') };
+      } finally {
+        this.saving = false;
+      }
+    },
+
     async getInvoicePreview(id) {
       try {
         return { success: true, data: (await deliveryListService.getInvoicePreview(id)).data };

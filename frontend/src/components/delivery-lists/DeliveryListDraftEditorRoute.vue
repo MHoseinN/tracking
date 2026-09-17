@@ -168,14 +168,19 @@
                       :disabled="!canDeleteItem(item)" @click="removeProduct(item.localKey)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
                     </button>
-                    <button type="button" class="damage-action-button" title="ثبت و پیگیری خسارت" aria-label="ثبت و پیگیری خسارت"
+                    <button type="button" class="damage-action-button" :title="damageButtonTitle(item)" aria-label="ثبت و پیگیری خسارت"
                       :class="{ 'damage-action-button--active': displayedDamageQuantity(item) > 0 }"
-                      :disabled="isDraft || !item.product_id || (currentRemaining(item) === 0 && displayedDamageQuantity(item) === 0)"
+                      :disabled="isDraft || !item.product_id || !canManageDamage(item)"
                       @click="openDamageDialog(item)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-8 8l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 8-8z" />
                       </svg>
                       <span v-if="displayedDamageQuantity(item)" class="damage-action-button__badge">{{ formatNumber(displayedDamageQuantity(item)) }}</span>
+                    </button>
+                    <button type="button" class="item-schedule-button" title="تاریخ تقریبی برگشت این محصول"
+                      aria-label="ویرایش تاریخ تقریبی برگشت محصول" :disabled="isDraft || !item.product_id || currentRemaining(item) === 0"
+                      @click="openItemScheduleDialog(item)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4m8-4v4M3 10h18"/><rect x="3" y="4" width="18" height="17" rx="2"/></svg>
                     </button>
                   </div>
                 </td>
@@ -217,6 +222,32 @@
             </div>
           </div>
         </footer>
+
+        <section v-if="!isDraft && registeredReturnEvents.length" class="return-history-panel">
+          <div class="return-history-panel__heading">
+            <div><strong>سوابق دریافت و بررسی سلامت</strong><span>تاریخ برگشت و وضعیت سلامت اقلام قابل اصلاح است.</span></div>
+          </div>
+          <article v-for="event in registeredReturnEvents" :key="event.id" class="return-event-card">
+            <header>
+              <div>
+                <strong>{{ formatReturnEventDate(event.returned_at) }}</strong>
+                <span>دریافت‌کننده: {{ event.received_by_name || '—' }}</span>
+              </div>
+              <button type="button" class="return-event-edit"
+                :title="returnEventIsInvoiced(event) ? 'اصلاح وضعیت سلامت؛ تاریخ فاکتورشده ثابت می‌ماند' : 'ویرایش تاریخ و وضعیت سلامت'"
+                @click="openReturnEventEditor(event)">
+                {{ returnEventIsInvoiced(event) ? 'ویرایش سلامت' : 'ویرایش برگشت' }}
+              </button>
+            </header>
+            <div class="return-event-card__items">
+              <span v-for="item in event.items" :key="item.id" :class="{ 'return-event-item--damaged': Number(item.damaged_quantity) > 0 }">
+                <b>{{ item.product_name_snapshot }}</b>
+                {{ formatNumber(Number(item.healthy_quantity) + Number(item.damaged_quantity)) }} عدد
+                <small v-if="Number(item.damaged_quantity)">({{ formatNumber(item.damaged_quantity) }} خسارتی)</small>
+              </span>
+            </div>
+          </article>
+        </section>
       </section>
 
       <p v-if="saveError" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -249,6 +280,57 @@
       <template #footer>
         <button type="button" class="app-button-secondary" :disabled="returning" @click="showReturnConfirm = false">انصراف</button>
         <button type="button" class="app-button-primary" :disabled="returning" @click="submitInlineReturn">{{ returning ? 'در حال ثبت...' : 'تأیید دریافت' }}</button>
+      </template>
+    </AppModal>
+
+    <AppModal :is-open="Boolean(editingReturnEvent)"
+      :title="isFocusedDamageEdit ? 'ثبت خسارت محصول' : 'ویرایش سابقه برگشت'"
+      :description="isFocusedDamageEdit ? focusedReturnEditItem?.product_name_snapshot || '' : 'تاریخ برگشت و نتیجه بررسی سلامت را اصلاح کنید'"
+      size="lg" :busy="savingReturnEdit"
+      @close="closeReturnEventEditor">
+      <div class="return-event-editor">
+        <div v-if="!isFocusedDamageEdit && !returnEventIsInvoiced(editingReturnEvent)" class="return-confirm-fields">
+          <label class="draft-field"><span class="draft-field__label">تاریخ برگشت</span>
+            <JalaliDatePicker v-model="editReturnDate" input-class="draft-field__control" /></label>
+          <label class="draft-field"><span class="draft-field__label">ساعت برگشت</span>
+            <TimePicker24 v-model="editReturnTime" input-class="draft-field__control" /></label>
+        </div>
+        <div v-else-if="!isFocusedDamageEdit" class="invoiced-return-notice">
+          تاریخ این برگشت در فاکتور استفاده شده و ثابت می‌ماند؛ نتیجه بررسی سلامت و شرح خسارت قابل اصلاح است.
+        </div>
+        <div v-for="item in visibleEditReturnItems" :key="item.id" class="return-health-row"
+          :class="{ 'return-health-row--single': isFocusedDamageEdit }">
+          <div class="return-health-row__title"><strong>{{ item.product_name_snapshot }}</strong>
+            <span>جمع برگشتی: {{ formatNumber(item.total_quantity) }}</span></div>
+          <label><span>تعداد خسارتی</span><input v-model.number="item.damaged_quantity" type="number" min="0"
+            :max="item.total_quantity" :data-return-damage-item="item.id" /></label>
+          <div v-if="!isFocusedDamageEdit" class="return-health-row__healthy"><span>سالم</span><strong>{{ formatNumber(item.total_quantity - normalizedDamageQuantity(item)) }}</strong></div>
+          <label class="return-health-row__notes"><span>شرح خسارت</span>
+            <input v-model.trim="item.damage_notes" type="text" maxlength="2000" :disabled="normalizedDamageQuantity(item) === 0"
+              :placeholder="normalizedDamageQuantity(item) ? 'نوع و شرح خسارت' : 'بدون خسارت'" /></label>
+        </div>
+        <label v-if="!isFocusedDamageEdit" class="draft-field"><span class="draft-field__label">یادداشت این برگشت</span>
+          <textarea v-model.trim="editReturnNotes" class="draft-field__control !h-20 py-2" maxlength="5000"></textarea></label>
+      </div>
+      <template #footer>
+        <button type="button" class="app-button-secondary" :disabled="savingReturnEdit" @click="closeReturnEventEditor">انصراف</button>
+        <button type="button" class="app-button-primary" :disabled="savingReturnEdit" @click="saveReturnEventEdit">
+          {{ savingReturnEdit ? 'در حال ذخیره...' : 'ذخیره اصلاحات' }}
+        </button>
+      </template>
+    </AppModal>
+
+    <AppModal :is-open="Boolean(itemScheduleTarget)" title="تاریخ تقریبی برگشت محصول"
+      :description="itemScheduleTarget?.product_name_snapshot || ''" size="sm" @close="closeItemScheduleDialog">
+      <div class="return-confirm-fields">
+        <label class="draft-field"><span class="draft-field__label">تاریخ تقریبی</span>
+          <JalaliDatePicker v-model="itemScheduleDate" input-class="draft-field__control" /></label>
+        <label class="draft-field"><span class="draft-field__label">ساعت تقریبی</span>
+          <TimePicker24 v-model="itemScheduleTime" input-class="draft-field__control" /></label>
+      </div>
+      <template #footer>
+        <button type="button" class="app-button-secondary" @click="useOverallItemSchedule">استفاده از تاریخ کلی</button>
+        <button type="button" class="app-button-primary" @click="saveItemSchedule">ذخیره تاریخ محصول</button>
       </template>
     </AppModal>
 
@@ -334,6 +416,22 @@ const showReturnConfirm = ref(false);
 const damageTarget = ref(null);
 const damageQuantity = ref(1);
 const damageDescription = ref('');
+const editingReturnEvent = ref(null);
+const editReturnDate = ref('');
+const editReturnTime = ref('');
+const editReturnNotes = ref('');
+const editReturnItems = ref([]);
+const editReturnFocusItemId = ref(null);
+const savingReturnEdit = ref(false);
+const itemScheduleTarget = ref(null);
+const itemScheduleDate = ref('');
+const itemScheduleTime = ref('');
+const isFocusedDamageEdit = computed(() => Number(editReturnFocusItemId.value) > 0);
+const focusedReturnEditItem = computed(() => editReturnItems.value
+  .find((item) => Number(item.id) === Number(editReturnFocusItemId.value)) || null);
+const visibleEditReturnItems = computed(() => (
+  isFocusedDamageEdit.value && focusedReturnEditItem.value ? [focusedReturnEditItem.value] : editReturnItems.value
+));
 const saveStatus = ref('saved');
 const saveError = ref('');
 const lastSavedAt = ref('');
@@ -573,8 +671,9 @@ function buildPayload() {
       product_id: Number(item.product_id),
       daily_price_toman: Math.max(0, Math.round(Number(item.daily_price_toman) || 0)),
       delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
-      remaining_expected_return_at: !isDraft.value && aggregateReturned(item) > 0 && currentRemaining(item) > 0
-        ? combineDateTime(form.expectedReturnDate, form.expectedReturnTime || timeFromMinutes(billingCutoffMinutes.value))
+      remaining_expected_return_at: !isDraft.value && currentRemaining(item) > 0
+        ? combineDateTime(item.remainingExpectedReturnDate || form.expectedReturnDate,
+          item.remainingExpectedReturnTime || form.expectedReturnTime || timeFromMinutes(billingCutoffMinutes.value))
         : null,
       notes: item.notes || null
     }))
@@ -660,6 +759,8 @@ function createItemRow(item = {}) {
     delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
     healthy_returned_quantity: Math.max(0, Math.round(Number(item.healthy_returned_quantity) || 0)),
     damaged_quantity: Math.max(0, Math.round(Number(item.damaged_quantity) || 0)),
+    remainingExpectedReturnDate: item.remaining_expected_return_at ? toPersianDate(String(item.remaining_expected_return_at).slice(0, 10)) : '',
+    remainingExpectedReturnTime: item.remaining_expected_return_at ? String(item.remaining_expected_return_at).slice(11, 16) : '',
     notes: item.notes || ''
   };
 }
@@ -834,6 +935,102 @@ function formatReturnEventDate(value) {
   return `${date}${time ? ` - ${time}` : ''}`;
 }
 
+function returnEventIsInvoiced(event) {
+  return (event?.items || []).some((item) => Number(item.rental_invoice_id) > 0);
+}
+
+function normalizedDamageQuantity(item) {
+  return Math.min(Number(item.total_quantity) || 0, Math.max(0, Math.round(Number(item.damaged_quantity) || 0)));
+}
+
+async function openReturnEventEditor(event, focusItemId = null) {
+  if (!event) return;
+  editingReturnEvent.value = event;
+  editReturnFocusItemId.value = focusItemId;
+  editReturnDate.value = toPersianDate(String(event.returned_at).slice(0, 10));
+  editReturnTime.value = String(event.returned_at).slice(11, 16);
+  editReturnNotes.value = event.notes || '';
+  editReturnItems.value = (event.items || []).map((item) => ({
+    ...item,
+    total_quantity: Number(item.healthy_quantity) + Number(item.damaged_quantity),
+    damaged_quantity: Number(item.damaged_quantity) || 0,
+    damage_notes: item.damage_notes || ''
+  }));
+  if (focusItemId) {
+    await nextTick();
+    const input = document.querySelector(`[data-return-damage-item="${Number(focusItemId)}"]`);
+    input?.focus();
+    input?.select();
+  }
+}
+
+function closeReturnEventEditor() {
+  if (savingReturnEdit.value) return;
+  editingReturnEvent.value = null;
+  editReturnItems.value = [];
+  editReturnFocusItemId.value = null;
+}
+
+async function saveReturnEventEdit() {
+  if (!editingReturnEvent.value || savingReturnEdit.value) return;
+  const returnedAt = combineDateTime(editReturnDate.value, editReturnTime.value);
+  if (!returnedAt || Date.parse(returnedAt) < Date.parse(combineDateTime(form.deliveryDate, form.deliveryTime))) {
+    return toast.error('زمان برگشت نمی‌تواند قبل از زمان تحویل باشد');
+  }
+  const invalidDamage = editReturnItems.value.find((item) => (
+    normalizedDamageQuantity(item) > 0 && !String(item.damage_notes || '').trim()
+  ));
+  if (invalidDamage) return toast.error(`شرح خسارت «${invalidDamage.product_name_snapshot}» را وارد کنید`);
+  savingReturnEdit.value = true;
+  const result = await draftStore.updateReturnEvent(draftId.value, editingReturnEvent.value.id, {
+    returned_at: returnedAt,
+    notes: editReturnNotes.value || null,
+    items: editReturnItems.value.map((item) => {
+      const damaged = normalizedDamageQuantity(item);
+      return {
+        id: Number(item.id),
+        healthy_quantity: Number(item.total_quantity) - damaged,
+        damaged_quantity: damaged,
+        damage_notes: damaged ? String(item.damage_notes || '').trim() : null
+      };
+    })
+  });
+  savingReturnEdit.value = false;
+  if (!result.success) return toast.error(result.message);
+  closeReturnEventEditor();
+  await hydrateDraft(result.data);
+  emit('saved', result.data);
+  toast.success('سابقه برگشت و وضعیت سلامت اصلاح شد');
+}
+
+function openItemScheduleDialog(item) {
+  itemScheduleTarget.value = item;
+  itemScheduleDate.value = item.remainingExpectedReturnDate || form.expectedReturnDate;
+  itemScheduleTime.value = item.remainingExpectedReturnTime || form.expectedReturnTime;
+}
+
+function closeItemScheduleDialog() {
+  itemScheduleTarget.value = null;
+  itemScheduleDate.value = '';
+  itemScheduleTime.value = '';
+}
+
+function saveItemSchedule() {
+  if (!itemScheduleTarget.value || !itemScheduleDate.value || !itemScheduleTime.value) {
+    return toast.error('تاریخ و ساعت تقریبی برگشت محصول را وارد کنید');
+  }
+  itemScheduleTarget.value.remainingExpectedReturnDate = itemScheduleDate.value;
+  itemScheduleTarget.value.remainingExpectedReturnTime = itemScheduleTime.value;
+  closeItemScheduleDialog();
+}
+
+function useOverallItemSchedule() {
+  if (!itemScheduleTarget.value) return;
+  itemScheduleTarget.value.remainingExpectedReturnDate = '';
+  itemScheduleTarget.value.remainingExpectedReturnTime = '';
+  closeItemScheduleDialog();
+}
+
 function canDeleteItem(item) {
   if (aggregateReturned(item) > 0) return false;
   return Boolean(item.product_id) || form.items.length > 5;
@@ -881,8 +1078,30 @@ function openReturnConfirm() {
   showReturnConfirm.value = true;
 }
 
+function returnEventsForItem(item) {
+  return registeredReturnEvents.value.filter((event) => (event.items || [])
+    .some((record) => Number(record.delivery_list_item_id) === Number(item?.id)));
+}
+
+function canManageDamage(item) {
+  return currentRemaining(item) > 0 || returnEventsForItem(item).length > 0;
+}
+
+function damageButtonTitle(item) {
+  if (currentRemaining(item) > 0) return 'ثبت خسارت برای کالای در حال برگشت';
+  const event = returnEventsForItem(item)[0];
+  if (event && returnEventIsInvoiced(event)) return 'اصلاح وضعیت سلامت کالای فاکتور‌شده';
+  return 'اصلاح وضعیت سلامت کالای برگشت‌خورده';
+}
+
 function openDamageDialog(item) {
-  if (currentRemaining(item) <= 0) return;
+  if (currentRemaining(item) <= 0) {
+    const events = returnEventsForItem(item);
+    const targetEvent = events[0];
+    if (targetEvent) return openReturnEventEditor(targetEvent,
+      targetEvent.items.find((record) => Number(record.delivery_list_item_id) === Number(item.id))?.id);
+    return toast.info('سابقه برگشتی برای این محصول پیدا نشد');
+  }
   const state = returnEntryFor(item);
   damageTarget.value = item;
   damageQuantity.value = state.damagedQuantity || 1;
@@ -1396,13 +1615,13 @@ function formatSavedTime(value) {
 .draft-items-table th:nth-child(7) { width: 6%; }
 .unified-list-table { min-width: 0; }
 .unified-list-table th:nth-child(1) { width: 4%; }
-.unified-list-table th:nth-child(2) { width: 29%; }
-.unified-list-table th:nth-child(3) { width: 10%; }
-.unified-list-table th:nth-child(4) { width: 11%; }
+.unified-list-table th:nth-child(2) { width: 28%; }
+.unified-list-table th:nth-child(3) { width: 9%; }
+.unified-list-table th:nth-child(4) { width: 10%; }
 .unified-list-table th:nth-child(5) { width: 8%; }
-.unified-list-table th:nth-child(6) { width: 24%; }
+.unified-list-table th:nth-child(6) { width: 22%; }
 .unified-list-table th:nth-child(7) { width: 7%; }
-.unified-list-table th:nth-child(8) { width: 7%; }
+.unified-list-table th:nth-child(8) { width: 12%; }
 .draft-add-row td { position: relative; background: #f5f8f1; color: #64748b; font-size: .7rem; }
 .draft-add-row__number {
   display: inline-grid;
@@ -1632,6 +1851,19 @@ function formatSavedTime(value) {
 .damage-action-button svg { width: 1rem; }
 .damage-action-button--active { border-color: #fb7185; background: #fff1f2; color: #be123c; }
 .damage-action-button:disabled { cursor: not-allowed; opacity: .4; }
+.item-schedule-button {
+  display: inline-grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: .55rem;
+  background: #eff6ff;
+  color: #2563eb;
+}
+.item-schedule-button svg { width: 1rem; }
+.item-schedule-button:hover:not(:disabled) { background: #dbeafe; }
+.item-schedule-button:disabled { cursor: not-allowed; opacity: .35; }
 .damage-action-button__badge {
   position: absolute;
   top: -.38rem;
@@ -1647,6 +1879,46 @@ function formatSavedTime(value) {
   color: #fff;
   font-size: .55rem;
   font-weight: 900;
+}
+.return-history-panel {
+  margin: 0 1rem 1rem;
+  border: 1px solid #dbe7e1;
+  border-radius: .8rem;
+  background: #f8fbf9;
+  padding: .85rem;
+}
+.return-history-panel__heading > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem .75rem; }
+.return-history-panel__heading strong { color: #24483a; font-size: .82rem; }
+.return-history-panel__heading span { color: #718078; font-size: .68rem; }
+.return-event-card { margin-top: .65rem; overflow: hidden; border: 1px solid #e2e8e5; border-radius: .65rem; background: #fff; }
+.return-event-card > header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .65rem .75rem; border-bottom: 1px solid #edf1ef; }
+.return-event-card > header > div { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; }
+.return-event-card > header strong { color: #1e3d32; font-size: .76rem; }
+.return-event-card > header span { color: #718078; font-size: .65rem; }
+.return-event-edit { border: 1px solid #b9d8ca; border-radius: .5rem; background: #edf8f3; padding: .35rem .65rem; color: #087255; font-size: .68rem; font-weight: 900; white-space: nowrap; }
+.return-event-edit:hover:not(:disabled) { background: #d9f0e6; }
+.return-event-edit:disabled { cursor: not-allowed; border-color: #e2e8f0; background: #f8fafc; color: #94a3b8; }
+.return-event-card__items { display: flex; flex-wrap: wrap; gap: .4rem; padding: .65rem .75rem; }
+.return-event-card__items > span { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; background: #f1f5f9; padding: .28rem .55rem; color: #475569; font-size: .65rem; }
+.return-event-card__items b { color: #334155; }
+.return-event-card__items small { color: #be123c; font-weight: 900; }
+.return-event-card__items .return-event-item--damaged { background: #fff1f2; color: #9f1239; }
+.return-event-editor { display: grid; gap: 1rem; }
+.invoiced-return-notice { border: 1px solid #fde68a; border-radius: .65rem; background: #fffbeb; padding: .7rem .8rem; color: #92400e; font-size: .72rem; line-height: 1.8; }
+.return-health-row { display: grid; grid-template-columns: minmax(9rem, 1fr) 8rem 5rem minmax(12rem, 1.3fr); align-items: end; gap: .65rem; border: 1px solid #e2e8f0; border-radius: .7rem; background: #f8fafc; padding: .75rem; }
+.return-health-row--single { grid-template-columns: minmax(8rem, 1fr) 7rem minmax(11rem, 1.4fr); border-color: #fed7aa; background: #fffaf3; box-shadow: 0 0 0 3px rgba(251, 146, 60, .1); }
+.return-health-row label { display: grid; gap: .3rem; color: #64748b; font-size: .68rem; font-weight: 800; }
+.return-health-row input { width: 100%; height: 2.35rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; padding: 0 .55rem; outline: none; }
+.return-health-row input:focus { border-color: #21a179; box-shadow: 0 0 0 3px rgba(33, 161, 121, .12); }
+.return-health-row input:disabled { background: #f1f5f9; color: #94a3b8; }
+.return-health-row__title { display: grid; gap: .25rem; }
+.return-health-row__title strong { color: #1e293b; font-size: .78rem; }
+.return-health-row__title span { color: #64748b; font-size: .65rem; }
+.return-health-row__healthy { display: grid; height: 2.35rem; place-items: center; border-radius: .5rem; background: #e8f7ef; color: #087255; font-size: .65rem; }
+.return-health-row__healthy strong { font-size: .8rem; }
+@media (max-width: 767px) {
+  .return-health-row { grid-template-columns: 1fr 1fr; }
+  .return-health-row__notes { grid-column: 1 / -1; }
 }
 .return-confirm-form,
 .damage-dialog-form {

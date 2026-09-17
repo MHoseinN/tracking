@@ -11,6 +11,7 @@ const {
   archiveList,
   finalizeDraft,
   recordReturn,
+  updateReturnEvent,
   getInvoicePreview,
   issueInvoice,
   getIssuedInvoice,
@@ -69,6 +70,17 @@ router.post('/:id/returns', [
   body('items.*.day_override_reason').optional({ nullable: true }).isString().isLength({ max: 1000 }),
   body('items.*.damage_notes').optional({ nullable: true }).isString().isLength({ max: 2000 })
 ], recordReturn);
+router.put('/:id/returns/:returnEventId', [
+  idValidation,
+  param('returnEventId').isInt({ min: 1 }),
+  body('returned_at').isISO8601(),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+  body('items').isArray({ min: 1, max: 500 }),
+  body('items.*.id').isInt({ min: 1 }),
+  body('items.*.healthy_quantity').isInt({ min: 0 }),
+  body('items.*.damaged_quantity').isInt({ min: 0 }),
+  body('items.*.damage_notes').optional({ nullable: true }).isString().isLength({ max: 2000 })
+], updateReturnEvent);
 router.get('/:id/invoice-preview', [idValidation], getInvoicePreview);
 router.post('/:id/invoices', [
   idValidation,

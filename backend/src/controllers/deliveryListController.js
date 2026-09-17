@@ -77,6 +77,16 @@ function recordReturn(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+function updateReturnEvent(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const result = draftService.updateReturnEvent(req.params.id, req.params.returnEventId, req.body, req.user.id);
+    deliveryListEvents.publish({ action: 'RETURN_UPDATED', list_id: Number(req.params.id) });
+    return res.json(result);
+  }
+  catch (error) { return handleError(error, res); }
+}
+
 function getInvoicePreview(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try { return res.json(invoiceService.getPreview(req.params.id)); }
@@ -240,6 +250,7 @@ module.exports = {
   archiveList,
   finalizeDraft,
   recordReturn,
+  updateReturnEvent,
   getInvoicePreview,
   issueInvoice,
   getIssuedInvoice,

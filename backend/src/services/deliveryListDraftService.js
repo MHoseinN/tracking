@@ -855,6 +855,139 @@ function createDeliveryListDraftService(db) {
     return getList(id);
   }
 
+  function updateReturnEvent(id, returnEventId, payload = {}, actorUserId) {
+    const list = getListRow(id);
+    const event = db.prepare(`
+      SELECT id, returned_at, notes
+      FROM return_events
+      WHERE id = ? AND delivery_list_id = ? AND deleted_at IS NULL
+    `).get(returnEventId, id);
+    if (!event) throw new DeliveryListDraftError('سابقه برگشت پیدا نشد', 404);
+
+    const existingItems = db.prepare(`
+      SELECT return_event_items.id, return_event_items.delivery_list_item_id,
+             return_event_items.healthy_quantity, return_event_items.damaged_quantity,
+             return_event_items.final_charged_days, return_event_items.day_override_reason,
+             return_event_items.damage_notes,
+             EXISTS(
+               SELECT 1 FROM invoice_lines
+               WHERE invoice_lines.return_event_item_id = return_event_items.id
+                 AND invoice_lines.deleted_at IS NULL
+             ) AS is_invoiced
+      FROM return_event_items
+      WHERE return_event_items.return_event_id = ? AND return_event_items.deleted_at IS NULL
+      ORDER BY return_event_items.id
+    `).all(event.id);
+    const isInvoiced = existingItems.some((item) => Number(item.is_invoiced));
+
+    const returnedAt = nullableText(payload.returned_at);
+    if (!returnedAt) throw new DeliveryListDraftError('تاریخ و ساعت برگشت الزامی است');
+    if (isInvoiced && returnedAt !== event.returned_at) {
+      throw new DeliveryListDraftError('تاریخ برگشت فاکتورشده قابل تغییر نیست؛ وضعیت سلامت و شرح خسارت را می‌توانید اصلاح کنید', 409);
+    }
+    const systemDays = calculateChargedDays({
+      deliveredAt: list.delivered_at,
+      returnedAt,
+      cutoffMinutes: list.billing_cutoff_minutes_snapshot,
+      nightBefore: Boolean(list.night_before)
+    });
+    if (!Array.isArray(payload.items) || payload.items.length !== existingItems.length) {
+      throw new DeliveryListDraftError('تمام اقلام این سابقه برگشت باید ارسال شوند');
+    }
+
+    const existingById = new Map(existingItems.map((item) => [Number(item.id), item]));
+    const seen = new Set();
+    const normalizedItems = payload.items.map((item) => {
+      const itemId = nullableId(item.id);
+      const existing = existingById.get(itemId);
+      if (!existing || seen.has(itemId)) throw new DeliveryListDraftError('قلم برگشتی نامعتبر یا تکراری است');
+      seen.add(itemId);
+      const healthy = Number(item.healthy_quantity) || 0;
+      const damaged = Number(item.damaged_quantity) || 0;
+      if (![healthy, damaged].every((value) => Number.isInteger(value) && value >= 0)) {
+        throw new DeliveryListDraftError('تعداد سالم یا خسارتی نامعتبر است');
+      }
+      const originalTotal = Number(existing.healthy_quantity) + Number(existing.damaged_quantity);
+      if (healthy + damaged !== originalTotal) {
+        throw new DeliveryListDraftError('تعداد کل این برگشت قابل تغییر نیست؛ فقط وضعیت سلامت اقلام را اصلاح کنید');
+      }
+      const damageNotes = nullableText(item.damage_notes);
+      if (damaged > 0 && !damageNotes) throw new DeliveryListDraftError('برای کالای خسارتی شرح خسارت الزامی است');
+      return { existing, healthy, damaged, damageNotes };
+    });
+
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE return_events
+        SET returned_at = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND delivery_list_id = ? AND deleted_at IS NULL
+      `).run(returnedAt, nullableText(payload.notes), event.id, id);
+
+      const updateItem = db.prepare(`
+        UPDATE return_event_items
+        SET healthy_quantity = ?, damaged_quantity = ?, system_calculated_days = ?,
+            final_charged_days = ?, damage_notes = ?,
+            issue_resolved_at = CASE
+              WHEN ? > 0 AND damaged_quantity = 0 THEN NULL
+              ELSE issue_resolved_at
+            END,
+            issue_resolved_by_user_id = CASE
+              WHEN ? > 0 AND damaged_quantity = 0 THEN NULL
+              ELSE issue_resolved_by_user_id
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND return_event_id = ? AND deleted_at IS NULL
+      `);
+      normalizedItems.forEach(({ existing, healthy, damaged, damageNotes }) => {
+        const finalDays = existing.day_override_reason ? Number(existing.final_charged_days) : systemDays;
+        updateItem.run(healthy, damaged, systemDays, finalDays, damageNotes, damaged, damaged, existing.id, event.id);
+      });
+
+      const state = db.prepare(`
+        SELECT
+          (SELECT COALESCE(SUM(delivered_quantity), 0) FROM delivery_list_items
+            WHERE delivery_list_id = ? AND deleted_at IS NULL) AS total_delivered,
+          (SELECT COALESCE(SUM(return_event_items.healthy_quantity + return_event_items.damaged_quantity), 0)
+             FROM return_event_items
+             JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+            WHERE delivery_list_items.delivery_list_id = ? AND delivery_list_items.deleted_at IS NULL
+              AND return_event_items.deleted_at IS NULL) AS total_returned,
+          (SELECT COALESCE(SUM(return_event_items.damaged_quantity), 0)
+             FROM return_event_items
+             JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+            WHERE delivery_list_items.delivery_list_id = ? AND delivery_list_items.deleted_at IS NULL
+              AND return_event_items.deleted_at IS NULL AND return_event_items.issue_resolved_at IS NULL) AS unresolved_issues
+      `).get(id, id, id);
+      const nextStatus = Number(state.unresolved_issues) > 0
+        ? 'NEEDS_FOLLOW_UP'
+        : Number(state.total_returned) === 0
+          ? 'DELIVERED'
+          : Number(state.total_returned) < Number(state.total_delivered) ? 'REMAINING' : 'COMPLETED';
+      const completedAt = nextStatus === 'COMPLETED'
+        ? db.prepare('SELECT MAX(returned_at) AS value FROM return_events WHERE delivery_list_id = ? AND deleted_at IS NULL').get(id).value
+        : null;
+      db.prepare(`
+        UPDATE delivery_lists
+        SET status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP, version = version + 1
+        WHERE id = ? AND archived_at IS NULL
+      `).run(nextStatus, completedAt, id);
+
+      db.prepare(`
+        INSERT INTO audit_logs (
+          actor_user_id, entity_type, entity_id, action, before_json, after_json, metadata_json
+        ) VALUES (?, 'DELIVERY_LIST', ?, 'UPDATE_RETURN_EVENT', ?, ?, ?)
+      `).run(
+        actorUserId,
+        String(id),
+        JSON.stringify({ returned_at: event.returned_at, items: existingItems.map((item) => ({ id: item.id, healthy_quantity: item.healthy_quantity, damaged_quantity: item.damaged_quantity })) }),
+        JSON.stringify({ returned_at: returnedAt, items: normalizedItems.map(({ existing, healthy, damaged }) => ({ id: existing.id, healthy_quantity: healthy, damaged_quantity: damaged })) }),
+        JSON.stringify({ return_event_id: Number(event.id) })
+      );
+    })();
+
+    return getList(id);
+  }
+
   return {
     listDrafts,
     listDeliveryLists,
@@ -865,7 +998,8 @@ function createDeliveryListDraftService(db) {
     deleteDraft,
     archiveList,
     finalizeDraft,
-    recordReturn
+    recordReturn,
+    updateReturnEvent
   };
 }
 

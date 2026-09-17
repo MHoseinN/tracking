@@ -570,6 +570,50 @@ test('records partial and complete healthy returns with independent charged days
   }
 });
 
+test('edits an unbilled return date and reclassifies healthy items as damaged', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
+    });
+    const finalized = service.finalizeDraft(draft.id, saved.version, 1);
+    const returned = service.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: finalized.items[0].id, healthy_quantity: 2 }]
+    }, 1);
+    const event = returned.return_events[0];
+    const edited = service.updateReturnEvent(draft.id, event.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      notes: 'بررسی سلامت با تأخیر انجام شد',
+      items: [{
+        id: event.items[0].id,
+        healthy_quantity: 1,
+        damaged_quantity: 1,
+        damage_notes: 'شکستگی پایه'
+      }]
+    }, 1);
+
+    assert.equal(edited.status, 'NEEDS_FOLLOW_UP');
+    assert.equal(edited.return_events[0].returned_at, '2026-08-26T11:00:00+03:30');
+    assert.equal(edited.return_events[0].items[0].healthy_quantity, 1);
+    assert.equal(edited.return_events[0].items[0].damaged_quantity, 1);
+    assert.equal(edited.return_events[0].items[0].damage_notes, 'شکستگی پایه');
+    assert.equal(edited.return_events[0].items[0].system_calculated_days, 2);
+    assert.throws(() => service.updateReturnEvent(draft.id, event.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ id: event.items[0].id, healthy_quantity: 2, damaged_quantity: 1, damage_notes: 'اضافه' }]
+    }, 1), /تعداد کل/);
+  } finally {
+    db.close();
+  }
+});
+
 test('marks damage for follow-up and requires reasons for issues and day overrides', () => {
   const db = createDatabase();
   try {
