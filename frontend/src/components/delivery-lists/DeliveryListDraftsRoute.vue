@@ -111,7 +111,7 @@
             {{ hasIssuedInvoice(draft) ? formatCurrency(draft.invoice_total_toman) : '—' }}
           </td>
           <td>
-            <div class="flex items-center justify-center gap-1">
+            <div class="delivery-list-actions">
               <AppIconButton label="مشاهده جزئیات" size="sm" @click="router.push(`/lists/${draft.id}`)">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <circle cx="5" cy="12" r="1.7" />
@@ -529,21 +529,36 @@ function formatDate(value) {
 .delivery-lists-table :deep(.app-table th:nth-child(1)),
 .delivery-lists-table :deep(.app-table td:nth-child(1)) { width: 4%; }
 .delivery-lists-table :deep(.app-table th:nth-child(2)),
-.delivery-lists-table :deep(.app-table td:nth-child(2)) { width: 16%; }
+.delivery-lists-table :deep(.app-table td:nth-child(2)) { width: 17%; }
 .delivery-lists-table :deep(.app-table th:nth-child(3)),
 .delivery-lists-table :deep(.app-table td:nth-child(3)) { width: 10%; }
 .delivery-lists-table :deep(.app-table th:nth-child(4)),
-.delivery-lists-table :deep(.app-table td:nth-child(4)) { width: 11%; }
+.delivery-lists-table :deep(.app-table td:nth-child(4)) { width: 10%; }
 .delivery-lists-table :deep(.app-table th:nth-child(5)),
-.delivery-lists-table :deep(.app-table td:nth-child(5)) { width: 10%; }
+.delivery-lists-table :deep(.app-table td:nth-child(5)) { width: 9%; }
 .delivery-lists-table :deep(.app-table th:nth-child(6)),
-.delivery-lists-table :deep(.app-table td:nth-child(6)) { width: 10%; }
+.delivery-lists-table :deep(.app-table td:nth-child(6)) { width: 9%; }
 .delivery-lists-table :deep(.app-table th:nth-child(7)),
-.delivery-lists-table :deep(.app-table td:nth-child(7)) { width: 14%; }
+.delivery-lists-table :deep(.app-table td:nth-child(7)) { width: 11%; }
 .delivery-lists-table :deep(.app-table th:nth-child(8)),
-.delivery-lists-table :deep(.app-table td:nth-child(8)) { width: 15%; }
+.delivery-lists-table :deep(.app-table td:nth-child(8)) { width: 16%; }
 .delivery-lists-table :deep(.app-table th:nth-child(9)),
-.delivery-lists-table :deep(.app-table td:nth-child(9)) { width: 10%; }
+.delivery-lists-table :deep(.app-table td:nth-child(9)) { width: 14%; }
+
+.delivery-list-actions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  white-space: nowrap;
+}
+
+.delivery-list-actions :deep(.app-icon-button) {
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 2.35rem;
+}
 
 .delivery-lists-table :deep(.app-status-button),
 .delivery-lists-table :deep(.app-status-badge) {

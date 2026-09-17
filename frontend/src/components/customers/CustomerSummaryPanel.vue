@@ -1,26 +1,38 @@
 <template>
   <section class="mb-2 space-y-3">
-    <section class="flex w-full flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
-      <div class="flex min-w-0 items-center gap-3">
-        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-16 w-16 shrink-0 sm:h-20 sm:w-20">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-        </svg>
-        <div class="flex flex-col justify-around">
-          <span class="text-xl font-black text-slate-800 sm:text-xl">
-            {{ customer?.name || 'مشتری' }}
-            <span class="text-gray-500 bg-gray-100 p-2 rounded-lg text-xs">{{ customer?.referrer }}</span>
-          </span>
-          <p class="app-button-secondary max-w-[150px] !p-1">{{ customer?.phone }}</p>
-        </div>
-      </div>
-      <button type="button" class="self-end xl:self-auto" @click="$emit('toggle')">
-        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white hover:bg-gray-100 transition-all text-slate-600 shadow-sm ring-1 ring-slate-200">
-          <svg class="h-5 w-5 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <section class="customer-summary__profile">
+      <button type="button" class="customer-summary__preview" :aria-expanded="open" @click="$emit('toggle')">
+        <span class="customer-summary__avatar" aria-hidden="true">
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          </svg>
+        </span>
+
+        <span class="customer-summary__identity">
+          <strong>{{ customer?.name || `${draft.first_name || ''} ${draft.last_name || ''}`.trim() || 'مشتری' }}</strong>
+          <small>پیش‌نمایش مشخصات مشتری</small>
+        </span>
+
+        <span class="customer-summary__facts">
+          <span class="customer-summary__fact"><small>نام</small><strong>{{ draft.first_name || '—' }}</strong></span>
+          <span class="customer-summary__fact"><small>نام خانوادگی</small><strong>{{ draft.last_name || '—' }}</strong></span>
+          <span class="customer-summary__fact"><small>شماره تماس</small><strong dir="ltr">{{ draft.phone || customer?.phone || '—' }}</strong></span>
+          <span class="customer-summary__fact"><small>معرف</small><strong>{{ draft.referrer || customer?.referrer || '—' }}</strong></span>
+        </span>
+
+        <span class="customer-summary__toggle">
+          <span>{{ open ? 'بستن جزئیات' : 'نمایش جزئیات' }}</span>
+          <svg :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </span>
       </button>
+
+      <CustomerProfileEditor v-if="open" class="customer-summary__editor" :draft="draft" :notes="notes"
+        :account-status-select-options="accountStatusSelectOptions" :phone-duplicate-error="phoneDuplicateError"
+        :changed="changed" :saving="saving" @update-field="handleUpdateField"
+        @update:notes="$emit('update:notes', $event)" @save="$emit('save')" />
     </section>
 
     <AppFinancialOverview
@@ -36,11 +48,6 @@
       :items="customerOverviewItems"
       status-title="وضعیت حساب مشتری"
       :status-items="customerSettlementItems" />
-
-    <CustomerProfileEditor v-if="open" class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm" :draft="draft" :notes="notes"
-      :account-status-select-options="accountStatusSelectOptions" :phone-duplicate-error="phoneDuplicateError"
-      :changed="changed" :saving="saving" @update-field="handleUpdateField"
-      @update:notes="$emit('update:notes', $event)" @save="$emit('save')" />
   </section>
 </template>
 
@@ -87,3 +94,23 @@ function handleUpdateField(field, value) {
   emit('update-field', field, value);
 }
 </script>
+
+<style scoped>
+.customer-summary__profile { overflow:hidden; border:1px solid #dde5e1; border-radius:.85rem; background:#fff; box-shadow:0 4px 14px rgb(15 23 42 / .05); }
+.customer-summary__preview { display:grid; width:100%; min-height:5.5rem; grid-template-columns:auto minmax(9rem,1fr) minmax(28rem,3fr) auto; align-items:center; gap:1rem; padding:.85rem 1rem; text-align:right; transition:background .18s ease; }
+.customer-summary__preview:hover { background:#fbfdfc; }
+.customer-summary__avatar { display:grid; width:3.25rem; height:3.25rem; place-items:center; border-radius:.75rem; background:#e5f6ef; color:#08745d; }
+.customer-summary__avatar svg { width:2rem; height:2rem; }
+.customer-summary__identity { min-width:0; }
+.customer-summary__identity strong { display:block; overflow:hidden; color:#172033; font-size:1.05rem; font-weight:950; text-overflow:ellipsis; white-space:nowrap; }
+.customer-summary__identity small { display:block; margin-top:.25rem; color:#94a3b8; font-size:.67rem; }
+.customer-summary__facts { display:grid; min-width:0; grid-template-columns:repeat(4,minmax(0,1fr)); border-right:1px solid #e7ece9; }
+.customer-summary__fact { min-width:0; padding:.2rem 1rem; border-left:1px solid #e7ece9; }
+.customer-summary__fact small { display:block; color:#8b97a7; font-size:.65rem; font-weight:750; }
+.customer-summary__fact strong { display:block; overflow:hidden; margin-top:.28rem; color:#344054; font-size:.82rem; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
+.customer-summary__toggle { display:flex; height:2.65rem; align-items:center; gap:.5rem; border:1px solid #cfe0d9; border-radius:.65rem; padding:0 .8rem; color:#0b735d; font-size:.7rem; font-weight:900; white-space:nowrap; }
+.customer-summary__toggle svg { width:1rem; height:1rem; transition:transform .18s ease; }
+.customer-summary__editor { border-top:1px solid #e2e8e5; background:#fff; }
+@media(max-width:1100px){.customer-summary__preview{grid-template-columns:auto minmax(9rem,1fr) auto}.customer-summary__facts{grid-column:1/-1; grid-row:2; border-top:1px solid #edf1ef; border-right:0; padding-top:.7rem}.customer-summary__toggle{grid-column:3;grid-row:1}}
+@media(max-width:640px){.customer-summary__preview{grid-template-columns:auto minmax(0,1fr) auto;gap:.7rem}.customer-summary__toggle span{display:none}.customer-summary__toggle{width:2.65rem;justify-content:center;padding:0}.customer-summary__facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}.customer-summary__fact{border:0;border-radius:.55rem;background:#f7f9f8;padding:.55rem .7rem}}
+</style>
