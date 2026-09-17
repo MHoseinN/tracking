@@ -11,22 +11,13 @@
         </header>
 
         <div class="space-y-6 p-6">
-          <table class="w-full border-collapse border border-slate-300 text-sm">
-            <thead class="bg-slate-100"><tr>
-              <th class="border border-slate-300 px-4 py-3 text-right">وضعیت تسویه</th>
-              <th class="border border-slate-300 px-4 py-3 text-right">جمع فاکتورهای صادرشده</th>
-              <th class="border border-slate-300 px-4 py-3 text-right">جمع پرداخت معتبر</th>
-              <th class="border border-slate-300 px-4 py-3 text-right">مانده قابل پرداخت</th>
-              <th class="border border-slate-300 px-4 py-3 text-right">بستانکاری/بیعانه مازاد</th>
-            </tr></thead>
-            <tbody><tr>
-              <td class="border border-slate-300 px-4 py-4"><span class="app-badge" :class="settlementMeta.className">{{ settlementMeta.label }}</span></td>
-              <td class="border border-slate-300 px-4 py-4 font-bold">{{ formatCurrency(summary?.total_invoiced_toman) }}</td>
-              <td class="border border-slate-300 px-4 py-4 font-bold text-emerald-700">{{ formatCurrency(summary?.total_paid_toman) }}</td>
-              <td class="border border-slate-300 px-4 py-4 font-black text-rose-700">{{ formatCurrency(summary?.balance_toman) }}</td>
-              <td class="border border-slate-300 px-4 py-4 font-bold text-indigo-700">{{ formatCurrency(summary?.credit_toman) }}</td>
-            </tr></tbody>
-          </table>
+          <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <AppStatCard label="وضعیت تسویه" :value="settlementMeta.label" value-class="text-slate-800" />
+            <AppStatCard label="جمع فاکتورهای صادرشده" :value="formatCurrency(summary?.total_invoiced_toman)" value-class="text-slate-800" />
+            <AppStatCard label="جمع پرداخت معتبر" :value="formatCurrency(summary?.total_paid_toman)" value-class="text-emerald-700" />
+            <AppStatCard label="مانده قابل پرداخت" :value="formatCurrency(summary?.balance_toman)" value-class="text-rose-700" />
+            <AppStatCard label="بستانکاری / بیعانه مازاد" :value="formatCurrency(summary?.credit_toman)" value-class="text-indigo-700" />
+          </section>
 
           <section>
             <h3 class="mb-3 text-sm font-black text-slate-800">فاکتورهای این لیست</h3>
@@ -83,6 +74,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
+import AppStatCard from '../AppStatCard.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import TimePicker24 from '../TimePicker24.vue';

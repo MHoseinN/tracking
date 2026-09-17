@@ -30,10 +30,19 @@
           </label>
         </div>
 
-        <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <AppStatCard v-for="card in reportSummaryCards" :key="card.label" :label="card.label" :value="card.value"
-            :value-class="card.valueClass" container-class="bg-white/90 shadow-md" />
-        </div>
+        <AppFinancialOverview
+          primary-label="مبلغ دریافت‌شده"
+          :primary-value="formatCurrency(report.summary.total_paid_toman)"
+          :primary-meta="selectedYear === 'all' ? 'مجموع عملکرد همه سال‌ها' : `عملکرد ${sectionTitle}`"
+          :primary-percent="reportPaidPercent"
+          primary-percent-label="دریافت‌شده"
+          danger-label="مانده قابل دریافت"
+          :danger-value="formatCurrency(report.summary.outstanding_toman)"
+          :danger-percent="reportOutstandingPercent"
+          danger-percent-label="در انتظار"
+          :items="reportOverviewItems"
+          status-title="وضعیت وصول درآمد"
+          :status-items="reportSettlementItems" />
 
         <div class="relative grid gap-6">
           <div class="grid grid-cols-1 gap-6 2xl:grid-cols-2">
@@ -122,11 +131,8 @@
               <section class="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <h3 class="font-black text-slate-800">مرور سریع</h3>
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                  <article v-for="item in reportHighlights" :key="item.label"
-                    class="rounded-lg border border-slate-200 bg-white p-4">
-                    <p class="text-xs text-slate-500">{{ item.label }}</p>
-                    <p class="mt-2 font-black" :class="item.valueClass">{{ item.value }}</p>
-                  </article>
+                  <AppStatCard v-for="item in reportHighlights" :key="item.label" :label="item.label"
+                    :value="item.value" :value-class="item.valueClass" />
                 </div>
               </section>
             </div>
@@ -181,6 +187,7 @@
 import { computed, reactive, ref } from 'vue';
 import AppPagination from '../AppPagination.vue';
 import AppContentState from '../AppContentState.vue';
+import AppFinancialOverview from '../AppFinancialOverview.vue';
 import AppStatCard from '../AppStatCard.vue';
 import CustomSelect from '../CustomSelect.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
@@ -193,6 +200,7 @@ import { usePaginatedList } from '../../composables/usePaginatedList';
 const {
   loading,
   errorMessage,
+  report,
   selectedYear,
   yearSelectOptions,
   displayMode,
@@ -201,7 +209,6 @@ const {
   incomeChartTitle,
   countChartTitle,
   periodHeader,
-  reportSummaryCards,
   topCustomers,
   operationalStatusRows,
   listStatusRows,
@@ -210,6 +217,21 @@ const {
   formatCurrency,
   formatPeriodLabel
 } = useReportsData();
+
+const reportInvoicedTotal = computed(() => Number(report.value.summary?.total_invoiced_toman) || 0);
+const reportPaidPercent = computed(() => reportInvoicedTotal.value > 0
+  ? Math.min(100, Math.round((Number(report.value.summary?.total_paid_toman || 0) / reportInvoicedTotal.value) * 100)) : 0);
+const reportOutstandingPercent = computed(() => reportInvoicedTotal.value > 0
+  ? Math.min(100, Math.round((Number(report.value.summary?.outstanding_toman || 0) / reportInvoicedTotal.value) * 100)) : 0);
+const reportOverviewItems = computed(() => [
+  { label: 'جمع فاکتورها', value: formatCurrency(report.value.summary?.total_invoiced_toman), tone: 'blue', icon: 'invoice' },
+  { label: 'تعداد فاکتورها', value: formatNumber(report.value.summary?.invoice_count), tone: 'violet', icon: 'users' },
+  { label: 'بهترین مشتری', value: report.value.top_customers?.[0]?.customer_name || '—', tone: 'amber', icon: 'crown', meta: `${formatNumber(report.value.summary?.list_count)} لیست ثبت‌شده` }
+]);
+const reportSettlementItems = computed(() => [
+  { label: 'دریافت‌شده', value: `${formatNumber(reportPaidPercent.value)}٪`, percent: reportPaidPercent.value, tone: 'success' },
+  { label: 'در انتظار', value: `${formatNumber(reportOutstandingPercent.value)}٪`, percent: reportOutstandingPercent.value, tone: 'danger' }
+]);
 
 const topCustomersTableRef = ref(null);
 const sortableCustomerColumns = [

@@ -53,6 +53,13 @@
       {{
         rangeError }}</p>
 
+    <div v-if="!loading" class="grid gap-3 sm:grid-cols-2">
+      <AppStatCard label="مجموع تحویل‌ها" :value="formatNumber(performanceTotals.delivered)"
+        value-class="text-teal-700" meta="در بازه انتخاب‌شده" />
+      <AppStatCard label="مجموع دریافت‌ها" :value="formatNumber(performanceTotals.received)"
+        value-class="text-emerald-700" meta="در بازه انتخاب‌شده" />
+    </div>
+
     <AppDataTable class="performance-table" :column-count="3" :loading="loading" :empty="!tableRows.length"
       min-width="100%" loading-message="در حال محاسبه عملکرد..." empty-message="آماری برای این بازه وجود ندارد.">
       <template #head>
@@ -76,6 +83,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
+import AppStatCard from '../AppStatCard.vue';
 import CustomSelect from '../CustomSelect.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
@@ -134,6 +142,10 @@ const customLabel = computed(() => {
 const tableRows = computed(() => viewMode.value === 'overview'
   ? overviewRows.value
   : [{ key: 'custom', label: customLabel.value, ...customPerformance.value }]);
+const performanceTotals = computed(() => tableRows.value.reduce((totals, row) => ({
+  delivered: totals.delivered + (Number(row.delivered) || 0),
+  received: totals.received + (Number(row.received) || 0)
+}), { delivered: 0, received: 0 }));
 
 function rowLabel(row) {
   if (row.label) return row.label;

@@ -16,20 +16,19 @@
       <p v-if="errorMessage" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{
         errorMessage }}</p>
 
-      <section class="grid gap-3 md:grid-cols-3">
-        <AppStatCard label="جمع فاکتورها" :value="formatCurrency(summary.total_invoiced_toman)"
-          value-class="text-slate-800" />
-        <AppStatCard label="مانده قابل دریافت" :value="formatCurrency(summary.outstanding_toman)"
-          value-class="text-rose-600" />
-        <AppStatCard label="مبلغ دریافت‌شده" :value="formatCurrency(summary.total_paid_toman)"
-          value-class="text-emerald-600" />
-      </section>
-      <section class="grid gap-3 md:grid-cols-3">
-        <AppStatCard label="تعداد فاکتورها" :value="formatNumber(summary.invoice_count)"
-          value-class="text-violet-600" />
-        <AppStatCard label="بهترین مشتری" :value="bestCustomer?.customer_name || '—'" value-class="text-sky-700" />
-        <AppStatCard label="مانده / پیگیری" :value="formatNumber(openListCount)" value-class="text-amber-600" />
-      </section>
+      <AppFinancialOverview
+        primary-label="مبلغ دریافت‌شده"
+        :primary-value="formatCurrency(summary.total_paid_toman)"
+        :primary-meta="selectedYear === 'all' ? 'مجموع همه سال‌ها' : `عملکرد سال ${formatYear(selectedYear)}`"
+        :primary-percent="paidPercent"
+        primary-percent-label="دریافت‌شده"
+        danger-label="مانده قابل دریافت"
+        :danger-value="formatCurrency(summary.outstanding_toman)"
+        :danger-percent="outstandingPercent"
+        danger-percent-label="در انتظار"
+        :items="homeOverviewItems"
+        status-title="وضعیت وصول درآمد"
+        :status-items="settlementStatusItems" />
 
       <section class="grid gap-6 2xl:grid-cols-2">
         <AppTablePanel>
@@ -130,6 +129,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
+import AppFinancialOverview from '../AppFinancialOverview.vue';
 import AppStatCard from '../AppStatCard.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
 import CustomSelect from '../CustomSelect.vue';
@@ -167,6 +167,20 @@ const yearOptions = computed(() => {
 });
 const openListCount = computed(() => Number(report.value.operational?.list_status?.REMAINING || 0)
   + Number(report.value.operational?.list_status?.NEEDS_FOLLOW_UP || 0));
+const invoicedTotal = computed(() => Number(summary.value.total_invoiced_toman) || 0);
+const paidPercent = computed(() => invoicedTotal.value > 0
+  ? Math.min(100, Math.round((Number(summary.value.total_paid_toman || 0) / invoicedTotal.value) * 100)) : 0);
+const outstandingPercent = computed(() => invoicedTotal.value > 0
+  ? Math.min(100, Math.round((Number(summary.value.outstanding_toman || 0) / invoicedTotal.value) * 100)) : 0);
+const homeOverviewItems = computed(() => [
+  { label: 'جمع فاکتورها', value: formatCurrency(summary.value.total_invoiced_toman), tone: 'blue', icon: 'invoice' },
+  { label: 'تعداد فاکتورها', value: formatNumber(summary.value.invoice_count), tone: 'violet', icon: 'users' },
+  { label: 'بهترین مشتری', value: bestCustomer.value?.customer_name || '—', tone: 'amber', icon: 'crown', meta: `${formatNumber(openListCount.value)} مورد نیازمند پیگیری` }
+]);
+const settlementStatusItems = computed(() => [
+  { label: 'دریافت‌شده', value: `${formatNumber(paidPercent.value)}٪`, percent: paidPercent.value, tone: 'success' },
+  { label: 'در انتظار', value: `${formatNumber(outstandingPercent.value)}٪`, percent: outstandingPercent.value, tone: 'danger' }
+]);
 
 onMounted(async () => {
   await Promise.all([loadDashboard(), invoiceStore.fetchCustomers().catch(() => undefined)]);

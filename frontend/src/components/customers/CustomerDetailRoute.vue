@@ -7,7 +7,11 @@
     </Teleport>
 
     <CustomerSummaryPanel :customer="customer" :settled-amount="formatCurrency(summary.paid_total_toman)"
-      :remaining-amount="formatCurrency(summary.balance_toman)" :open="isCustomerInfoOpen"
+      :remaining-amount="formatCurrency(summary.balance_toman)"
+      :invoiced-amount="formatCurrency(summary.invoiced_total_toman)"
+      :invoice-count="formatNumber(summary.invoice_count)" :list-count="formatNumber(summary.list_count)"
+      :settled-percent="customerSettledPercent" :remaining-percent="customerRemainingPercent"
+      :open="isCustomerInfoOpen"
       :draft="customerProfileDraft" :notes="customerNotesDraft"
       :account-status-select-options="accountStatusSelectOptions" :phone-duplicate-error="phoneDuplicateError"
       :changed="customerFormChanged" :saving="customerFormSaving"
@@ -150,6 +154,11 @@ const creatingList = ref(false);
 const isCustomerInfoOpen = ref(false);
 const tableSectionRef = ref(null);
 const summary = ref({ list_count: 0, invoice_count: 0, invoiced_total_toman: 0, paid_total_toman: 0, balance_toman: 0 });
+const customerInvoicedTotal = computed(() => Number(summary.value.invoiced_total_toman) || 0);
+const customerSettledPercent = computed(() => customerInvoicedTotal.value > 0
+  ? Math.min(100, Math.round((Number(summary.value.paid_total_toman || 0) / customerInvoicedTotal.value) * 100)) : 0);
+const customerRemainingPercent = computed(() => customerInvoicedTotal.value > 0
+  ? Math.min(100, Math.round((Number(summary.value.balance_toman || 0) / customerInvoicedTotal.value) * 100)) : 0);
 const searchQuery = ref('');
 const filtersExpanded = ref(false);
 const deliveryDateFilter = ref('');

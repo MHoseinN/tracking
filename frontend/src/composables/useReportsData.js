@@ -47,18 +47,6 @@ export function useReportsData(options = {}) {
     : 'تعداد فاکتورها در هر ماه');
   const periodHeader = computed(() => (selectedYear.value === 'all' ? 'سال' : 'ماه'));
 
-  const reportSummaryCards = computed(() => {
-    const summary = report.value.summary;
-    return [
-      { label: 'جمع فاکتورها', value: formatCurrency(summary.total_invoiced_toman), valueClass: 'text-indigo-700' },
-      { label: 'مبلغ دریافت‌شده', value: formatCurrency(summary.total_paid_toman), valueClass: 'text-emerald-600' },
-      { label: 'مانده قابل دریافت', value: formatCurrency(summary.outstanding_toman), valueClass: 'text-rose-600' },
-      { label: 'تعداد فاکتورها', value: formatNumber(summary.invoice_count), valueClass: 'text-blue-600' },
-      { label: 'تعداد لیست‌ها', value: formatNumber(summary.list_count), valueClass: 'text-violet-600' },
-      { label: 'بهترین مشتری', value: report.value.top_customers?.[0]?.customer_name || '—', valueClass: 'text-sky-700' }
-    ];
-  });
-
   const topCustomers = computed(() => (report.value.top_customers || []).map((customer) => ({
     id: customer.customer_id,
     name: customer.customer_name,
@@ -140,6 +128,7 @@ export function useReportsData(options = {}) {
   return {
     loading,
     errorMessage,
+    report,
     selectedYear,
     yearSelectOptions,
     displayMode,
@@ -148,7 +137,6 @@ export function useReportsData(options = {}) {
     incomeChartTitle,
     countChartTitle,
     periodHeader,
-    reportSummaryCards,
     topCustomers,
     operationalStatusRows,
     listStatusRows,
