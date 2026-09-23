@@ -472,6 +472,12 @@ function createDeliveryListDraftService(db) {
 
       existingItems.forEach((item) => {
         if (retainedIds.has(Number(item.id))) return;
+        // Legacy accounts were migrated with a synthetic item whose product_id
+        // is NULL. The editor cannot include that placeholder in its payload,
+        // so omitting it must not be interpreted as a request to delete it.
+        // It remains replaceable when the client explicitly sends its id with
+        // a real product.
+        if (!item.product_id) return;
         if (Number(item.returned_quantity) > 0) {
           throw new DeliveryListDraftError('قلم دارای سابقه برگشت یا خسارت قابل حذف نیست');
         }

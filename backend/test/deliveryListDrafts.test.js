@@ -665,6 +665,52 @@ test('marks damage for follow-up and requires reasons for issues and day overrid
   }
 });
 
+test('preserves migrated legacy items when other completed-list fields are edited', () => {
+  const db = createDatabase();
+  try {
+    const service = createDeliveryListDraftService(db);
+    const draft = service.createDraft(1);
+    const saved = service.saveDraft(draft.id, {
+      version: draft.version,
+      customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+    });
+    const finalized = service.finalizeDraft(draft.id, saved.version, 1);
+    const itemId = finalized.items[0].id;
+    const returned = service.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
+    }, 1);
+
+    // This is the shape produced by the legacy-account conversion migration.
+    db.prepare(`
+      UPDATE delivery_list_items
+      SET product_id = NULL, product_name_snapshot = ?
+      WHERE id = ?
+    `).run('Legacy account items', itemId);
+
+    const edited = service.saveDraft(draft.id, {
+      version: returned.version,
+      customer_id: 1,
+      customer_name_snapshot: 'Ignored snapshot',
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      notes: 'Updated customer-facing note',
+      items: []
+    }, 1);
+
+    assert.equal(edited.notes, 'Updated customer-facing note');
+    assert.equal(edited.items.length, 1);
+    assert.equal(edited.items[0].id, itemId);
+    assert.equal(edited.items[0].product_id, null);
+    assert.equal(edited.items[0].healthy_returned_quantity, 1);
+  } finally {
+    db.close();
+  }
+});
+
 test('manager can update collection identity and the cutoff used by new lists', () => {
   const db = createDatabase();
   try {
