@@ -1,14 +1,16 @@
 <template>
   <div>
     <Teleport v-if="!embedded" to="#app-shell-actions">
-      <button type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
-        :disabled="finalizing" @click="openFinalizeConfirm">
-        {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره تغییرات لیست') }}
+      <button type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700" :disabled="finalizing"
+        @click="openFinalizeConfirm">
+        {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره
+        تغییرات لیست') }}
       </button>
       <button type="button" class="app-button-primary w-full" :disabled="creating" @click="createAnotherDraft">
         {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست دیگر' }}
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به لیست‌ها</button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به
+        لیست‌ها</button>
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال آماده‌سازی پیش‌نویس..." />
@@ -20,7 +22,8 @@
             <h2 class="text-lg font-black text-slate-900">{{ isDraft ? 'ایجاد لیست تحویل' : 'ویرایش لیست تحویل' }}</h2>
             <span class="app-badge" :class="editorStatusMeta.className">{{ editorStatusMeta.label }}</span>
             <span class="draft-id-badge">
-              {{ isDraft ? `شناسه ${formatNumber(draftId)}` : `شماره لیست ${loadedListNumber || formatNumber(draftId)}` }}
+              {{ isDraft ? `شناسه ${formatNumber(draftId)}` : `شماره لیست ${loadedListNumber || formatNumber(draftId)}`
+              }}
             </span>
           </div>
           <div class="rounded-lg px-3 py-2 text-xs font-bold" :class="saveStatusClass">{{ saveStatusText }}</div>
@@ -31,24 +34,21 @@
             <span class="draft-field__label">مشتری</span>
             <div class="draft-customer-control">
               <input v-model.trim="form.customerName" type="text" maxlength="255"
-                placeholder="نام مشتری را وارد یا انتخاب کنید" autocomplete="off"
-                role="combobox" aria-autocomplete="list" aria-controls="customer-search-results"
-                :aria-expanded="customerSearchOpen" :aria-activedescendant="activeCustomerOptionId"
-                @focus="openCustomerSearch" @input="handleCustomerSearchInput"
-                @blur="closeCustomerSearch"
-                @keydown.down.prevent="moveCustomerSelection(1)"
-                @keydown.up.prevent="moveCustomerSelection(-1)"
+                placeholder="نام مشتری را وارد یا انتخاب کنید" autocomplete="off" role="combobox"
+                aria-autocomplete="list" aria-controls="customer-search-results" :aria-expanded="customerSearchOpen"
+                :aria-activedescendant="activeCustomerOptionId" @focus="openCustomerSearch"
+                @input="handleCustomerSearchInput" @blur="closeCustomerSearch"
+                @keydown.down.prevent="moveCustomerSelection(1)" @keydown.up.prevent="moveCustomerSelection(-1)"
                 @keydown.enter.prevent="selectHighlightedCustomer"
                 @keydown.escape.prevent="closeCustomerSearchImmediately" />
               <button type="button" title="ایجاد مشتری جدید" aria-label="ایجاد مشتری جدید"
                 @click="showCustomerModal = true">+</button>
             </div>
             <div v-if="customerSearchOpen" id="customer-search-results" class="draft-customer-results" role="listbox">
-              <button v-for="(customerOption, customerIndex) in filteredCustomers" :id="customerOptionId(customerOption)"
-                :key="customerOption.id" type="button" role="option"
+              <button v-for="(customerOption, customerIndex) in filteredCustomers"
+                :id="customerOptionId(customerOption)" :key="customerOption.id" type="button" role="option"
                 :class="{ 'draft-customer-result--active': customerActiveIndex === customerIndex }"
-                :aria-selected="customerActiveIndex === customerIndex"
-                @mouseenter="customerActiveIndex = customerIndex"
+                :aria-selected="customerActiveIndex === customerIndex" @mouseenter="customerActiveIndex = customerIndex"
                 @mousedown.prevent="selectCustomer(customerOption)">
                 <span class="draft-customer-result__identity">
                   <strong>{{ customerOption.name }}</strong>
@@ -70,7 +70,8 @@
             <span class="draft-field__label">ساعت تحویل</span>
             <TimePicker24 v-model="form.deliveryTime" input-class="draft-field__control" />
           </label>
-          <label class="draft-night-before draft-night-before--compact" :class="{ 'draft-night-before--active': form.nightBefore }">
+          <label class="draft-night-before draft-night-before--compact"
+            :class="{ 'draft-night-before--active': form.nightBefore }">
             <input v-model="form.nightBefore" type="checkbox" />
             <span class="draft-night-before__switch" aria-hidden="true"><span></span></span>
             <span><strong>شب قبل</strong><small>روز تحویل در محاسبه اجاره منظور نشود</small></span>
@@ -114,73 +115,101 @@
                 <td class="draft-row-number">{{ formatNumber(index + 1) }}</td>
                 <td class="draft-product-search-cell">
                   <div class="draft-product-search">
-                    <svg class="draft-product-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                    <svg class="draft-product-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2">
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="m20 20-3.5-3.5" />
+                    </svg>
                     <input v-model.trim="rowSearchState[item.localKey].query" type="search" :data-product-search="index"
                       role="combobox" aria-autocomplete="list" :aria-expanded="rowSearchState[item.localKey].open"
-                      :aria-controls="`product-results-${item.localKey}`" :aria-activedescendant="activeProductOptionId(item)"
-                      placeholder="جست‌وجوی نام محصول..." @focus="openRowSearch(item)" @input="handleRowSearchInput(item)"
-                      @blur="closeRowSearch(item)" @keydown.escape="rowSearchState[item.localKey].open = false"
+                      :aria-controls="`product-results-${item.localKey}`"
+                      :aria-activedescendant="activeProductOptionId(item)" placeholder="جست‌وجوی نام محصول..."
+                      @focus="openRowSearch(item)" @input="handleRowSearchInput(item)" @blur="closeRowSearch(item)"
+                      @keydown.escape="rowSearchState[item.localKey].open = false"
                       @keydown.down.prevent="moveRowSearchSelection(item, 1)"
                       @keydown.up.prevent="moveRowSearchSelection(item, -1)"
                       @keydown.enter.prevent="selectHighlightedRowResult(item)" />
                     <div v-if="rowSearchState[item.localKey].open" :id="`product-results-${item.localKey}`"
                       class="draft-product-results" role="listbox">
-                      <button v-for="(product, resultIndex) in searchableProductsForRow(item)" :id="productOptionId(item, product)"
-                        :key="product.id" type="button" class="draft-product-result"
+                      <button v-for="(product, resultIndex) in searchableProductsForRow(item)"
+                        :id="productOptionId(item, product)" :key="product.id" type="button"
+                        class="draft-product-result"
                         :class="{ 'draft-product-result--active': rowSearchState[item.localKey].activeIndex === resultIndex }"
                         role="option" :aria-selected="rowSearchState[item.localKey].activeIndex === resultIndex"
-                        @mouseenter="setRowSearchSelection(item, resultIndex)" @mousedown.prevent="selectProductForRow(item, product)">
+                        @mouseenter="setRowSearchSelection(item, resultIndex)"
+                        @mousedown.prevent="selectProductForRow(item, product)">
                         <span class="draft-product-result__name">{{ product.name }}</span>
                         <strong>{{ formatCurrency(product.daily_price_toman) }}</strong>
                       </button>
-                      <div v-if="!searchableProductsForRow(item).length" class="draft-product-results__empty">محصولی با این عبارت پیدا نشد.</div>
+                      <div v-if="!searchableProductsForRow(item).length" class="draft-product-results__empty">محصولی با
+                        این عبارت پیدا نشد.</div>
                     </div>
                   </div>
                 </td>
                 <td class="quantity-cell">
                   <div class="draft-stepper draft-stepper--compact draft-stepper--delivered">
                     <button type="button" :disabled="!item.product_id" @click="decrementQuantity(item)">−</button>
-                    <input v-model.number="item.delivered_quantity" type="number" :min="aggregateReturned(item) || 1" step="1" :disabled="!item.product_id" />
+                    <input v-model.number="item.delivered_quantity" type="number" :min="aggregateReturned(item) || 1"
+                      step="1" :disabled="!item.product_id" />
                     <button type="button" :disabled="!item.product_id" @click="incrementQuantity(item)">+</button>
                   </div>
                 </td>
                 <td class="quantity-cell">
                   <span v-if="isDraft || !item.product_id" class="return-stat return-stat--returned">۰</span>
                   <div v-else class="draft-stepper draft-stepper--compact draft-stepper--returned">
-                    <button type="button" :disabled="displayReturnedQuantity(item) <= aggregateReturned(item)" @click="changeCumulativeReturned(item, -1)">−</button>
-                    <input :value="displayReturnedQuantity(item)" type="number" :min="aggregateReturned(item)" :max="item.delivered_quantity"
-                      @input="setCumulativeReturned(item, $event.target.value)" />
-                    <button type="button" :disabled="displayReturnedQuantity(item) >= item.delivered_quantity" @click="changeCumulativeReturned(item, 1)">+</button>
+                    <button type="button" :disabled="displayReturnedQuantity(item) <= aggregateReturned(item)"
+                      @click="changeCumulativeReturned(item, -1)">−</button>
+                    <input :value="displayReturnedQuantity(item)" type="number" :min="aggregateReturned(item)"
+                      :max="item.delivered_quantity" @input="setCumulativeReturned(item, $event.target.value)" />
+                    <button type="button" :disabled="displayReturnedQuantity(item) >= item.delivered_quantity"
+                      @click="changeCumulativeReturned(item, 1)">+</button>
                   </div>
                 </td>
-                <td><strong class="return-stat" :class="remainingAfterReturn(item) ? 'return-stat--remaining' : 'return-stat--complete'">{{ formatNumber(isDraft ? item.delivered_quantity : remainingAfterReturn(item)) }}</strong></td>
-                <td><input v-model.trim="item.notes" class="draft-table-input" type="text" maxlength="1000" placeholder="اختیاری" :disabled="!item.product_id" /></td>
+                <td><strong class="return-stat"
+                    :class="remainingAfterReturn(item) ? 'return-stat--remaining' : 'return-stat--complete'">{{
+                      formatNumber(isDraft ? item.delivered_quantity : remainingAfterReturn(item)) }}</strong></td>
+                <td><input v-model.trim="item.notes" class="draft-table-input" type="text" maxlength="1000"
+                    placeholder="اختیاری" :disabled="!item.product_id" /></td>
                 <td>
-                  <label class="return-check" :class="{ 'return-check--active': !isDraft && isFullReturnSelected(item), 'return-check--done': !isDraft && currentRemaining(item) === 0 }">
-                    <input type="checkbox" :checked="!isDraft && (isFullReturnSelected(item) || currentRemaining(item) === 0)"
-                      :disabled="isDraft || currentRemaining(item) === 0" @change="toggleFullReturn(item, $event.target.checked)" />
+                  <label class="return-check"
+                    :class="{ 'return-check--active': !isDraft && isFullReturnSelected(item), 'return-check--done': !isDraft && currentRemaining(item) === 0 }">
+                    <input type="checkbox"
+                      :checked="!isDraft && (isFullReturnSelected(item) || currentRemaining(item) === 0)"
+                      :disabled="isDraft || currentRemaining(item) === 0"
+                      @change="toggleFullReturn(item, $event.target.checked)" />
                     <span aria-hidden="true">✓</span>
                   </label>
                 </td>
                 <td>
                   <div class="draft-row-operations">
-                    <button type="button" class="draft-delete-button" :title="deleteButtonTitle(item)" aria-label="حذف قلم"
-                      :disabled="!canDeleteItem(item)" @click="removeProduct(item.localKey)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
-                    </button>
-                    <button type="button" class="damage-action-button" :title="damageButtonTitle(item)" aria-label="ثبت و پیگیری خسارت"
-                      :class="{ 'damage-action-button--active': displayedDamageQuantity(item) > 0 }"
-                      :disabled="isDraft || !item.product_id || !canManageDamage(item)"
-                      @click="openDamageDialog(item)">
+                    <button type="button" class="draft-delete-button" :title="deleteButtonTitle(item)"
+                      aria-label="حذف قلم" :disabled="!canDeleteItem(item)" @click="removeProduct(item.localKey)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-8 8l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 8-8z" />
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="m19 6-1 14H6L5 6" />
+                        <path d="M10 11v5M14 11v5" />
                       </svg>
-                      <span v-if="displayedDamageQuantity(item)" class="damage-action-button__badge">{{ formatNumber(displayedDamageQuantity(item)) }}</span>
+                    </button>
+                    <button type="button" class="damage-action-button" :title="damageButtonTitle(item)"
+                      aria-label="ثبت و پیگیری خسارت"
+                      :class="{ 'damage-action-button--active': displayedDamageQuantity(item) > 0 }"
+                      :disabled="isDraft || !item.product_id || !canManageDamage(item)" @click="openDamageDialog(item)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                          d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-8 8l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 8-8z" />
+                      </svg>
+                      <span v-if="displayedDamageQuantity(item)" class="damage-action-button__badge">{{
+                        formatNumber(displayedDamageQuantity(item)) }}</span>
                     </button>
                     <button type="button" class="item-schedule-button" title="تاریخ تقریبی برگشت این محصول"
-                      aria-label="ویرایش تاریخ تقریبی برگشت محصول" :disabled="isDraft || !item.product_id || currentRemaining(item) === 0"
+                      aria-label="ویرایش تاریخ تقریبی برگشت محصول"
+                      :disabled="isDraft || !item.product_id || currentRemaining(item) === 0"
                       @click="openItemScheduleDialog(item)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4m8-4v4M3 10h18"/><rect x="3" y="4" width="18" height="17" rx="2"/></svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 2v4m8-4v4M3 10h18" />
+                        <rect x="3" y="4" width="18" height="17" rx="2" />
+                      </svg>
                     </button>
                   </div>
                 </td>
@@ -193,12 +222,16 @@
           <div class="draft-table-footer__actions">
             <div ref="addRowsMenuRef" class="draft-add-rows-control" @keydown.escape.stop="addRowsMenuOpen = false">
               <button type="button" class="draft-add-rows-control__main" @click="addRowsAndFocus(1)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" /></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
                 <span>افزودن ردیف</span>
               </button>
               <button type="button" class="draft-add-rows-control__toggle" aria-label="انتخاب تعداد ردیف"
                 :aria-expanded="addRowsMenuOpen" aria-haspopup="menu" @click="addRowsMenuOpen = !addRowsMenuOpen">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 10 5 5 5-5" /></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="m7 10 5 5 5-5" />
+                </svg>
               </button>
               <div v-if="addRowsMenuOpen" class="draft-add-rows-menu" role="menu">
                 <button v-for="count in [5, 10, 20]" :key="count" type="button" role="menuitem"
@@ -207,7 +240,8 @@
                 </button>
               </div>
             </div>
-            <button v-if="!isDraft" type="button" class="draft-register-return" :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
+            <button v-if="!isDraft" type="button" class="draft-register-return"
+              :disabled="returning || !pendingReturnCount" @click="openReturnConfirm">
               ثبت دریافت‌ها
             </button>
           </div>
@@ -225,7 +259,8 @@
 
         <section v-if="!isDraft && registeredReturnEvents.length" class="return-history-panel">
           <div class="return-history-panel__heading">
-            <div><strong>سوابق دریافت و بررسی سلامت</strong><span>تاریخ برگشت و وضعیت سلامت اقلام قابل اصلاح است.</span></div>
+            <div><strong>سوابق دریافت و بررسی سلامت</strong><span>تاریخ برگشت و وضعیت سلامت اقلام قابل اصلاح است.</span>
+            </div>
           </div>
           <article v-for="event in registeredReturnEvents" :key="event.id" class="return-event-card">
             <header>
@@ -240,7 +275,8 @@
               </button>
             </header>
             <div class="return-event-card__items">
-              <span v-for="item in event.items" :key="item.id" :class="{ 'return-event-item--damaged': Number(item.damaged_quantity) > 0 }">
+              <span v-for="item in event.items" :key="item.id"
+                :class="{ 'return-event-item--damaged': Number(item.damaged_quantity) > 0 }">
                 <b>{{ item.product_name_snapshot }}</b>
                 {{ formatNumber(Number(item.healthy_quantity) + Number(item.damaged_quantity)) }} عدد
                 <small v-if="Number(item.damaged_quantity)">({{ formatNumber(item.damaged_quantity) }} خسارتی)</small>
@@ -255,15 +291,15 @@
       </p>
     </div>
 
-    <ConfirmModal :is-open="isDraft && showFinalizeConfirm" title="ثبت نهایی تحویل"
-      :message="finalizeConfirmMessage" :loading="finalizing"
-      confirm-text="بله، تحویل ثبت شود" loading-text="در حال ثبت تحویل..."
+    <ConfirmModal :is-open="isDraft && showFinalizeConfirm" title="ثبت نهایی تحویل" :message="finalizeConfirmMessage"
+      :loading="finalizing" confirm-text="بله، تحویل ثبت شود" loading-text="در حال ثبت تحویل..."
       @confirm="confirmFinalize" @cancel="showFinalizeConfirm = false" />
 
     <CustomerFormModal :is-open="showCustomerModal" :existing-customers="invoiceStore.customers"
       @close="showCustomerModal = false" @saved="handleCustomerSaved" />
 
-    <AppModal :is-open="showReturnConfirm" title="ثبت دریافت اقلام" size="sm" :busy="returning" @close="showReturnConfirm = false">
+    <AppModal :is-open="showReturnConfirm" title="ثبت دریافت اقلام" size="sm" :busy="returning"
+      @close="showReturnConfirm = false">
       <div class="return-confirm-form">
         <p>مقادیر ستون «دریافت» برای {{ formatNumber(pendingReturnCount) }} قلم ثبت می‌شود.</p>
         <div class="return-confirm-fields">
@@ -278,22 +314,25 @@
         </div>
       </div>
       <template #footer>
-        <button type="button" class="app-button-secondary" :disabled="returning" @click="showReturnConfirm = false">انصراف</button>
-        <button type="button" class="app-button-primary" :disabled="returning" @click="submitInlineReturn">{{ returning ? 'در حال ثبت...' : 'تأیید دریافت' }}</button>
+        <button type="button" class="app-button-secondary" :disabled="returning"
+          @click="showReturnConfirm = false">انصراف</button>
+        <button type="button" class="app-button-primary" :disabled="returning" @click="submitInlineReturn">{{ returning
+          ? 'در حال ثبت...' : 'تأیید دریافت' }}</button>
       </template>
     </AppModal>
 
     <AppModal :is-open="Boolean(editingReturnEvent)"
       :title="isFocusedDamageEdit ? 'ثبت خسارت محصول' : 'ویرایش سابقه برگشت'"
       :description="isFocusedDamageEdit ? focusedReturnEditItem?.product_name_snapshot || '' : 'تاریخ برگشت و نتیجه بررسی سلامت را اصلاح کنید'"
-      size="lg" :busy="savingReturnEdit"
-      @close="closeReturnEventEditor">
+      size="lg" :busy="savingReturnEdit" @close="closeReturnEventEditor">
       <div class="return-event-editor">
         <div v-if="!isFocusedDamageEdit && !returnEventIsInvoiced(editingReturnEvent)" class="return-confirm-fields">
           <label class="draft-field"><span class="draft-field__label">تاریخ برگشت</span>
-            <JalaliDatePicker v-model="editReturnDate" input-class="draft-field__control" /></label>
+            <JalaliDatePicker v-model="editReturnDate" input-class="draft-field__control" />
+          </label>
           <label class="draft-field"><span class="draft-field__label">ساعت برگشت</span>
-            <TimePicker24 v-model="editReturnTime" input-class="draft-field__control" /></label>
+            <TimePicker24 v-model="editReturnTime" input-class="draft-field__control" />
+          </label>
         </div>
         <div v-else-if="!isFocusedDamageEdit" class="invoiced-return-notice">
           تاریخ این برگشت در فاکتور استفاده شده و ثابت می‌ماند؛ نتیجه بررسی سلامت و شرح خسارت قابل اصلاح است.
@@ -301,19 +340,24 @@
         <div v-for="item in visibleEditReturnItems" :key="item.id" class="return-health-row"
           :class="{ 'return-health-row--single': isFocusedDamageEdit }">
           <div class="return-health-row__title"><strong>{{ item.product_name_snapshot }}</strong>
-            <span>جمع برگشتی: {{ formatNumber(item.total_quantity) }}</span></div>
+            <span>جمع برگشتی: {{ formatNumber(item.total_quantity) }}</span>
+          </div>
           <label><span>تعداد خسارتی</span><input v-model.number="item.damaged_quantity" type="number" min="0"
-            :max="item.total_quantity" :data-return-damage-item="item.id" /></label>
-          <div v-if="!isFocusedDamageEdit" class="return-health-row__healthy"><span>سالم</span><strong>{{ formatNumber(item.total_quantity - normalizedDamageQuantity(item)) }}</strong></div>
+              :max="item.total_quantity" :data-return-damage-item="item.id" /></label>
+          <div v-if="!isFocusedDamageEdit" class="return-health-row__healthy"><span>سالم</span><strong>{{
+            formatNumber(item.total_quantity - normalizedDamageQuantity(item)) }}</strong></div>
           <label class="return-health-row__notes"><span>شرح خسارت</span>
-            <input v-model.trim="item.damage_notes" type="text" maxlength="2000" :disabled="normalizedDamageQuantity(item) === 0"
+            <input v-model.trim="item.damage_notes" type="text" maxlength="2000"
+              :disabled="normalizedDamageQuantity(item) === 0"
               :placeholder="normalizedDamageQuantity(item) ? 'نوع و شرح خسارت' : 'بدون خسارت'" /></label>
         </div>
         <label v-if="!isFocusedDamageEdit" class="draft-field"><span class="draft-field__label">یادداشت این برگشت</span>
-          <textarea v-model.trim="editReturnNotes" class="draft-field__control !h-20 py-2" maxlength="5000"></textarea></label>
+          <textarea v-model.trim="editReturnNotes" class="draft-field__control !h-20 py-2"
+            maxlength="5000"></textarea></label>
       </div>
       <template #footer>
-        <button type="button" class="app-button-secondary" :disabled="savingReturnEdit" @click="closeReturnEventEditor">انصراف</button>
+        <button type="button" class="app-button-secondary" :disabled="savingReturnEdit"
+          @click="closeReturnEventEditor">انصراف</button>
         <button type="button" class="app-button-primary" :disabled="savingReturnEdit" @click="saveReturnEventEdit">
           {{ savingReturnEdit ? 'در حال ذخیره...' : 'ذخیره اصلاحات' }}
         </button>
@@ -324,9 +368,11 @@
       :description="itemScheduleTarget?.product_name_snapshot || ''" size="sm" @close="closeItemScheduleDialog">
       <div class="return-confirm-fields">
         <label class="draft-field"><span class="draft-field__label">تاریخ تقریبی</span>
-          <JalaliDatePicker v-model="itemScheduleDate" input-class="draft-field__control" /></label>
+          <JalaliDatePicker v-model="itemScheduleDate" input-class="draft-field__control" />
+        </label>
         <label class="draft-field"><span class="draft-field__label">ساعت تقریبی</span>
-          <TimePicker24 v-model="itemScheduleTime" input-class="draft-field__control" /></label>
+          <TimePicker24 v-model="itemScheduleTime" input-class="draft-field__control" />
+        </label>
       </div>
       <template #footer>
         <button type="button" class="app-button-secondary" @click="useOverallItemSchedule">استفاده از تاریخ کلی</button>
@@ -334,8 +380,8 @@
       </template>
     </AppModal>
 
-    <AppModal :is-open="Boolean(damageTarget)" title="ثبت و پیگیری خسارت" :description="damageTarget?.product_name_snapshot || ''"
-      size="sm" @close="closeDamageDialog">
+    <AppModal :is-open="Boolean(damageTarget)" title="ثبت و پیگیری خسارت"
+      :description="damageTarget?.product_name_snapshot || ''" size="sm" @close="closeDamageDialog">
       <div class="damage-dialog-form">
         <div v-if="damageHistoryFor(damageTarget).length" class="damage-history">
           <strong>سوابق خسارت ثبت‌شده</strong>
@@ -354,14 +400,18 @@
           </label>
           <label>
             <span>شرح خسارت</span>
-            <textarea v-model.trim="damageDescription" rows="3" maxlength="2000" placeholder="نوع و شرح خسارت را بنویسید"></textarea>
+            <textarea v-model.trim="damageDescription" rows="3" maxlength="2000"
+              placeholder="نوع و شرح خسارت را بنویسید"></textarea>
           </label>
-          <p class="damage-dialog-hint">پس از تأیید، تاریخ و ساعت دریافت مشخص می‌شود و خسارت در سابقه این قلم ثبت خواهد شد.</p>
+          <p class="damage-dialog-hint">پس از تأیید، تاریخ و ساعت دریافت مشخص می‌شود و خسارت در سابقه این قلم ثبت خواهد
+            شد.</p>
         </template>
       </div>
       <template #footer>
-        <button type="button" class="app-button-secondary" @click="closeDamageDialog">{{ damageTarget && currentRemaining(damageTarget) > 0 ? 'انصراف' : 'بستن' }}</button>
-        <button v-if="damageTarget && currentRemaining(damageTarget) > 0" type="button" class="app-button-primary" @click="saveDamageDialog">ادامه ثبت خسارت</button>
+        <button type="button" class="app-button-secondary" @click="closeDamageDialog">{{ damageTarget &&
+          currentRemaining(damageTarget) > 0 ? 'انصراف' : 'بستن' }}</button>
+        <button v-if="damageTarget && currentRemaining(damageTarget) > 0" type="button" class="app-button-primary"
+          @click="saveDamageDialog">ادامه ثبت خسارت</button>
       </template>
     </AppModal>
   </div>
@@ -495,7 +545,7 @@ const estimatedBillingDays = computed(() => calculateBillingDays({
 const dailyListPrice = computed(() => activeItems.value.reduce((sum, item) => (
   sum
   + Math.max(1, Math.round(Number(item.delivered_quantity) || 1))
-    * Math.max(0, Math.round(Number(item.daily_price_toman) || 0))
+  * Math.max(0, Math.round(Number(item.daily_price_toman) || 0))
 ), 0));
 const estimatedListPrice = computed(() => dailyListPrice.value * estimatedBillingDays.value);
 const pendingReturnCount = computed(() => activeItems.value.filter((item) => returnEntryFor(item).returnQuantity > 0).length);
@@ -1292,6 +1342,7 @@ function formatSavedTime(value) {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #ebe4d7;
 }
+
 .draft-id-badge {
   border: 1px solid #b8ddce;
   border-radius: 999px;
@@ -1320,15 +1371,35 @@ function formatSavedTime(value) {
   background: #fff;
 }
 
-.draft-field--customer { z-index: 40; grid-column: span 3; }
-.draft-field--notes { grid-column: span 4; }
-.draft-field--row-one-customer { grid-column: span 4; }
+.draft-field--customer {
+  z-index: 40;
+  grid-column: span 3;
+}
+
+.draft-field--notes {
+  grid-column: span 4;
+}
+
+.draft-field--row-one-customer {
+  grid-column: span 4;
+}
+
 .draft-field--row-one-date,
 .draft-field--row-one-time,
 .draft-field--row-two-date,
-.draft-field--row-two-time { grid-column: span 2; }
-.draft-night-before--compact { grid-column: span 4; min-height: 3.25rem; }
-.draft-field--row-two-notes { grid-column: span 8; }
+.draft-field--row-two-time {
+  grid-column: span 2;
+}
+
+.draft-night-before--compact {
+  grid-column: span 4;
+  min-height: 3.25rem;
+}
+
+.draft-field--row-two-notes {
+  grid-column: span 8;
+}
+
 .draft-field--readonly {
   display: flex;
   align-items: center;
@@ -1372,14 +1443,23 @@ function formatSavedTime(value) {
   box-shadow: 0 0 0 3px rgba(15, 95, 76, .08);
 }
 
-.draft-field > .draft-field__control,
+.draft-field>.draft-field__control,
 .draft-field :deep(input.draft-field__control) {
   direction: ltr;
   text-align: center;
 }
-.draft-field--notes > .draft-field__control { direction: rtl; text-align: right; }
 
-.draft-customer-control { display: flex; height: 100%; align-items: center; }
+.draft-field--notes>.draft-field__control {
+  direction: rtl;
+  text-align: right;
+}
+
+.draft-customer-control {
+  display: flex;
+  height: 100%;
+  align-items: center;
+}
+
 .draft-customer-control button {
   display: grid;
   width: 2.25rem;
@@ -1393,6 +1473,7 @@ function formatSavedTime(value) {
   font-size: 1.25rem;
   font-weight: 900;
 }
+
 .draft-customer-results {
   position: absolute;
   z-index: 80;
@@ -1406,6 +1487,7 @@ function formatSavedTime(value) {
   background: #fff;
   box-shadow: 0 18px 38px rgba(35, 48, 43, .2);
 }
+
 .draft-customer-results button {
   display: flex;
   width: 100%;
@@ -1416,18 +1498,27 @@ function formatSavedTime(value) {
   border-bottom: 1px solid #eee9df;
   text-align: right;
 }
-.draft-customer-results button:last-child { border-bottom: 0; }
+
+.draft-customer-results button:last-child {
+  border-bottom: 0;
+}
+
 .draft-customer-results button:hover,
 .draft-customer-results .draft-customer-result--active {
   background: var(--draft-sage);
 }
-.draft-customer-results .draft-customer-result--active { box-shadow: inset -3px 0 0 var(--draft-green); }
+
+.draft-customer-results .draft-customer-result--active {
+  box-shadow: inset -3px 0 0 var(--draft-green);
+}
+
 .draft-customer-result__identity {
   display: grid;
   min-width: 0;
   gap: .15rem;
   text-align: right;
 }
+
 .draft-customer-result__identity strong {
   overflow: hidden;
   color: #1e293b;
@@ -1435,6 +1526,7 @@ function formatSavedTime(value) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .draft-customer-result__identity small {
   overflow: hidden;
   color: #7c6f57;
@@ -1443,6 +1535,7 @@ function formatSavedTime(value) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .draft-customer-result__phone {
   flex: 0 0 auto;
   color: #64748b;
@@ -1450,7 +1543,13 @@ function formatSavedTime(value) {
   font-size: .68rem;
   white-space: nowrap;
 }
-.draft-customer-results__empty { padding: 1rem; color: #94a3b8; font-size: .72rem; text-align: center; }
+
+.draft-customer-results__empty {
+  padding: 1rem;
+  color: #94a3b8;
+  font-size: .72rem;
+  text-align: center;
+}
 
 .draft-night-before {
   grid-column: span 4;
@@ -1465,8 +1564,19 @@ function formatSavedTime(value) {
   background: #faf8f2;
   cursor: pointer;
 }
-.draft-night-before--active { border-color: #86b7a8; background: var(--draft-sage); }
-.draft-night-before > input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.draft-night-before--active {
+  border-color: #86b7a8;
+  background: var(--draft-sage);
+}
+
+.draft-night-before>input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
 .draft-night-before__switch {
   display: flex;
   width: 2rem;
@@ -1478,9 +1588,22 @@ function formatSavedTime(value) {
   background: #cbd5e1;
   transition: background .2s;
 }
-.draft-night-before--compact .draft-night-before__switch { width: 1.65rem; height: .92rem; padding: .12rem; }
-.draft-night-before--compact .draft-night-before__switch span { width: .68rem; height: .68rem; }
-.draft-night-before--compact.draft-night-before--active .draft-night-before__switch span { transform: translateX(-.72rem); }
+
+.draft-night-before--compact .draft-night-before__switch {
+  width: 1.65rem;
+  height: .92rem;
+  padding: .12rem;
+}
+
+.draft-night-before--compact .draft-night-before__switch span {
+  width: .68rem;
+  height: .68rem;
+}
+
+.draft-night-before--compact.draft-night-before--active .draft-night-before__switch span {
+  transform: translateX(-.72rem);
+}
+
 .draft-night-before__switch span {
   width: .8rem;
   height: .8rem;
@@ -1489,14 +1612,42 @@ function formatSavedTime(value) {
   box-shadow: 0 1px 3px rgba(15, 23, 42, .2);
   transition: transform .2s;
 }
-.draft-night-before--active .draft-night-before__switch { background: var(--draft-green); }
-.draft-night-before--active .draft-night-before__switch span { transform: translateX(-.9rem); }
-.draft-night-before strong { display: block; color: #334155; font-size: .72rem; }
-.draft-night-before small { display: block; margin-top: .1rem; color: #64748b; font-size: .6rem; }
 
-.draft-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
-.draft-row-actions > span:first-child { color: #64748b; font-size: .7rem; font-weight: 800; }
-.draft-row-actions > button {
+.draft-night-before--active .draft-night-before__switch {
+  background: var(--draft-green);
+}
+
+.draft-night-before--active .draft-night-before__switch span {
+  transform: translateX(-.9rem);
+}
+
+.draft-night-before strong {
+  display: block;
+  color: #334155;
+  font-size: .72rem;
+}
+
+.draft-night-before small {
+  display: block;
+  margin-top: .1rem;
+  color: #64748b;
+  font-size: .6rem;
+}
+
+.draft-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem;
+}
+
+.draft-row-actions>span:first-child {
+  color: #64748b;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.draft-row-actions>button {
   min-width: 2.6rem;
   height: 2rem;
   border: 1px solid #bcd7cc;
@@ -1506,7 +1657,11 @@ function formatSavedTime(value) {
   font-size: .7rem;
   font-weight: 900;
 }
-.draft-row-actions > button:hover { background: var(--draft-sage); }
+
+.draft-row-actions>button:hover {
+  background: var(--draft-sage);
+}
+
 .draft-register-return {
   min-width: 7.5rem;
   height: 2.35rem;
@@ -1519,8 +1674,16 @@ function formatSavedTime(value) {
   font-size: .75rem;
   font-weight: 900;
 }
-.draft-register-return:hover:not(:disabled) { background: var(--draft-green-dark); }
-.draft-register-return:disabled { cursor: not-allowed; opacity: .45; }
+
+.draft-register-return:hover:not(:disabled) {
+  background: var(--draft-green-dark);
+}
+
+.draft-register-return:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
 .draft-add-rows-control {
   position: relative;
   z-index: 40;
@@ -1528,6 +1691,7 @@ function formatSavedTime(value) {
   align-items: stretch;
   direction: rtl;
 }
+
 .draft-add-rows-control__main,
 .draft-add-rows-control__toggle {
   display: inline-flex;
@@ -1541,21 +1705,33 @@ function formatSavedTime(value) {
   font-weight: 900;
   transition: background .15s ease;
 }
+
 .draft-add-rows-control__main {
   gap: .45rem;
   border-radius: 0 .55rem .55rem 0;
   padding: 0 .85rem;
 }
+
 .draft-add-rows-control__toggle {
   width: 2.15rem;
   border-right: 1px solid rgba(255, 255, 255, .3);
   border-radius: .55rem 0 0 .55rem;
   background: #2f8d63;
 }
+
 .draft-add-rows-control__main:hover,
-.draft-add-rows-control__toggle:hover { background: var(--draft-green-dark); }
-.draft-add-rows-control__main svg { width: 1.05rem; }
-.draft-add-rows-control__toggle svg { width: .95rem; }
+.draft-add-rows-control__toggle:hover {
+  background: var(--draft-green-dark);
+}
+
+.draft-add-rows-control__main svg {
+  width: 1.05rem;
+}
+
+.draft-add-rows-control__toggle svg {
+  width: .95rem;
+}
+
 .draft-add-rows-menu {
   position: absolute;
   z-index: 150;
@@ -1569,6 +1745,7 @@ function formatSavedTime(value) {
   background: #fff;
   box-shadow: 0 14px 30px rgba(35, 48, 43, .18);
 }
+
 .draft-add-rows-menu button {
   display: block;
   width: 100%;
@@ -1579,12 +1756,30 @@ function formatSavedTime(value) {
   font-weight: 800;
   text-align: right;
 }
-.draft-add-rows-menu button:last-child { border-bottom: 0; }
-.draft-add-rows-menu button:hover,
-.draft-add-rows-menu button:focus-visible { background: var(--draft-sage); outline: none; }
 
-.draft-table-wrap { position: relative; overflow: visible; padding: 1.25rem 1.25rem 0; }
-.draft-items-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.draft-add-rows-menu button:last-child {
+  border-bottom: 0;
+}
+
+.draft-add-rows-menu button:hover,
+.draft-add-rows-menu button:focus-visible {
+  background: var(--draft-sage);
+  outline: none;
+}
+
+.draft-table-wrap {
+  position: relative;
+  overflow: visible;
+  padding: 1.25rem 1.25rem 0;
+}
+
+.draft-items-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
 .draft-items-table th,
 .draft-items-table td {
   height: 3.55rem;
@@ -1594,8 +1789,12 @@ function formatSavedTime(value) {
   text-align: center;
   vertical-align: middle;
 }
+
 .draft-items-table th:first-child,
-.draft-items-table td:first-child { border-right: 1px solid #e7e1d6; }
+.draft-items-table td:first-child {
+  border-right: 1px solid #e7e1d6;
+}
+
 .draft-items-table thead th {
   height: 2.75rem;
   border-top: 1px solid #e7e1d6;
@@ -1604,25 +1803,86 @@ function formatSavedTime(value) {
   font-size: .7rem;
   font-weight: 900;
 }
-.draft-items-table thead th:first-child { border-top-right-radius: .65rem; }
-.draft-items-table thead th:last-child { border-top-left-radius: .65rem; }
-.draft-items-table th:nth-child(1) { width: 5%; }
-.draft-items-table th:nth-child(2) { width: 29%; }
-.draft-items-table th:nth-child(3) { width: 12%; }
-.draft-items-table th:nth-child(4) { width: 16%; }
-.draft-items-table th:nth-child(5) { width: 16%; }
-.draft-items-table th:nth-child(6) { width: 16%; }
-.draft-items-table th:nth-child(7) { width: 6%; }
-.unified-list-table { min-width: 0; }
-.unified-list-table th:nth-child(1) { width: 4%; }
-.unified-list-table th:nth-child(2) { width: 28%; }
-.unified-list-table th:nth-child(3) { width: 9%; }
-.unified-list-table th:nth-child(4) { width: 10%; }
-.unified-list-table th:nth-child(5) { width: 8%; }
-.unified-list-table th:nth-child(6) { width: 22%; }
-.unified-list-table th:nth-child(7) { width: 7%; }
-.unified-list-table th:nth-child(8) { width: 12%; }
-.draft-add-row td { position: relative; background: #f5f8f1; color: #64748b; font-size: .7rem; }
+
+.draft-items-table thead th:first-child {
+  border-top-right-radius: .65rem;
+}
+
+.draft-items-table thead th:last-child {
+  border-top-left-radius: .65rem;
+}
+
+.draft-items-table th:nth-child(1) {
+  width: 5%;
+}
+
+.draft-items-table th:nth-child(2) {
+  width: 29%;
+}
+
+.draft-items-table th:nth-child(3) {
+  width: 12%;
+}
+
+.draft-items-table th:nth-child(4) {
+  width: 16%;
+}
+
+.draft-items-table th:nth-child(5) {
+  width: 16%;
+}
+
+.draft-items-table th:nth-child(6) {
+  width: 16%;
+}
+
+.draft-items-table th:nth-child(7) {
+  width: 6%;
+}
+
+.unified-list-table {
+  min-width: 0;
+}
+
+.unified-list-table th:nth-child(1) {
+  width: 4%;
+}
+
+.unified-list-table th:nth-child(2) {
+  width: 28%;
+}
+
+.unified-list-table th:nth-child(3) {
+  width: 9%;
+}
+
+.unified-list-table th:nth-child(4) {
+  width: 10%;
+}
+
+.unified-list-table th:nth-child(5) {
+  width: 8%;
+}
+
+.unified-list-table th:nth-child(6) {
+  width: 22%;
+}
+
+.unified-list-table th:nth-child(7) {
+  width: 7%;
+}
+
+.unified-list-table th:nth-child(8) {
+  width: 12%;
+}
+
+.draft-add-row td {
+  position: relative;
+  background: #f5f8f1;
+  color: #64748b;
+  font-size: .7rem;
+}
+
 .draft-add-row__number {
   display: inline-grid;
   width: 1.75rem;
@@ -1634,7 +1894,11 @@ function formatSavedTime(value) {
   font-size: 1rem;
   font-weight: 900;
 }
-.draft-add-row__hint { color: #94a3b8 !important; }
+
+.draft-add-row__hint {
+  color: #94a3b8 !important;
+}
+
 .draft-add-row__action {
   display: inline-block;
   color: var(--draft-green);
@@ -1649,17 +1913,20 @@ function formatSavedTime(value) {
   overflow: visible;
   padding: 0 !important;
 }
+
 .draft-product-search-cell:focus-within {
   z-index: 100;
   background: #f5faf6 !important;
 }
+
 .draft-product-search {
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 3.55rem;
 }
-.draft-product-search > input {
+
+.draft-product-search>input {
   width: 100%;
   height: 100%;
   min-height: 3.55rem;
@@ -1671,7 +1938,11 @@ function formatSavedTime(value) {
   font-size: .76rem;
   outline: none;
 }
-.draft-product-search > input:focus { box-shadow: none; }
+
+.draft-product-search>input:focus {
+  box-shadow: none;
+}
+
 .draft-product-search__icon {
   position: absolute;
   z-index: 2;
@@ -1682,6 +1953,7 @@ function formatSavedTime(value) {
   transform: translateY(-50%);
   pointer-events: none;
 }
+
 .draft-product-search kbd {
   position: absolute;
   z-index: 2;
@@ -1695,6 +1967,7 @@ function formatSavedTime(value) {
   color: #64748b;
   font-size: .65rem;
 }
+
 .draft-product-results {
   position: absolute;
   z-index: 110;
@@ -1712,6 +1985,7 @@ function formatSavedTime(value) {
   background: #fff;
   box-shadow: 0 18px 40px rgba(35, 48, 43, .18);
 }
+
 .draft-product-result {
   display: grid;
   width: 100%;
@@ -1723,28 +1997,86 @@ function formatSavedTime(value) {
   text-align: right;
   transition: background .15s;
 }
-.draft-product-result:last-child { border-bottom: 0; }
-.draft-product-result:hover { background: var(--draft-sage); }
+
+.draft-product-result:last-child {
+  border-bottom: 0;
+}
+
+.draft-product-result:hover {
+  background: var(--draft-sage);
+}
+
 .draft-product-result--active {
   background: var(--draft-sage);
   box-shadow: inset -3px 0 0 var(--draft-green);
 }
-.draft-product-result span { overflow: hidden; color: #64748b; font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
-.draft-product-result__name { color: #1e293b !important; font-size: .76rem !important; font-weight: 900; }
-.draft-product-result strong { color: var(--draft-green); font-size: .72rem; white-space: nowrap; }
-.draft-product-results__empty { padding: 1rem; color: #94a3b8; font-size: .75rem; text-align: center; }
 
-.draft-item-row td { background: #fff; color: #334155; font-size: .75rem; }
-.draft-item-row:nth-child(odd) td { background: #fffdfa; }
-.draft-item-row--empty td { background: #fbfcf8 !important; }
+.draft-product-result span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: .7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-product-result__name {
+  color: #1e293b !important;
+  font-size: .76rem !important;
+  font-weight: 900;
+}
+
+.draft-product-result strong {
+  color: var(--draft-green);
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+.draft-product-results__empty {
+  padding: 1rem;
+  color: #94a3b8;
+  font-size: .75rem;
+  text-align: center;
+}
+
+.draft-item-row td {
+  background: #fff;
+  color: #334155;
+  font-size: .75rem;
+}
+
+.draft-item-row:nth-child(odd) td {
+  background: #fffdfa;
+}
+
+.draft-item-row--empty td {
+  background: #fbfcf8 !important;
+}
+
 .draft-item-row--empty .draft-table-input,
-.draft-item-row--empty .draft-stepper { opacity: .55; }
+.draft-item-row--empty .draft-stepper {
+  opacity: .55;
+}
+
 .draft-table-input:disabled,
 .draft-stepper button:disabled,
-.draft-stepper input:disabled { cursor: not-allowed; }
-.draft-row-number { color: #64748b !important; font-weight: 800; }
-.draft-product-name { text-align: right !important; font-weight: 900; }
-.draft-product-category { color: #64748b !important; }
+.draft-stepper input:disabled {
+  cursor: not-allowed;
+}
+
+.draft-row-number {
+  color: #64748b !important;
+  font-weight: 800;
+}
+
+.draft-product-name {
+  text-align: right !important;
+  font-weight: 900;
+}
+
+.draft-product-category {
+  color: #64748b !important;
+}
+
 .draft-stepper {
   display: grid;
   height: 2.25rem;
@@ -1754,8 +2086,20 @@ function formatSavedTime(value) {
   border-radius: .5rem;
   background: #fff;
 }
-.draft-stepper button { color: var(--draft-green); font-size: 1rem; font-weight: 900; }
-.draft-stepper input { min-width: 0; border-inline: 1px solid #e7e1d6; text-align: center; outline: none; }
+
+.draft-stepper button {
+  color: var(--draft-green);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.draft-stepper input {
+  min-width: 0;
+  border-inline: 1px solid #e7e1d6;
+  text-align: center;
+  outline: none;
+}
+
 .draft-stepper--compact {
   width: min(100%, 5.75rem);
   height: 2rem;
@@ -1763,23 +2107,58 @@ function formatSavedTime(value) {
   grid-template-columns: 1.5rem minmax(1.65rem, 1fr) 1.5rem;
   border-radius: 999px;
 }
-.draft-stepper--compact button { font-size: .85rem; }
+
+.draft-stepper--compact button {
+  font-size: .85rem;
+}
+
 .draft-stepper--compact input {
   appearance: textfield;
   background: rgba(255, 255, 255, .82);
   font-size: .76rem;
   font-weight: 900;
 }
+
 .draft-stepper--compact input::-webkit-inner-spin-button,
-.draft-stepper--compact input::-webkit-outer-spin-button { margin: 0; appearance: none; }
-.draft-stepper--compact button { transition: background-color .15s ease, color .15s ease; }
-.draft-stepper--delivered { border-color: #b7d9cc; background: #edf8f3; }
-.draft-stepper--delivered button { color: #087255; }
-.draft-stepper--delivered button:not(:disabled):hover { background: #d8f0e6; }
-.draft-stepper--returned { border-color: #f1cca2; background: #fff7e8; }
-.draft-stepper--returned button { color: #b45309; }
-.draft-stepper--returned button:not(:disabled):hover { background: #ffebc7; }
-.quantity-cell { padding-inline: .3rem !important; }
+.draft-stepper--compact input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.draft-stepper--compact button {
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.draft-stepper--delivered {
+  border-color: #b7d9cc;
+  background: #edf8f3;
+}
+
+.draft-stepper--delivered button {
+  color: #087255;
+}
+
+.draft-stepper--delivered button:not(:disabled):hover {
+  background: #d8f0e6;
+}
+
+.draft-stepper--returned {
+  border-color: #f1cca2;
+  background: #fff7e8;
+}
+
+.draft-stepper--returned button {
+  color: #b45309;
+}
+
+.draft-stepper--returned button:not(:disabled):hover {
+  background: #ffebc7;
+}
+
+.quantity-cell {
+  padding-inline: .3rem !important;
+}
+
 .quantity-heading {
   display: inline-flex;
   align-items: center;
@@ -1787,6 +2166,7 @@ function formatSavedTime(value) {
   gap: .35rem;
   white-space: nowrap;
 }
+
 .quantity-heading::before {
   width: .42rem;
   height: .42rem;
@@ -1794,13 +2174,42 @@ function formatSavedTime(value) {
   border-radius: 999px;
   content: '';
 }
-.quantity-heading--delivered { color: #087255; }
-.quantity-heading--delivered::before { background: #21a179; box-shadow: 0 0 0 3px #dff3eb; }
-.quantity-heading--returned { color: #a4510a; }
-.quantity-heading--returned::before { background: #e59435; box-shadow: 0 0 0 3px #fff0d8; }
-.unified-return-row--selected td { background: #f2f9f5 !important; }
-.return-check { display: inline-grid; cursor: pointer; place-items: center; }
-.return-check input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.quantity-heading--delivered {
+  color: #087255;
+}
+
+.quantity-heading--delivered::before {
+  background: #21a179;
+  box-shadow: 0 0 0 3px #dff3eb;
+}
+
+.quantity-heading--returned {
+  color: #a4510a;
+}
+
+.quantity-heading--returned::before {
+  background: #e59435;
+  box-shadow: 0 0 0 3px #fff0d8;
+}
+
+.unified-return-row--selected td {
+  background: #f2f9f5 !important;
+}
+
+.return-check {
+  display: inline-grid;
+  cursor: pointer;
+  place-items: center;
+}
+
+.return-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
 .return-check span {
   display: grid;
   width: 2rem;
@@ -1814,9 +2223,19 @@ function formatSavedTime(value) {
   font-weight: 900;
   transition: .15s ease;
 }
+
 .return-check--active span,
-.return-check--done span { border-color: #8cc5ae; background: var(--draft-green); color: #fff; }
-.return-check--done { cursor: default; opacity: .65; }
+.return-check--done span {
+  border-color: #8cc5ae;
+  background: var(--draft-green);
+  color: #fff;
+}
+
+.return-check--done {
+  cursor: default;
+  opacity: .65;
+}
+
 .return-stat {
   display: inline-grid;
   min-width: 2rem;
@@ -1827,15 +2246,29 @@ function formatSavedTime(value) {
   color: #475569;
   font-size: .75rem;
 }
-.return-stat--returned { background: #e8f7ef; color: #087255; }
-.return-stat--remaining { background: #fff3dd; color: #b45309; }
-.return-stat--complete { background: #e8f7ef; color: #087255; }
+
+.return-stat--returned {
+  background: #e8f7ef;
+  color: #087255;
+}
+
+.return-stat--remaining {
+  background: #fff3dd;
+  color: #b45309;
+}
+
+.return-stat--complete {
+  background: #e8f7ef;
+  color: #087255;
+}
+
 .draft-row-operations {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: .35rem;
 }
+
 .damage-action-button {
   position: relative;
   display: inline-grid;
@@ -1848,9 +2281,22 @@ function formatSavedTime(value) {
   padding: 0;
   color: #c2410c;
 }
-.damage-action-button svg { width: 1rem; }
-.damage-action-button--active { border-color: #fb7185; background: #fff1f2; color: #be123c; }
-.damage-action-button:disabled { cursor: not-allowed; opacity: .4; }
+
+.damage-action-button svg {
+  width: 1rem;
+}
+
+.damage-action-button--active {
+  border-color: #fb7185;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.damage-action-button:disabled {
+  cursor: not-allowed;
+  opacity: .4;
+}
+
 .item-schedule-button {
   display: inline-grid;
   width: 2.15rem;
@@ -1861,9 +2307,20 @@ function formatSavedTime(value) {
   background: #eff6ff;
   color: #2563eb;
 }
-.item-schedule-button svg { width: 1rem; }
-.item-schedule-button:hover:not(:disabled) { background: #dbeafe; }
-.item-schedule-button:disabled { cursor: not-allowed; opacity: .35; }
+
+.item-schedule-button svg {
+  width: 1rem;
+}
+
+.item-schedule-button:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.item-schedule-button:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+
 .damage-action-button__badge {
   position: absolute;
   top: -.38rem;
@@ -1880,6 +2337,7 @@ function formatSavedTime(value) {
   font-size: .55rem;
   font-weight: 900;
 }
+
 .return-history-panel {
   margin: 0 1rem 1rem;
   border: 1px solid #dbe7e1;
@@ -1887,50 +2345,247 @@ function formatSavedTime(value) {
   background: #f8fbf9;
   padding: .85rem;
 }
-.return-history-panel__heading > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem .75rem; }
-.return-history-panel__heading strong { color: #24483a; font-size: .82rem; }
-.return-history-panel__heading span { color: #718078; font-size: .68rem; }
-.return-event-card { margin-top: .65rem; overflow: hidden; border: 1px solid #e2e8e5; border-radius: .65rem; background: #fff; }
-.return-event-card > header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .65rem .75rem; border-bottom: 1px solid #edf1ef; }
-.return-event-card > header > div { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; }
-.return-event-card > header strong { color: #1e3d32; font-size: .76rem; }
-.return-event-card > header span { color: #718078; font-size: .65rem; }
-.return-event-edit { border: 1px solid #b9d8ca; border-radius: .5rem; background: #edf8f3; padding: .35rem .65rem; color: #087255; font-size: .68rem; font-weight: 900; white-space: nowrap; }
-.return-event-edit:hover:not(:disabled) { background: #d9f0e6; }
-.return-event-edit:disabled { cursor: not-allowed; border-color: #e2e8f0; background: #f8fafc; color: #94a3b8; }
-.return-event-card__items { display: flex; flex-wrap: wrap; gap: .4rem; padding: .65rem .75rem; }
-.return-event-card__items > span { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; background: #f1f5f9; padding: .28rem .55rem; color: #475569; font-size: .65rem; }
-.return-event-card__items b { color: #334155; }
-.return-event-card__items small { color: #be123c; font-weight: 900; }
-.return-event-card__items .return-event-item--damaged { background: #fff1f2; color: #9f1239; }
-.return-event-editor { display: grid; gap: 1rem; }
-.invoiced-return-notice { border: 1px solid #fde68a; border-radius: .65rem; background: #fffbeb; padding: .7rem .8rem; color: #92400e; font-size: .72rem; line-height: 1.8; }
-.return-health-row { display: grid; grid-template-columns: minmax(9rem, 1fr) 8rem 5rem minmax(12rem, 1.3fr); align-items: end; gap: .65rem; border: 1px solid #e2e8f0; border-radius: .7rem; background: #f8fafc; padding: .75rem; }
-.return-health-row--single { grid-template-columns: minmax(8rem, 1fr) 7rem minmax(11rem, 1.4fr); border-color: #fed7aa; background: #fffaf3; box-shadow: 0 0 0 3px rgba(251, 146, 60, .1); }
-.return-health-row label { display: grid; gap: .3rem; color: #64748b; font-size: .68rem; font-weight: 800; }
-.return-health-row input { width: 100%; height: 2.35rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; padding: 0 .55rem; outline: none; }
-.return-health-row input:focus { border-color: #21a179; box-shadow: 0 0 0 3px rgba(33, 161, 121, .12); }
-.return-health-row input:disabled { background: #f1f5f9; color: #94a3b8; }
-.return-health-row__title { display: grid; gap: .25rem; }
-.return-health-row__title strong { color: #1e293b; font-size: .78rem; }
-.return-health-row__title span { color: #64748b; font-size: .65rem; }
-.return-health-row__healthy { display: grid; height: 2.35rem; place-items: center; border-radius: .5rem; background: #e8f7ef; color: #087255; font-size: .65rem; }
-.return-health-row__healthy strong { font-size: .8rem; }
-@media (max-width: 767px) {
-  .return-health-row { grid-template-columns: 1fr 1fr; }
-  .return-health-row__notes { grid-column: 1 / -1; }
+
+.return-history-panel__heading>div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .4rem .75rem;
 }
+
+.return-history-panel__heading strong {
+  color: #24483a;
+  font-size: .82rem;
+}
+
+.return-history-panel__heading span {
+  color: #718078;
+  font-size: .68rem;
+}
+
+.return-event-card {
+  margin-top: .65rem;
+  overflow: hidden;
+  border: 1px solid #e2e8e5;
+  border-radius: .65rem;
+  background: #fff;
+}
+
+.return-event-card>header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .65rem .75rem;
+  border-bottom: 1px solid #edf1ef;
+}
+
+.return-event-card>header>div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .75rem;
+}
+
+.return-event-card>header strong {
+  color: #1e3d32;
+  font-size: .76rem;
+}
+
+.return-event-card>header span {
+  color: #718078;
+  font-size: .65rem;
+}
+
+.return-event-edit {
+  border: 1px solid #b9d8ca;
+  border-radius: .5rem;
+  background: #edf8f3;
+  padding: .35rem .65rem;
+  color: #087255;
+  font-size: .68rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.return-event-edit:hover:not(:disabled) {
+  background: #d9f0e6;
+}
+
+.return-event-edit:disabled {
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.return-event-card__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .65rem .75rem;
+}
+
+.return-event-card__items>span {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  padding: .28rem .55rem;
+  color: #475569;
+  font-size: .65rem;
+}
+
+.return-event-card__items b {
+  color: #334155;
+}
+
+.return-event-card__items small {
+  color: #be123c;
+  font-weight: 900;
+}
+
+.return-event-card__items .return-event-item--damaged {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.return-event-editor {
+  display: grid;
+  gap: 1rem;
+}
+
+.invoiced-return-notice {
+  border: 1px solid #fde68a;
+  border-radius: .65rem;
+  background: #fffbeb;
+  padding: .7rem .8rem;
+  color: #92400e;
+  font-size: .72rem;
+  line-height: 1.8;
+}
+
+.return-health-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) 8rem 5rem minmax(12rem, 1.3fr);
+  align-items: end;
+  gap: .65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: .7rem;
+  background: #f8fafc;
+  padding: .75rem;
+}
+
+.return-health-row--single {
+  grid-template-columns: minmax(8rem, 1fr) 7rem minmax(11rem, 1.4fr);
+  border-color: #fed7aa;
+  background: #fffaf3;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, .1);
+}
+
+.return-health-row label {
+  display: grid;
+  gap: .3rem;
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.return-health-row input {
+  width: 100%;
+  height: 2.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: .5rem;
+  background: #fff;
+  padding: 0 .55rem;
+  outline: none;
+}
+
+.return-health-row input:focus {
+  border-color: #21a179;
+  box-shadow: 0 0 0 3px rgba(33, 161, 121, .12);
+}
+
+.return-health-row input:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.return-health-row__title {
+  display: grid;
+  gap: .25rem;
+}
+
+.return-health-row__title strong {
+  color: #1e293b;
+  font-size: .78rem;
+}
+
+.return-health-row__title span {
+  color: #64748b;
+  font-size: .65rem;
+}
+
+.return-health-row__healthy {
+  display: grid;
+  height: 2.35rem;
+  place-items: center;
+  border-radius: .5rem;
+  background: #e8f7ef;
+  color: #087255;
+  font-size: .65rem;
+}
+
+.return-health-row__healthy strong {
+  font-size: .8rem;
+}
+
+@media (max-width: 767px) {
+  .return-health-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .return-health-row__notes {
+    grid-column: 1 / -1;
+  }
+}
+
 .return-confirm-form,
 .damage-dialog-form {
   --draft-green: #0f5f4c;
   --draft-cream: #fffdf8;
   --draft-border: #ded7c8;
 }
-.return-confirm-form { display: grid; gap: 1rem; }
-.return-confirm-form > p { color: #475569; font-size: .78rem; line-height: 1.8; }
-.return-confirm-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding-top: .35rem; }
-.return-confirm-fields .draft-field { grid-column: auto; width: 100%; }
-.damage-dialog-form { display: grid; gap: 1rem; }
+
+.return-confirm-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.return-confirm-form>p {
+  color: #475569;
+  font-size: .78rem;
+  line-height: 1.8;
+}
+
+.return-confirm-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  padding-top: .35rem;
+}
+
+.return-confirm-fields .draft-field {
+  grid-column: auto;
+  width: 100%;
+}
+
+.damage-dialog-form {
+  display: grid;
+  gap: 1rem;
+}
+
 .damage-history {
   display: grid;
   gap: .55rem;
@@ -1939,15 +2594,60 @@ function formatSavedTime(value) {
   background: #fff8f4;
   padding: .75rem;
 }
-.damage-history > strong { color: #9a3412; font-size: .75rem; }
-.damage-history__item { border-top: 1px solid #f5ddd4; padding-top: .55rem; }
-.damage-history__item:first-of-type { border-top: 0; padding-top: 0; }
-.damage-history__item > div { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-.damage-history__item b { color: #be123c; font-size: .72rem; }
-.damage-history__item span { color: #64748b; font-size: .66rem; }
-.damage-history__item p { margin-top: .3rem; color: #475569; font-size: .72rem; line-height: 1.7; }
-.damage-dialog-hint { color: #64748b; font-size: .68rem; line-height: 1.7; }
-.damage-dialog-form label { display: grid; gap: .4rem; color: #475569; font-size: .72rem; font-weight: 800; }
+
+.damage-history>strong {
+  color: #9a3412;
+  font-size: .75rem;
+}
+
+.damage-history__item {
+  border-top: 1px solid #f5ddd4;
+  padding-top: .55rem;
+}
+
+.damage-history__item:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.damage-history__item>div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.damage-history__item b {
+  color: #be123c;
+  font-size: .72rem;
+}
+
+.damage-history__item span {
+  color: #64748b;
+  font-size: .66rem;
+}
+
+.damage-history__item p {
+  margin-top: .3rem;
+  color: #475569;
+  font-size: .72rem;
+  line-height: 1.7;
+}
+
+.damage-dialog-hint {
+  color: #64748b;
+  font-size: .68rem;
+  line-height: 1.7;
+}
+
+.damage-dialog-form label {
+  display: grid;
+  gap: .4rem;
+  color: #475569;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
 .damage-dialog-form input,
 .damage-dialog-form textarea {
   width: 100%;
@@ -1959,10 +2659,22 @@ function formatSavedTime(value) {
   font-size: .78rem;
   outline: none;
 }
-.damage-dialog-form input { height: 2.8rem; text-align: center; }
-.damage-dialog-form textarea { resize: vertical; }
+
+.damage-dialog-form input {
+  height: 2.8rem;
+  text-align: center;
+}
+
+.damage-dialog-form textarea {
+  resize: vertical;
+}
+
 .damage-dialog-form input:focus,
-.damage-dialog-form textarea:focus { border-color: var(--draft-green); box-shadow: 0 0 0 3px rgba(15, 95, 76, .08); }
+.damage-dialog-form textarea:focus {
+  border-color: var(--draft-green);
+  box-shadow: 0 0 0 3px rgba(15, 95, 76, .08);
+}
+
 .draft-table-input {
   width: 100%;
   height: 2.25rem;
@@ -1975,9 +2687,21 @@ function formatSavedTime(value) {
   font-size: .72rem;
   outline: none;
 }
-.draft-table-input:focus { border-color: #6f9e8f; box-shadow: 0 0 0 2px rgba(15, 95, 76, .07); }
-.draft-price-input { text-align: center; }
-.draft-line-total { color: var(--draft-green) !important; font-weight: 900; }
+
+.draft-table-input:focus {
+  border-color: #6f9e8f;
+  box-shadow: 0 0 0 2px rgba(15, 95, 76, .07);
+}
+
+.draft-price-input {
+  text-align: center;
+}
+
+.draft-line-total {
+  color: var(--draft-green) !important;
+  font-weight: 900;
+}
+
 .draft-delete-button {
   display: inline-grid;
   width: 2.15rem;
@@ -1988,9 +2712,22 @@ function formatSavedTime(value) {
   background: #fff1f2;
   color: #e11d48;
 }
-.draft-delete-button svg { width: 1rem; }
-.draft-delete-button:disabled { cursor: not-allowed; opacity: .4; }
-.draft-empty-row td { height: 4.5rem; color: #94a3b8; font-size: .75rem; text-align: center; }
+
+.draft-delete-button svg {
+  width: 1rem;
+}
+
+.draft-delete-button:disabled {
+  cursor: not-allowed;
+  opacity: .4;
+}
+
+.draft-empty-row td {
+  height: 4.5rem;
+  color: #94a3b8;
+  font-size: .75rem;
+  text-align: center;
+}
 
 .draft-table-footer {
   display: flex;
@@ -2003,16 +2740,19 @@ function formatSavedTime(value) {
   background: #faf8f2;
   padding: .75rem 1.25rem;
 }
+
 .draft-table-footer .draft-add-rows-menu {
   top: auto;
   bottom: calc(100% + .35rem);
 }
+
 .draft-table-footer__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: .55rem;
 }
+
 .draft-price-summary {
   display: flex;
   align-items: stretch;
@@ -2021,6 +2761,7 @@ function formatSavedTime(value) {
   border-radius: .7rem;
   background: #fff;
 }
+
 .draft-estimated-price {
   display: flex;
   min-width: 11rem;
@@ -2029,31 +2770,109 @@ function formatSavedTime(value) {
   gap: .25rem;
   padding: .55rem .85rem;
 }
-.draft-estimated-price + .draft-estimated-price { border-right: 1px solid #e5dfd3; }
-.draft-estimated-price span { color: #64748b; font-size: .7rem; font-weight: 800; }
-.draft-estimated-price strong { color: #334155; font-size: .95rem; font-weight: 900; }
-.draft-estimated-price--total { background: var(--draft-sage); }
-.draft-estimated-price--total strong { color: var(--draft-green); font-size: 1.05rem; }
+
+.draft-estimated-price+.draft-estimated-price {
+  border-right: 1px solid #e5dfd3;
+}
+
+.draft-estimated-price span {
+  color: #64748b;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.draft-estimated-price strong {
+  color: #334155;
+  font-size: .95rem;
+  font-weight: 900;
+}
+
+.draft-estimated-price--total {
+  background: var(--draft-sage);
+}
+
+.draft-estimated-price--total strong {
+  color: var(--draft-green);
+  font-size: 1.05rem;
+}
 
 @media (max-width: 1279px) {
-  .draft-field--row-one-customer { grid-column: span 4; }
-  .draft-field--row-one-date, .draft-field--row-one-time { grid-column: span 2; }
-  .draft-night-before--compact { grid-column: span 4; }
-  .draft-field--row-two-date, .draft-field--row-two-time { grid-column: span 2; }
-  .draft-field--row-two-notes { grid-column: span 8; }
+  .draft-field--row-one-customer {
+    grid-column: span 4;
+  }
+
+  .draft-field--row-one-date,
+  .draft-field--row-one-time {
+    grid-column: span 2;
+  }
+
+  .draft-night-before--compact {
+    grid-column: span 4;
+  }
+
+  .draft-field--row-two-date,
+  .draft-field--row-two-time {
+    grid-column: span 2;
+  }
+
+  .draft-field--row-two-notes {
+    grid-column: span 8;
+  }
 }
 
 @media (max-width: 767px) {
-  .draft-workspace__header { align-items: flex-start; flex-direction: column; }
-  .draft-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1rem; }
-  .draft-field--row-one-customer, .draft-night-before--compact, .draft-field--row-two-notes { grid-column: span 2; }
-  .draft-field--row-one-date, .draft-field--row-one-time, .draft-field--row-two-date, .draft-field--row-two-time { grid-column: span 1; }
-  .draft-table-wrap { padding: .5rem .35rem 0; overflow: visible; }
-  .unified-list-table { min-width: 0; }
-  .draft-table-footer { align-items: stretch; flex-direction: column-reverse; }
-  .draft-table-footer__actions { justify-content: center; }
-  .draft-price-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .draft-estimated-price { min-width: 0; }
-  .draft-estimated-price { align-items: center; }
+  .draft-workspace__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .draft-information-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 1rem;
+  }
+
+  .draft-field--row-one-customer,
+  .draft-night-before--compact,
+  .draft-field--row-two-notes {
+    grid-column: span 2;
+  }
+
+  .draft-field--row-one-date,
+  .draft-field--row-one-time,
+  .draft-field--row-two-date,
+  .draft-field--row-two-time {
+    grid-column: span 1;
+  }
+
+  .draft-table-wrap {
+    padding: .5rem .35rem 0;
+    overflow: visible;
+  }
+
+  .unified-list-table {
+    min-width: 0;
+  }
+
+  .draft-table-footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .draft-table-footer__actions {
+    justify-content: center;
+  }
+
+  .draft-price-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .draft-estimated-price {
+    min-width: 0;
+  }
+
+  .draft-estimated-price {
+    align-items: center;
+  }
 }
 </style>

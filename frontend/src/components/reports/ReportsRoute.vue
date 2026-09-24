@@ -24,24 +24,17 @@
           <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
           <label class="app-filter-field min-w-[180px]">
             <span class="app-filter-label">سال گزارش</span>
-            <CustomSelect :model-value="selectedYear" :options="yearSelectOptions"
-              trigger-class="app-filter-control"
+            <CustomSelect :model-value="selectedYear" :options="yearSelectOptions" trigger-class="app-filter-control"
               @update:model-value="selectedYear = $event" />
           </label>
         </div>
 
-        <AppFinancialOverview
-          primary-label="مبلغ دریافت‌شده"
+        <AppFinancialOverview primary-label="مبلغ دریافت‌شده"
           :primary-value="formatCurrency(report.summary.total_paid_toman)"
           :primary-meta="selectedYear === 'all' ? 'مجموع عملکرد همه سال‌ها' : `عملکرد ${sectionTitle}`"
-          :primary-percent="reportPaidPercent"
-          primary-percent-label="دریافت‌شده"
-          danger-label="مانده قابل دریافت"
-          :danger-value="formatCurrency(report.summary.outstanding_toman)"
-          :danger-percent="reportOutstandingPercent"
-          danger-percent-label="در انتظار"
-          :items="reportOverviewItems"
-          status-title="وضعیت وصول درآمد"
+          :primary-percent="reportPaidPercent" primary-percent-label="دریافت‌شده" danger-label="مانده قابل دریافت"
+          :danger-value="formatCurrency(report.summary.outstanding_toman)" :danger-percent="reportOutstandingPercent"
+          danger-percent-label="در انتظار" :items="reportOverviewItems" status-title="وضعیت وصول درآمد"
           :status-items="reportSettlementItems" />
 
         <div class="relative grid gap-6">
@@ -57,7 +50,7 @@
           <div class="grid gap-6 xl:grid-cols-1">
             <section class="rounded-lg border border-slate-200 bg-slate-50 p-5">
               <div class="mb-4 flex items-center justify-between">
-                  <h3 class="font-black text-slate-800">وضعیت فاکتور و تسویه حساب</h3>
+                <h3 class="font-black text-slate-800">وضعیت فاکتور و تسویه حساب</h3>
               </div>
               <div class="grid gap-3 sm:grid-cols-2">
                 <article v-for="item in operationalStatusRows" :key="item.label"
@@ -139,43 +132,47 @@
           </div>
 
           <div ref="topCustomersTableRef">
-          <AppTablePanel title=" مشتریان برتر">
-            <AppDataTable class="top-customers-table" :column-count="6" :empty="!topCustomersTotalRows"
-              min-width="100%" empty-message="داده کافی برای رتبه‌بندی مشتریان وجود ندارد.">
-              <template #head>
-                <tr>
-                  <th>ردیف</th>
-                  <th>نام مشتری</th>
-                  <th v-for="column in sortableCustomerColumns" :key="column.key"
-                    :aria-sort="customerSortAria(column.key)">
-                    <button type="button" class="top-customers-sort" @click="toggleCustomerSort(column.key)">
-                      <span>{{ column.label }}</span>
-                      <span class="top-customers-sort__icon" :class="{ 'top-customers-sort__icon--active': customerSorts[column.key] }">
-                        {{ customerSortIcon(column.key) }}
-                      </span>
-                    </button>
-                  </th>
+            <AppTablePanel title=" مشتریان برتر">
+              <AppDataTable class="top-customers-table" :column-count="6" :empty="!topCustomersTotalRows"
+                min-width="100%" empty-message="داده کافی برای رتبه‌بندی مشتریان وجود ندارد.">
+                <template #head>
+                  <tr>
+                    <th>ردیف</th>
+                    <th>نام مشتری</th>
+                    <th v-for="column in sortableCustomerColumns" :key="column.key"
+                      :aria-sort="customerSortAria(column.key)">
+                      <button type="button" class="top-customers-sort" @click="toggleCustomerSort(column.key)">
+                        <span>{{ column.label }}</span>
+                        <span class="top-customers-sort__icon"
+                          :class="{ 'top-customers-sort__icon--active': customerSorts[column.key] }">
+                          {{ customerSortIcon(column.key) }}
+                        </span>
+                      </button>
+                    </th>
+                  </tr>
+                </template>
+                <tr v-for="(customer, index) in paginatedTopCustomers" :key="customer.id || customer.name"
+                  class="app-table-row">
+                  <td class="text-center font-bold text-slate-500">{{ formatNumber(topCustomersRowStartIndex + index +
+                    1) }}</td>
+                  <td class="font-black text-slate-900">{{ customer.name }}</td>
+                  <td class="text-center font-bold">{{ formatNumber(customer.invoiceCount) }}</td>
+                  <td class="text-center font-bold">{{ formatCurrency(customer.average) }}</td>
+                  <td class="text-center font-black text-emerald-700">{{ formatCurrency(customer.total) }}</td>
+                  <td class="text-center font-black"
+                    :class="customer.outstanding > 0 ? 'text-rose-600' : 'text-slate-400'">
+                    {{ formatCurrency(customer.outstanding) }}
+                  </td>
                 </tr>
+              </AppDataTable>
+              <template #footer>
+                <AppPagination :total-rows="topCustomersTotalRows" :row-start-index="topCustomersRowStartIndex"
+                  :page-size="topCustomersPageSize" :page-size-options="topCustomersPageSizeOptions"
+                  :current-page="topCustomersCurrentPage" :total-pages="topCustomersTotalPages"
+                  :visible-page-numbers="topCustomersVisiblePageNumbers"
+                  @update:page-size="topCustomersPageSize = $event" @go-to-page="goToTopCustomersPage" />
               </template>
-              <tr v-for="(customer, index) in paginatedTopCustomers" :key="customer.id || customer.name" class="app-table-row">
-                <td class="text-center font-bold text-slate-500">{{ formatNumber(topCustomersRowStartIndex + index + 1) }}</td>
-                <td class="font-black text-slate-900">{{ customer.name }}</td>
-                <td class="text-center font-bold">{{ formatNumber(customer.invoiceCount) }}</td>
-                <td class="text-center font-bold">{{ formatCurrency(customer.average) }}</td>
-                <td class="text-center font-black text-emerald-700">{{ formatCurrency(customer.total) }}</td>
-                <td class="text-center font-black" :class="customer.outstanding > 0 ? 'text-rose-600' : 'text-slate-400'">
-                  {{ formatCurrency(customer.outstanding) }}
-                </td>
-              </tr>
-            </AppDataTable>
-            <template #footer>
-              <AppPagination :total-rows="topCustomersTotalRows" :row-start-index="topCustomersRowStartIndex"
-                :page-size="topCustomersPageSize" :page-size-options="topCustomersPageSizeOptions"
-                :current-page="topCustomersCurrentPage" :total-pages="topCustomersTotalPages"
-                :visible-page-numbers="topCustomersVisiblePageNumbers"
-                @update:page-size="topCustomersPageSize = $event" @go-to-page="goToTopCustomersPage" />
-            </template>
-          </AppTablePanel>
+            </AppTablePanel>
           </div>
         </div>
       </section>
@@ -314,21 +311,67 @@ function exportReports() {
 </script>
 
 <style scoped>
-.top-customers-table :deep(.app-table) { width: 100%; table-layout: fixed; }
-.top-customers-table :deep(.app-table-wrapper) { overflow-x: hidden; }
-.top-customers-table :deep(th) { text-align: center; }
-.top-customers-table :deep(th), .top-customers-table :deep(td) {
+.top-customers-table :deep(.app-table) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.top-customers-table :deep(.app-table-wrapper) {
+  overflow-x: hidden;
+}
+
+.top-customers-table :deep(th) {
+  text-align: center;
+}
+
+.top-customers-table :deep(th),
+.top-customers-table :deep(td) {
   padding: .75rem .5rem;
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
-.top-customers-table :deep(th:nth-child(1)) { width: 7%; }
-.top-customers-table :deep(th:nth-child(2)) { width: 23%; }
-.top-customers-table :deep(th:nth-child(3)) { width: 13%; }
-.top-customers-table :deep(th:nth-child(4)) { width: 19%; }
-.top-customers-table :deep(th:nth-child(5)) { width: 21%; }
-.top-customers-table :deep(th:nth-child(6)) { width: 17%; }
-.top-customers-sort { display:inline-flex; width:100%; align-items:center; justify-content:center; gap:.35rem; color:inherit; }
-.top-customers-sort__icon { color:#94a3b8; font-size:.9rem; transition:.15s; }
-.top-customers-sort__icon--active { color:#0f766e; font-weight:900; }
+
+.top-customers-table :deep(th:nth-child(1)) {
+  width: 7%;
+}
+
+.top-customers-table :deep(th:nth-child(2)) {
+  width: 23%;
+}
+
+.top-customers-table :deep(th:nth-child(3)) {
+  width: 13%;
+}
+
+.top-customers-table :deep(th:nth-child(4)) {
+  width: 19%;
+}
+
+.top-customers-table :deep(th:nth-child(5)) {
+  width: 21%;
+}
+
+.top-customers-table :deep(th:nth-child(6)) {
+  width: 17%;
+}
+
+.top-customers-sort {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  color: inherit;
+}
+
+.top-customers-sort__icon {
+  color: #94a3b8;
+  font-size: .9rem;
+  transition: .15s;
+}
+
+.top-customers-sort__icon--active {
+  color: #0f766e;
+  font-weight: 900;
+}
 </style>
