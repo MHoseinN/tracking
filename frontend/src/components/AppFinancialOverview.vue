@@ -11,7 +11,6 @@
           <div>
             <p class="financial-overview__eyebrow">{{ primaryLabel }}</p>
             <p class="financial-overview__hero-value">{{ primaryValue }}</p>
-            <p class="financial-overview__hero-meta financial-overview__primary-meta">{{ primaryMeta || '\u00a0' }}</p>
           </div>
         </div>
         <div class="financial-overview__ring financial-overview__ring--primary" :style="primaryRingStyle">
@@ -33,7 +32,6 @@
           <div>
             <p class="financial-overview__eyebrow">{{ dangerLabel }}</p>
             <p class="financial-overview__hero-value financial-overview__danger-value">{{ dangerValue }}</p>
-            <p class="financial-overview__hero-meta financial-overview__danger-meta">{{ dangerMeta || '\u00a0' }}</p>
           </div>
         </div>
         <div class="financial-overview__ring" :style="ringStyle">

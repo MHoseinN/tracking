@@ -495,7 +495,7 @@ body {
   @apply hover:border-emerald-700 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100;
 }
 
-.app-filter-field { position:relative; display:block; min-width:0; padding-top:.4rem; }
+.app-filter-field { position:relative; display:block; min-width:120px; padding-top:.4rem; }
 .app-filter-field > .app-filter-label {
   position:absolute;
   top:0;

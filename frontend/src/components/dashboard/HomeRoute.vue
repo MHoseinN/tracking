@@ -19,7 +19,6 @@
       <AppFinancialOverview
         primary-label="مبلغ دریافت‌شده"
         :primary-value="formatCurrency(summary.total_paid_toman)"
-        :primary-meta="selectedYear === 'all' ? 'مجموع همه سال‌ها' : `عملکرد سال ${formatYear(selectedYear)}`"
         :primary-percent="paidPercent"
         primary-percent-label="دریافت‌شده"
         danger-label="مانده قابل دریافت"
