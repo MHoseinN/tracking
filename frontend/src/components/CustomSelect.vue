@@ -12,8 +12,8 @@
     </button>
 
     <Teleport to="body">
-      <div v-if="isOpen" class="fixed inset-0 z-[140]" @click="closeDropdown">
-        <div ref="dropdownRef" class="fixed z-[141] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+      <div v-if="isOpen" class="fixed inset-0 z-[240]" @click="closeDropdown">
+        <div ref="dropdownRef" class="fixed z-[241] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
           :style="dropdownStyle" @click.stop>
           <div class="overflow-y-auto p-1 flex flex-col gap-2" :style="{ maxHeight: dropdownStyle.maxHeight }">
             <button v-for="option in normalizedOptions" :key="String(option.value)" type="button"

@@ -1,10 +1,10 @@
 <template>
-  <section class="space-y-4">
+  <section class="user-performance-panel space-y-4">
     <div class="performance-toolbar">
       <h2 class="shrink-0 text-lg font-black text-slate-900">آمار تحویل و دریافت من</h2>
 
       <div class="performance-controls">
-        <div class="inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-1">
+        <div class="performance-view-toggle inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-1">
           <button v-for="option in viewOptions" :key="option.value" type="button"
             class="rounded-md px-4 py-2 text-sm font-bold transition"
             :class="viewMode === option.value ? 'bg-white text-emerald-800 shadow-sm ring-1 ring-stone-200' : 'text-slate-500 hover:text-emerald-900'"
@@ -184,27 +184,40 @@ function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleStr
 .performance-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
   align-items: center;
   gap: 1rem;
+}
+
+.performance-toolbar > h2 {
+  width: 100%;
 }
 
 .performance-controls {
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
+  flex: 1 1 100%;
   flex-wrap: wrap;
   align-items: flex-end;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: .75rem;
+}
+
+.performance-view-toggle {
+  flex: 1 1 14rem;
+}
+
+.performance-view-toggle > button {
+  flex: 1 1 0;
+  white-space: nowrap;
 }
 
 .performance-filter-field {
   position: relative;
   display: flex;
   width: 11rem;
-  flex: 0 0 11rem;
+  min-width: 10rem;
+  flex: 1 1 11rem;
   flex-direction: column;
   padding-top: .4rem;
 }
@@ -227,11 +240,27 @@ function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleStr
   flex-basis: 14rem;
 }
 
-@media (min-width: 1280px) {
+@media (max-width: 639px) {
+  .performance-toolbar {
+    gap: .75rem;
+  }
 
-  .performance-toolbar,
   .performance-controls {
-    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .performance-view-toggle,
+  .performance-filter-field,
+  .performance-filter-field--wide {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .performance-view-toggle > button {
+    min-width: 0;
+    padding-inline: .65rem;
   }
 }
 

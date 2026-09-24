@@ -17,7 +17,7 @@
         <section
           ref="dialogRef"
           class="app-modal"
-          :class="sizeClass"
+          :class="[sizeClass, dialogClass]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
@@ -70,6 +70,7 @@ const props = defineProps({
   showClose: { type: Boolean, default: true },
   closeOnBackdrop: { type: Boolean, default: true },
   closeOnEscape: { type: Boolean, default: true },
+  dialogClass: { type: [String, Array, Object], default: '' },
   bodyClass: { type: [String, Array, Object], default: '' },
   zIndex: { type: Number, default: 160 }
 });
