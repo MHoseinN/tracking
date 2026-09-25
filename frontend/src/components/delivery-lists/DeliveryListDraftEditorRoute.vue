@@ -3,8 +3,7 @@
     <Teleport v-if="!embedded" to="#app-shell-actions">
       <button type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700" :disabled="finalizing"
         @click="openFinalizeConfirm">
-        {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره
-        تغییرات لیست') }}
+        {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره تغییرات لیست') }}
       </button>
       <button type="button" class="app-button-primary w-full" :disabled="creating" @click="createAnotherDraft">
         {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست دیگر' }}

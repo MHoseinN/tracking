@@ -38,7 +38,6 @@
               <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions"
                 trigger-class="app-filter-control" />
             </label>
-
             <label class="app-filter-field"><span class="app-filter-label">وضعیت تسویه</span>
               <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions"
                 trigger-class="app-filter-control" />

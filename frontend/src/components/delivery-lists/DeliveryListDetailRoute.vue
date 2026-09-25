@@ -37,7 +37,12 @@
           <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
         </div>
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
-          <span>تحویل‌دهنده: <strong class="text-slate-800">{{ list.delivered_by_name || '—' }}</strong></span>
+          <span>تحویل‌دهنده  :
+            <strong class="text-slate-800">{{ list.delivered_by_name || '—' }}</strong>
+          </span>
+          <span>دریافت‌کننده  :
+            <strong class="text-slate-800">{{ returnReceiverNames }}</strong>
+          </span>
           <span>پیش‌فاکتور: <strong class="text-violet-700">{{ list.proforma ? `#${formatNumber(list.proforma.id)}` : 'ایجاد نشده' }}</strong></span>
         </div>
       </section>
@@ -148,6 +153,12 @@ const canRecordReturn = computed(() => (
 const returnRows = computed(() => (list.value?.return_events || []).flatMap((event) => (
   event.items.map((item) => ({ ...item, returned_at: event.returned_at, received_by_name: event.received_by_name }))
 )));
+const returnReceiverNames = computed(() => {
+  const names = (list.value?.return_events || [])
+    .map((event) => event.received_by_name)
+    .filter(Boolean);
+  return [...new Set(names)].join('، ') || 'هنوز برگشتی ثبت نشده';
+});
 const canIssueInvoice = computed(() => returnRows.value.some((item) => !item.rental_invoice_id));
 const listStatus = computed(() => ({
   DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },

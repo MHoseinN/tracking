@@ -1069,9 +1069,10 @@ test('builds reports from workflow lists, issued invoices and active payments', 
   }
 });
 
-test('counts delivered and received lists for Jalali day, week, month and year', () => {
+test('attributes delivered and received lists to their responsible internal users', () => {
   const db = createDatabase();
   try {
+    db.prepare("INSERT INTO users (id, username, display_name) VALUES (2, 'admin', 'ادمین دریافت')").run();
     const listService = createDeliveryListDraftService(db);
     const draft = listService.createDraft(1);
     const saved = listService.saveDraft(draft.id, {
@@ -1085,21 +1086,28 @@ test('counts delivered and received lists for Jalali day, week, month and year',
     listService.recordReturn(draft.id, {
       returned_at: '2026-08-27T11:00:00+03:30',
       items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }]
-    }, 1);
+    }, 2);
 
     const keys = periodKeys('2026-08-27T12:00:00+03:30');
     assert.equal(keys.year, '1405');
     assert.equal(keys.month, '1405-06');
     assert.equal(keys.week, '2026-08-22');
     const performanceService = createInternalUserPerformanceService(db);
-    const performance = performanceService.getUserPerformance(1, new Date('2026-08-27T12:00:00+03:30'));
+    const deliveryPerformance = performanceService.getUserPerformance(1, new Date('2026-08-27T12:00:00+03:30'));
+    const returnPerformance = performanceService.getUserPerformance(2, new Date('2026-08-27T12:00:00+03:30'));
     ['day', 'week', 'month', 'year'].forEach((period) => {
-      assert.equal(performance[period].delivered, 1);
-      assert.equal(performance[period].received, 1);
+      assert.equal(deliveryPerformance[period].delivered, 1);
+      assert.equal(deliveryPerformance[period].received, 0);
+      assert.equal(returnPerformance[period].delivered, 0);
+      assert.equal(returnPerformance[period].received, 1);
     });
     const selectedDay = keys.day.replaceAll('-', '/');
     assert.deepEqual(performanceService.getUserPerformanceRange(1, { from: selectedDay, to: selectedDay }), {
       delivered: 1,
+      received: 0
+    });
+    assert.deepEqual(performanceService.getUserPerformanceRange(2, { from: selectedDay, to: selectedDay }), {
+      delivered: 0,
       received: 1
     });
     assert.deepEqual(performanceService.getUserPerformanceRange(1, { from: '1405/01/01', to: '1405/01/02' }), {
@@ -1113,10 +1121,17 @@ test('counts delivered and received lists for Jalali day, week, month and year',
     );
     assert.equal(overview.rows.find((row) => row.key === 'today').delivered, 1);
     assert.equal(overview.rows.find((row) => row.key === 'yesterday').delivered, 0);
-    assert.equal(overview.rows.find((row) => row.key === 'last_7_days').received, 1);
+    assert.equal(overview.rows.find((row) => row.key === 'last_7_days').received, 0);
     assert.equal(overview.rows.find((row) => row.key === 'month_06').delivered, 1);
-    assert.equal(overview.rows.find((row) => row.key === 'year_total').received, 1);
+    assert.equal(overview.rows.find((row) => row.key === 'year_total').received, 0);
     assert.equal(overview.rows.filter((row) => row.type === 'month').length, 6);
+    const returnOverview = performanceService.getUserPerformanceOverview(
+      2,
+      '1405',
+      new Date('2026-08-27T12:00:00+03:30')
+    );
+    assert.equal(returnOverview.rows.find((row) => row.key === 'last_7_days').received, 1);
+    assert.equal(returnOverview.rows.find((row) => row.key === 'year_total').received, 1);
   } finally {
     db.close();
   }

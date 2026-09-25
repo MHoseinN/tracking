@@ -6,16 +6,14 @@
       </AppButton>
     </Teleport>
 
-    <AppTablePanel
-      title="مرکز  لیست‌ها"
-      :count="draftStore.loading ? null : filteredDrafts.length"
-    >
+    <AppTablePanel title="مرکز  لیست‌ها" :count="draftStore.loading ? null : filteredDrafts.length">
       <template #filters>
-        <AppFilterBar :expanded="filtersExpanded" collapsible columns-class="md:grid-cols-2 xl:grid-cols-3"
+        <AppFilterBar :expanded="filtersExpanded" collapsible columns-class="md:grid-cols-2 xl:grid-cols-4"
           advanced-columns-class="md:grid-cols-2 xl:grid-cols-4" @update:expanded="filtersExpanded = $event">
           <label class="app-filter-field">
             <span class="app-filter-label">جستجو</span>
-            <input v-model.trim="searchQuery" type="search" placeholder="مشتری یا شماره لیست" class="app-filter-control" />
+            <input v-model.trim="searchQuery" type="search" placeholder="مشتری یا شماره لیست"
+              class="app-filter-control" />
           </label>
           <label class="app-filter-field">
             <span class="app-filter-label">تاریخ تحویل</span>
@@ -25,16 +23,21 @@
             <span class="app-filter-label">وضعیت لیست</span>
             <CustomSelect v-model="listStatusFilter" :options="listStatusOptions" trigger-class="app-filter-control" />
           </label>
+          <label class="app-filter-field"><span class="app-filter-label">وضعیت ارسال</span>
+            <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="app-filter-control" />
+          </label>
           <template #advanced>
             <label class="app-filter-field"><span class="app-filter-label">وضعیت فاکتور</span>
-              <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions" trigger-class="app-filter-control" /></label>
-            <label class="app-filter-field"><span class="app-filter-label">وضعیت ارسال</span>
-              <CustomSelect v-model="sendStatusFilter" :options="sendStatusOptions" trigger-class="app-filter-control" /></label>
+              <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions"
+                trigger-class="app-filter-control" />
+            </label>
             <label class="app-filter-field"><span class="app-filter-label">وضعیت تسویه</span>
-              <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions" trigger-class="app-filter-control" /></label>
+              <CustomSelect v-model="settlementStatusFilter" :options="settlementStatusOptions"
+                trigger-class="app-filter-control" />
+            </label>
             <label class="app-filter-field"><span class="app-filter-label">جست‌وجوی مبلغ فاکتور</span>
-              <input v-model.trim="invoiceAmountFilter" type="search" inputmode="numeric"
-                placeholder="مثلاً ۷۳۰٬۰۰۰" class="app-filter-control" /></label>
+              <input v-model.trim="invoiceAmountFilter" type="search" inputmode="numeric" placeholder="مثلاً ۷۳۰٬۰۰۰"
+                class="app-filter-control" /></label>
           </template>
           <template #actions>
             <AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton>
@@ -42,16 +45,9 @@
         </AppFilterBar>
       </template>
 
-      <AppDataTable
-        class="delivery-lists-table"
-        :column-count="9"
-        :loading="draftStore.loading"
-        :empty="!filteredDrafts.length"
-        min-width="100%"
-        sticky-header
-        loading-message="در حال دریافت لیست‌ها..."
-        empty-message="لیستی با این جست‌وجو یا فیلتر پیدا نشد."
-      >
+      <AppDataTable class="delivery-lists-table" :column-count="9" :loading="draftStore.loading"
+        :empty="!filteredDrafts.length" min-width="100%" sticky-header loading-message="در حال دریافت لیست‌ها..."
+        empty-message="لیستی با این جست‌وجو یا فیلتر پیدا نشد.">
         <template #head>
           <tr>
             <th>ردیف</th>
@@ -71,43 +67,24 @@
           <td class="font-bold text-slate-900">{{ draft.customer_name || 'نامشخص' }}</td>
           <td>{{ formatDate(draft.delivered_at) }}</td>
           <td>
-            <AppStatusButton
-              group="list"
-              :status="draft.status"
-              :loading="isActionLoading(draft, 'list')"
-              :aria-label="`مدیریت وضعیت لیست ${draft.list_number || draft.id}`"
-              @click="manageListStatus(draft)"
-            />
+            <AppStatusButton group="list" :status="draft.status" :loading="isActionLoading(draft, 'list')"
+              :aria-label="`مدیریت وضعیت لیست ${draft.list_number || draft.id}`" @click="manageListStatus(draft)" />
           </td>
           <td>
-            <AppStatusButton
-              group="invoice"
-              :status="draft.invoice_status"
-              :loading="isActionLoading(draft, 'invoice')"
-              :aria-label="`مدیریت فاکتور لیست ${draft.list_number || draft.id}`"
-              @click="manageInvoice(draft)"
-            />
+            <AppStatusButton group="invoice" :status="draft.invoice_status" :loading="isActionLoading(draft, 'invoice')"
+              :aria-label="`مدیریت فاکتور لیست ${draft.list_number || draft.id}`" @click="manageInvoice(draft)" />
           </td>
           <td>
-            <AppStatusButton
-              v-if="draft.invoice_status !== 'NONE' && draft.invoice_status !== 'PROFORMA'"
-              group="send"
-              :status="draft.invoice_send_status"
-              :loading="isActionLoading(draft, 'send')"
+            <AppStatusButton v-if="draft.invoice_status !== 'NONE' && draft.invoice_status !== 'PROFORMA'" group="send"
+              :status="draft.invoice_send_status" :loading="isActionLoading(draft, 'send')"
               :aria-label="`مدیریت ارسال فاکتور لیست ${draft.list_number || draft.id}`"
-              @click="manageInvoiceSend(draft)"
-            />
+              @click="manageInvoiceSend(draft)" />
             <AppStatusBadge v-else group="send" :status="draft.invoice_send_status" />
           </td>
           <td>
-            <AppStatusButton
-              v-if="draft.status !== 'DRAFT'"
-              group="settlement"
-              :status="draft.settlement_status"
+            <AppStatusButton v-if="draft.status !== 'DRAFT'" group="settlement" :status="draft.settlement_status"
               :loading="isActionLoading(draft, 'settlement')"
-              :aria-label="`مدیریت تسویه لیست ${draft.list_number || draft.id}`"
-              @click="openSettlement(draft)"
-            />
+              :aria-label="`مدیریت تسویه لیست ${draft.list_number || draft.id}`" @click="openSettlement(draft)" />
             <AppStatusBadge v-else group="settlement" :status="draft.settlement_status" />
           </td>
           <td class="font-black text-slate-800">
@@ -125,17 +102,14 @@
               <AppIconButton v-if="draft.status !== 'DRAFT'" label="ویرایش لیست" size="sm" variant="primary"
                 @click="router.push(`/lists/${draft.id}`)">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" />
                 </svg>
               </AppIconButton>
-              <AppIconButton
-                label="حذف رکورد"
-                size="sm"
-                variant="danger"
-                @click="draftToDelete = draft"
-              >
+              <AppIconButton label="حذف رکورد" size="sm" variant="danger" @click="draftToDelete = draft">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12m-9 0V5h6v2m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M6 7h12m-9 0V5h6v2m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
                 </svg>
               </AppIconButton>
             </div>
@@ -144,64 +118,27 @@
       </AppDataTable>
 
       <template #footer>
-        <AppPagination
-          :total-rows="totalRows"
-          :row-start-index="rowStartIndex"
-          :page-size="pageSize"
-          :page-size-options="pageSizeOptions"
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :visible-page-numbers="visiblePageNumbers"
-          @update:page-size="pageSize = $event"
-          @go-to-page="goToPage"
-        />
+        <AppPagination :total-rows="totalRows" :row-start-index="rowStartIndex" :page-size="pageSize"
+          :page-size-options="pageSizeOptions" :current-page="currentPage" :total-pages="totalPages"
+          :visible-page-numbers="visiblePageNumbers" @update:page-size="pageSize = $event" @go-to-page="goToPage" />
       </template>
     </AppTablePanel>
 
-    <ConfirmModal
-      :is-open="Boolean(draftToDelete)"
-      title="حذف رکورد لیست"
+    <ConfirmModal :is-open="Boolean(draftToDelete)" title="حذف رکورد لیست"
       :message="`آیا از حذف ${draftToDelete?.list_number ? `لیست شماره ${draftToDelete.list_number}` : 'این پیش‌نویس'}${draftToDelete?.customer_name ? ` مربوط به مشتری «${draftToDelete.customer_name}»` : ''} مطمئن هستید؟`"
-      :loading="deleting"
-      confirm-text="بله، حذف شود"
-      loading-text="در حال حذف..."
-      @confirm="confirmDelete"
-      @cancel="draftToDelete = null"
-    />
+      :loading="deleting" confirm-text="بله، حذف شود" loading-text="در حال حذف..." @confirm="confirmDelete"
+      @cancel="draftToDelete = null" />
 
-    <DeliveryInvoiceIssueModal
-      :is-open="showInvoiceIssueModal"
-      :preview="invoicePreview"
-      :saving="issuingInvoice"
-      @close="closeInvoiceIssueModal"
-      @issue="handleIssueInvoice"
-    />
-    <DeliveryInvoiceSendModal
-      :is-open="showInvoiceSendModal"
-      :invoice="sendInvoice"
-      :saving="updatingSendStatus"
-      @close="closeInvoiceSendModal"
-      @save="handleInvoiceSend"
-      @request-unsent="invoiceToResetSend = sendInvoice"
-    />
-    <DeliverySettlementModal
-      :is-open="showSettlementModal"
-      :summary="settlementSummary"
-      :saving="settlementSaving"
-      @close="showSettlementModal = false"
-      @record="handleRecordPayment"
-      @void="handleVoidPayment"
-    />
-    <ConfirmModal
-      :is-open="Boolean(invoiceToResetSend)"
-      title="لغو وضعیت ارسال فاکتور"
+    <DeliveryInvoiceIssueModal :is-open="showInvoiceIssueModal" :preview="invoicePreview" :saving="issuingInvoice"
+      @close="closeInvoiceIssueModal" @issue="handleIssueInvoice" />
+    <DeliveryInvoiceSendModal :is-open="showInvoiceSendModal" :invoice="sendInvoice" :saving="updatingSendStatus"
+      @close="closeInvoiceSendModal" @save="handleInvoiceSend" @request-unsent="invoiceToResetSend = sendInvoice" />
+    <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
+      @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
+    <ConfirmModal :is-open="Boolean(invoiceToResetSend)" title="لغو وضعیت ارسال فاکتور"
       :message="`فاکتور ${invoiceToResetSend?.invoice_number || ''} دوباره به وضعیت «ارسال‌نشده» برگردد؟ این تغییر در تاریخچه ثبت می‌شود.`"
-      :loading="updatingSendStatus"
-      confirm-text="بله، ارسال‌نشده شود"
-      loading-text="در حال ثبت..."
-      @confirm="confirmResetInvoiceSend"
-      @cancel="invoiceToResetSend = null"
-    />
+      :loading="updatingSendStatus" confirm-text="بله، ارسال‌نشده شود" loading-text="در حال ثبت..."
+      @confirm="confirmResetInvoiceSend" @cancel="invoiceToResetSend = null" />
   </div>
 </template>
 
@@ -518,12 +455,29 @@ function formatDate(value) {
 </script>
 
 <style scoped>
-.lists-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.lists-heading-search { width: min(32rem, 50%); min-width: 18rem; }
-@media (max-width: 767px) {
-  .lists-panel-heading { flex-wrap: wrap; }
-  .lists-heading-search { width: 100%; min-width: 0; }
+.lists-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
+
+.lists-heading-search {
+  width: min(32rem, 50%);
+  min-width: 18rem;
+}
+
+@media (max-width: 767px) {
+  .lists-panel-heading {
+    flex-wrap: wrap;
+  }
+
+  .lists-heading-search {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .delivery-lists-table {
   overflow-x: hidden;
 }
@@ -540,23 +494,49 @@ function formatDate(value) {
 }
 
 .delivery-lists-table :deep(.app-table th:nth-child(1)),
-.delivery-lists-table :deep(.app-table td:nth-child(1)) { width: 4%; }
+.delivery-lists-table :deep(.app-table td:nth-child(1)) {
+  width: 4%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(2)),
-.delivery-lists-table :deep(.app-table td:nth-child(2)) { width: 17%; }
+.delivery-lists-table :deep(.app-table td:nth-child(2)) {
+  width: 17%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(3)),
-.delivery-lists-table :deep(.app-table td:nth-child(3)) { width: 10%; }
+.delivery-lists-table :deep(.app-table td:nth-child(3)) {
+  width: 10%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(4)),
-.delivery-lists-table :deep(.app-table td:nth-child(4)) { width: 10%; }
+.delivery-lists-table :deep(.app-table td:nth-child(4)) {
+  width: 10%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(5)),
-.delivery-lists-table :deep(.app-table td:nth-child(5)) { width: 9%; }
+.delivery-lists-table :deep(.app-table td:nth-child(5)) {
+  width: 9%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(6)),
-.delivery-lists-table :deep(.app-table td:nth-child(6)) { width: 9%; }
+.delivery-lists-table :deep(.app-table td:nth-child(6)) {
+  width: 9%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(7)),
-.delivery-lists-table :deep(.app-table td:nth-child(7)) { width: 11%; }
+.delivery-lists-table :deep(.app-table td:nth-child(7)) {
+  width: 11%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(8)),
-.delivery-lists-table :deep(.app-table td:nth-child(8)) { width: 16%; }
+.delivery-lists-table :deep(.app-table td:nth-child(8)) {
+  width: 16%;
+}
+
 .delivery-lists-table :deep(.app-table th:nth-child(9)),
-.delivery-lists-table :deep(.app-table td:nth-child(9)) { width: 14%; }
+.delivery-lists-table :deep(.app-table td:nth-child(9)) {
+  width: 14%;
+}
 
 .delivery-list-actions {
   display: flex;
@@ -580,5 +560,4 @@ function formatDate(value) {
   text-align: center;
   line-height: 1.35;
 }
-
 </style>
