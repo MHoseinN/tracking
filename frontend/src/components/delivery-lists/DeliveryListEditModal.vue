@@ -129,9 +129,12 @@ watch(() => [props.isOpen, props.list], ([open, list]) => {
   form.expectedReturnDate = datePart(list.expected_return_at);
   form.expectedReturnTime = timePart(list.expected_return_at);
   form.items = (list.items || []).filter((item) => Number(item.product_id) > 0).map((item) => ({ ...item }));
-  form.dailyTotal = formatPriceValue(form.items.reduce((sum, item) => (
+  const dailyItemsTotal = form.items.reduce((sum, item) => (
     sum + Math.max(1, Number(item.delivered_quantity) || 1) * Math.max(0, Number(item.daily_price_toman) || 0)
-  ), 0));
+  ), 0);
+  const hasIssuedInvoices = Array.isArray(list.invoices) && list.invoices.length > 0;
+  const issuedInvoiceTotal = Math.max(0, Number(list.invoice_total_toman) || 0);
+  form.dailyTotal = formatPriceValue(hasIssuedInvoices ? issuedInvoiceTotal : dailyItemsTotal);
   closeCustomerSearchImmediately();
 }, { immediate: true });
 
@@ -140,9 +143,12 @@ function submitForm() {
   errorMessage.value = validateForm();
   if (errorMessage.value) return;
   const customer = activeCustomers.value.find((item) => String(item.id) === form.customerId);
-  const pricedItems = allocateDailyTotal(form.items, Number(normalizeNumericSearch(form.dailyTotal)));
+  const targetTotal = Number(normalizeNumericSearch(form.dailyTotal));
+  const hasIssuedInvoices = Array.isArray(props.list.invoices) && props.list.invoices.length > 0;
+  const pricedItems = hasIssuedInvoices ? form.items : allocateDailyTotal(form.items, targetTotal);
   emit('save', {
     version: Number(props.list.version),
+    total_price_toman: targetTotal,
     customer_id: Number(customer.id),
     customer_name_snapshot: customer.name,
     delivered_at: combineDateTime(form.deliveryDate, form.deliveryTime),
@@ -171,8 +177,9 @@ function validateForm() {
   if (!form.items.length) return 'این لیست قلم قابل‌ویرایشی ندارد.';
   const normalizedTotal = normalizeNumericSearch(form.dailyTotal);
   if (normalizedTotal === '') return 'مجموع قیمت لیست را وارد کنید.';
+  const hasIssuedInvoices = Array.isArray(props.list?.invoices) && props.list.invoices.length > 0;
   const quantities = form.items.map((item) => Math.max(1, Number(item.delivered_quantity) || 1));
-  if (!findPriceAdditions(Number(normalizedTotal), quantities)) {
+  if (!hasIssuedInvoices && !findPriceAdditions(Number(normalizedTotal), quantities)) {
     return 'مجموع قیمت واردشده با تعداد اقلام این لیست سازگار نیست.';
   }
   return '';

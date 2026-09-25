@@ -37,6 +37,7 @@ router.get('/:id', [idValidation], getList);
 router.put('/:id/draft', [
   idValidation,
   body('version').isInt({ min: 1 }),
+  body('total_price_toman').optional().isInt({ min: 0 }),
   body('customer_id').optional({ nullable: true }).isInt({ min: 1 }),
   body('customer_name_snapshot').optional({ nullable: true }).isString().isLength({ max: 255 }),
   body('delivered_at').optional({ nullable: true }).isISO8601(),

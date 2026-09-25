@@ -26,6 +26,81 @@ function serializeDraft(row) {
   return row ? { ...row, night_before: Boolean(row.night_before) } : row;
 }
 
+function parseJson(value, fallback) {
+  try { return value ? JSON.parse(value) : fallback; }
+  catch (_error) { return fallback; }
+}
+
+function applyIssuedInvoiceTotal(db, listId, targetTotal) {
+  const invoices = db.prepare(`
+    SELECT id, final_amount_toman
+    FROM invoices
+    WHERE delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+    ORDER BY issued_at DESC, id DESC
+  `).all(listId);
+  if (!invoices.length) return null;
+
+  const previousTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.final_amount_toman || 0), 0);
+  let difference = targetTotal - previousTotal;
+  if (difference === 0) return { previousTotal, targetTotal, changed: false };
+
+  const insertAdjustment = db.prepare(`
+    INSERT INTO invoice_adjustments (
+      invoice_id, adjustment_type, description, percent_basis_points,
+      amount_toman, sort_order, created_at, updated_at
+    ) VALUES (?, ?, 'اصلاح مجموع قیمت از ویرایش لیست', NULL, ?, 9999, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `);
+  const applyDifference = (invoice, amount) => {
+    const increase = amount > 0 ? amount : 0;
+    const discount = amount < 0 ? Math.abs(amount) : 0;
+    db.prepare(`
+      UPDATE invoices
+      SET price = final_amount_toman + ?,
+          final_amount_toman = final_amount_toman + ?,
+          extra_charges_toman = extra_charges_toman + ?,
+          discount_amount_toman = discount_amount_toman + ?,
+          send_status = 'NOT_SENT', updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+      WHERE id = ?
+    `).run(amount, amount, increase, discount, invoice.id);
+    insertAdjustment.run(invoice.id, amount > 0 ? 'OTHER' : 'DISCOUNT_AMOUNT', amount);
+  };
+
+  if (difference > 0) {
+    applyDifference(invoices[0], difference);
+  } else {
+    let reductionRemaining = Math.abs(difference);
+    invoices.forEach((invoice) => {
+      if (reductionRemaining <= 0) return;
+      const reduction = Math.min(Number(invoice.final_amount_toman || 0), reductionRemaining);
+      if (reduction > 0) applyDifference(invoice, -reduction);
+      reductionRemaining -= reduction;
+    });
+  }
+
+  const paidTotal = Number(db.prepare(`
+    SELECT COALESCE(SUM(amount_toman), 0) AS total
+    FROM payments WHERE delivery_list_id = ? AND voided_at IS NULL
+  `).get(listId).total) || 0;
+  const list = db.prepare('SELECT invoice_status FROM delivery_lists WHERE id = ?').get(listId);
+  const settlementStatus = paidTotal === 0
+    ? 'UNPAID'
+    : list.invoice_status === 'ISSUED' && targetTotal > 0 && paidTotal >= targetTotal
+      ? 'PAID'
+      : 'PARTIAL';
+  db.prepare(`
+    UPDATE invoices
+    SET settlement_status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+  `).run(settlementStatus, listId);
+  db.prepare(`
+    UPDATE delivery_lists
+    SET invoice_send_status = 'NOT_SENT', settlement_status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(settlementStatus, listId);
+  return { previousTotal, targetTotal, changed: true };
+}
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 function addCalendarDays(dateText, days) {
@@ -221,7 +296,36 @@ function createDeliveryListDraftService(db) {
       ORDER BY sort_order, id
     `);
     invoices.forEach((invoice) => { invoice.lines = lineStatement.all(invoice.id); });
-    return { ...list, items, proforma, invoices, return_events: [...returnEventsById.values()] };
+    const changeHistory = db.prepare(`
+      SELECT audit_logs.id, audit_logs.action, audit_logs.before_json,
+             audit_logs.after_json, audit_logs.metadata_json, audit_logs.created_at,
+             COALESCE(users.display_name, users.username, 'کاربر سیستم') AS actor_name,
+             COALESCE(users.role, 'ADMIN') AS actor_role
+      FROM audit_logs
+      LEFT JOIN users ON users.id = audit_logs.actor_user_id
+      WHERE audit_logs.entity_type = 'DELIVERY_LIST'
+        AND audit_logs.entity_id = ?
+        AND audit_logs.action = 'UPDATE_DELIVERY_LIST'
+      ORDER BY audit_logs.id DESC
+      LIMIT 30
+    `).all(String(id)).map((entry) => ({
+      id: entry.id,
+      action: entry.action,
+      actor_name: entry.actor_name,
+      actor_role: entry.actor_role,
+      created_at: entry.created_at,
+      before: parseJson(entry.before_json, {}),
+      after: parseJson(entry.after_json, {}),
+      changed_fields: parseJson(entry.metadata_json, {}).changed_fields || []
+    }));
+    return {
+      ...list,
+      items,
+      proforma,
+      invoices,
+      return_events: [...returnEventsById.values()],
+      change_history: changeHistory
+    };
   }
 
   function getDraft(id) {
@@ -387,6 +491,46 @@ function createDeliveryListDraftService(db) {
     const expectedReturnAt = nullableText(payload.expected_return_at);
     const nightBefore = payload.night_before ? 1 : 0;
     const notes = nullableText(payload.notes);
+    const requestedTotal = payload.total_price_toman === undefined || payload.total_price_toman === null
+      ? null
+      : Number(payload.total_price_toman);
+    if (requestedTotal !== null && (!Number.isInteger(requestedTotal) || requestedTotal < 0)) {
+      throw new DeliveryListDraftError('مجموع قیمت لیست نامعتبر است');
+    }
+    const previousItems = db.prepare(`
+      SELECT id, product_id, daily_price_toman, delivered_quantity, notes
+      FROM delivery_list_items
+      WHERE delivery_list_id = ? AND deleted_at IS NULL
+      ORDER BY id
+    `).all(id);
+    const previousDailyTotal = previousItems.reduce((sum, item) => (
+      sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
+    ), 0);
+    const previousInvoiceTotal = Number(db.prepare(`
+      SELECT COALESCE(SUM(final_amount_toman), 0) AS total
+      FROM invoices
+      WHERE delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+    `).get(id).total) || 0;
+    const changedFields = [];
+    if (Number(draft.customer_id) !== Number(customer.customerId)) changedFields.push('OWNER');
+    if (String(draft.delivered_at || '') !== String(deliveredAt || '')) changedFields.push('DELIVERED_AT');
+    if (String(draft.expected_return_at || '') !== String(expectedReturnAt || '')) changedFields.push('EXPECTED_RETURN_AT');
+    if (Boolean(draft.night_before) !== Boolean(nightBefore)) changedFields.push('NIGHT_BEFORE');
+    if (String(draft.notes || '') !== String(notes || '')) changedFields.push('NOTES');
+    const previousById = new Map(previousItems.map((item) => [Number(item.id), item]));
+    if (items.some((item) => {
+      const previous = previousById.get(Number(item.itemId));
+      return !previous || Number(previous.product_id) !== Number(item.productId)
+        || Number(previous.delivered_quantity) !== Number(item.quantity);
+    }) || items.length !== previousItems.filter((item) => item.product_id).length) changedFields.push('ITEMS');
+    const itemPriceChanged = items.some((item) => {
+      const previous = previousById.get(Number(item.itemId));
+      return previous && Number(previous.daily_price_toman) !== Number(item.dailyPrice);
+    });
+    const previousComparableTotal = previousInvoiceTotal > 0 ? previousInvoiceTotal : previousDailyTotal;
+    if (itemPriceChanged || (requestedTotal !== null && requestedTotal !== previousComparableTotal)) {
+      changedFields.push('TOTAL_PRICE');
+    }
 
     const save = db.transaction(() => {
       const update = db.prepare(`
@@ -499,6 +643,10 @@ function createDeliveryListDraftService(db) {
         `).run(customer.customerId, id);
       }
 
+      const invoicePriceChange = draft.status !== 'DRAFT' && requestedTotal !== null
+        ? applyIssuedInvoiceTotal(db, id, requestedTotal)
+        : null;
+
       if (draft.status !== 'DRAFT') {
         const state = db.prepare(`
           SELECT
@@ -551,9 +699,24 @@ function createDeliveryListDraftService(db) {
         `).run(
           actorUserId,
           String(id),
-          JSON.stringify({ version: Number(draft.version), status: draft.status }),
-          JSON.stringify({ version: expectedVersion + 1, customer_id: customer.customerId }),
-          JSON.stringify({ item_count: items.length, edited_after_finalize: true })
+          JSON.stringify({
+            version: Number(draft.version),
+            status: draft.status,
+            customer_id: draft.customer_id,
+            customer_name: draft.customer_name || draft.customer_name_snapshot,
+            delivered_at: draft.delivered_at,
+            expected_return_at: draft.expected_return_at,
+            total_price_toman: previousComparableTotal
+          }),
+          JSON.stringify({
+            version: expectedVersion + 1,
+            customer_id: customer.customerId,
+            customer_name: customer.customerName,
+            delivered_at: deliveredAt,
+            expected_return_at: expectedReturnAt,
+            total_price_toman: invoicePriceChange?.targetTotal ?? requestedTotal ?? previousDailyTotal
+          }),
+          JSON.stringify({ item_count: items.length, edited_after_finalize: true, changed_fields: changedFields })
         );
       }
     });

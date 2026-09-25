@@ -331,7 +331,11 @@ async function openEditModal(list) {
   setActionLoading();
   if (!detailResult.success) return toast.error(detailResult.message);
   if (!customersResult) return toast.error(invoiceStore.error || 'دریافت فهرست مشتریان انجام نشد');
-  editingList.value = detailResult.data;
+  editingList.value = {
+    ...detailResult.data,
+    invoice_total_toman: Number(list.invoice_total_toman) || 0,
+    daily_total_toman: Number(list.daily_total_toman) || 0
+  };
 }
 
 function closeEditModal() {

@@ -21,7 +21,8 @@ function createDatabase() {
     CREATE TABLE users (
       id INTEGER PRIMARY KEY,
       username TEXT NOT NULL,
-      display_name TEXT
+      display_name TEXT,
+      role TEXT NOT NULL DEFAULT 'ADMIN'
     );
     CREATE TABLE customers (
       id INTEGER PRIMARY KEY,
@@ -241,7 +242,7 @@ function createDatabase() {
       FOREIGN KEY (actor_user_id) REFERENCES users(id)
     );
 
-    INSERT INTO users (id, username, display_name) VALUES (1, 'manager', 'مدیر');
+    INSERT INTO users (id, username, display_name, role) VALUES (1, 'manager', 'مدیر', 'MANAGER');
     INSERT INTO customers (id, name) VALUES (1, 'علی حیدری');
     INSERT INTO app_settings (id, billing_cutoff_minutes) VALUES (1, 660);
     INSERT INTO products (id, name, daily_price_toman) VALUES (1, 'Sony A7 IV', 1500000);
@@ -892,6 +893,26 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(finalList.invoice_status, 'ISSUED');
     assert.equal(finalList.invoices.length, 2);
     assert.equal(finalList.invoices[1].lines[0].billing_to_at, '2026-08-26T11:00:00+03:30');
+    const priceEditedList = listService.saveDraft(draft.id, {
+      version: finalList.version,
+      total_price_toman: 8000000,
+      customer_id: finalList.customer_id,
+      delivered_at: finalList.delivered_at,
+      expected_return_at: finalList.expected_return_at,
+      night_before: finalList.night_before,
+      notes: finalList.notes,
+      items: finalList.items.map((item) => ({
+        id: item.id,
+        product_id: item.product_id,
+        daily_price_toman: item.daily_price_toman,
+        delivered_quantity: item.delivered_quantity,
+        remaining_expected_return_at: item.remaining_expected_return_at,
+        notes: item.notes
+      }))
+    }, 1);
+    assert.equal(listService.listDeliveryLists().find((list) => list.id === draft.id).invoice_total_toman, 8000000);
+    assert.equal(priceEditedList.change_history[0].actor_role, 'MANAGER');
+    assert.deepEqual(priceEditedList.change_history[0].changed_fields, ['TOTAL_PRICE']);
   } finally {
     db.close();
   }

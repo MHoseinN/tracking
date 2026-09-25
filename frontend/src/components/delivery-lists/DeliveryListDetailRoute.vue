@@ -47,6 +47,31 @@
         </div>
       </section>
 
+      <section v-if="list.change_history?.length" class="app-panel overflow-hidden">
+        <div class="border-b border-slate-200 px-5 py-4">
+          <h3 class="text-sm font-black text-slate-800">تاریخچه ویرایش لیست</h3>
+          <p class="mt-1 text-xs text-slate-500">تغییرات ثبت‌شده به تفکیک کاربر و نقش سیستم</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          <article v-for="entry in list.change_history" :key="entry.id"
+            class="grid gap-3 px-5 py-4 md:grid-cols-[12rem_minmax(0,1fr)_10rem] md:items-center">
+            <div class="min-w-0">
+              <strong class="block truncate text-sm text-slate-800">{{ entry.actor_name }}</strong>
+              <span class="mt-1 inline-flex rounded-md bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700">
+                {{ roleLabel(entry.actor_role) }}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="change in historyChanges(entry)" :key="change"
+                class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600">
+                {{ change }}
+              </span>
+            </div>
+            <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatDateTime(entry.created_at) }}</time>
+          </article>
+        </div>
+      </section>
+
       <section v-if="list.invoices?.length" class="app-panel overflow-hidden">
         <div class="border-b border-slate-300 p-5"><h3 class="text-base font-black text-slate-800">فاکتورهای صادرشده این لیست</h3></div>
         <div class="p-5">
@@ -433,6 +458,27 @@ function invoiceSendStatusMeta(status) {
     PARTIALLY_SENT: { label: 'ارسال جزئی', className: 'bg-amber-100 text-amber-700' },
     SENT: { label: 'ارسال‌شده', className: 'bg-cyan-100 text-cyan-700' }
   }[status] || { label: 'ارسال‌نشده', className: 'bg-slate-100 text-slate-600' };
+}
+
+function roleLabel(role) {
+  return role === 'MANAGER' ? 'مدیر' : 'ادمین';
+}
+
+function historyChanges(entry) {
+  const before = entry.before || {};
+  const after = entry.after || {};
+  return (entry.changed_fields || []).map((field) => {
+    if (field === 'OWNER') return `مالک: ${before.customer_name || '—'} ← ${after.customer_name || '—'}`;
+    if (field === 'TOTAL_PRICE') {
+      return `مجموع قیمت: ${formatCurrency(before.total_price_toman)} ← ${formatCurrency(after.total_price_toman)}`;
+    }
+    if (field === 'DELIVERED_AT') return `زمان تحویل: ${formatDateTime(before.delivered_at)} ← ${formatDateTime(after.delivered_at)}`;
+    if (field === 'EXPECTED_RETURN_AT') return `زمان برگشت: ${formatDateTime(before.expected_return_at)} ← ${formatDateTime(after.expected_return_at)}`;
+    if (field === 'ITEMS') return 'اقلام لیست';
+    if (field === 'NIGHT_BEFORE') return 'محاسبه شب قبل';
+    if (field === 'NOTES') return 'توضیحات لیست';
+    return 'ویرایش لیست';
+  });
 }
 
 function formatNumber(value) { return Number(value || 0).toLocaleString('fa-IR'); }
