@@ -32,7 +32,7 @@
           <label class="draft-field draft-field--customer draft-field--row-one-customer">
             <span class="draft-field__label">مشتری</span>
             <div class="draft-customer-control">
-              <input v-model.trim="form.customerName" type="text" maxlength="255"
+              <input ref="customerInputRef" v-model.trim="form.customerName" type="text" maxlength="255"
                 placeholder="نام مشتری را وارد یا انتخاب کنید" autocomplete="off" role="combobox"
                 aria-autocomplete="list" aria-controls="customer-search-results" :aria-expanded="customerSearchOpen"
                 :aria-activedescendant="activeCustomerOptionId" @focus="openCustomerSearch"
@@ -59,9 +59,20 @@
                 @mousedown.prevent="selectCustomer(customerOption)">
                 <span class="draft-customer-result__identity">
                   <strong>{{ customerOption.name }}</strong>
-                  <small v-if="customerOption.referrer">معرف: {{ customerOption.referrer }}</small>
+                  <small>
+                    <template v-if="isExactPhoneMatch(customerOption)">تطبیق دقیق شماره تماس</template>
+                    <template v-else-if="customerOption.referrer">معرف: {{ customerOption.referrer }}</template>
+                    <template v-else>{{ customerOption.open_list_count || 0 }} لیست باز</template>
+                  </small>
                 </span>
-                <span class="draft-customer-result__phone">{{ customerOption.phone || 'بدون شماره تماس' }}</span>
+                <span class="draft-customer-result__meta">
+                  <small class="draft-customer-result__phone">{{ customerOption.phone || 'بدون شماره تماس' }}</small>
+                  <strong :class="Number(customerOption.balance_toman) > 0 ? 'text-rose-700' : 'text-emerald-700'">
+                    {{ Number(customerOption.balance_toman) > 0
+                      ? `بدهی ${formatCurrency(customerOption.balance_toman)}`
+                      : 'بدون بدهی' }}
+                  </strong>
+                </span>
               </button>
               <div v-if="!filteredCustomers.length" class="draft-customer-results__empty">
                 مشتری‌ای با این عبارت پیدا نشد.
@@ -97,6 +108,35 @@
               placeholder="یادداشت اختیاری برای این لیست" />
           </label>
         </div>
+
+        <section v-if="form.customerId" class="draft-customer-account-card"
+          :class="Number(selectedCustomerSummary.balance_toman) > 0
+            ? 'draft-customer-account-card--debt' : 'draft-customer-account-card--clear'">
+          <div class="draft-customer-account-card__identity">
+            <span>وضعیت حساب مشتری</span>
+            <strong>{{ selectedCustomer?.name || form.customerName }}</strong>
+            <small>{{ selectedCustomer?.phone || 'شماره تماس ثبت نشده' }}</small>
+          </div>
+          <div v-if="customerFinancialLoading" class="draft-customer-account-card__loading">در حال بررسی حساب...</div>
+          <div v-else class="draft-customer-account-card__stats">
+            <span>
+              <small>بدهی قبلی</small>
+              <strong>{{ formatCurrency(selectedCustomerSummary.balance_toman) }}</strong>
+            </span>
+            <span>
+              <small>اعتبار</small>
+              <strong>{{ formatCurrency(selectedCustomerSummary.credit_toman) }}</strong>
+            </span>
+            <span>
+              <small>لیست باز</small>
+              <strong>{{ formatNumber(selectedCustomerSummary.open_list_count) }}</strong>
+            </span>
+          </div>
+          <div class="draft-customer-account-card__actions">
+            <button type="button" @click="openCustomerProfile">مشاهده حساب</button>
+            <button type="button" @click="beginCustomerChange">تغییر مشتری</button>
+          </div>
+        </section>
 
         <div ref="itemsSection" class="draft-table-wrap">
           <table class="draft-items-table unified-list-table">
@@ -460,6 +500,9 @@ const showFinalizeConfirm = ref(false);
 const showCustomerModal = ref(false);
 const customerSearchOpen = ref(false);
 const customerActiveIndex = ref(-1);
+const customerInputRef = ref(null);
+const customerFinancialLoading = ref(false);
+const selectedCustomerFinancial = ref(null);
 const addRowsMenuOpen = ref(false);
 const addRowsMenuRef = ref(null);
 const rowSearchState = reactive({});
@@ -529,12 +572,26 @@ const editorStatusMeta = computed(() => ({
 
 const filteredCustomers = computed(() => {
   const query = form.customerName.trim().toLowerCase();
+  const phoneQuery = normalizePhone(form.customerName);
   return invoiceStore.customers
     .filter((customerOption) => !query
       || String(customerOption.name || '').toLowerCase().includes(query)
-      || String(customerOption.phone || '').includes(query)
+      || (phoneQuery && normalizePhone(customerOption.phone).includes(phoneQuery))
       || String(customerOption.referrer || '').toLowerCase().includes(query))
     .slice(0, 8);
+});
+
+const selectedCustomer = computed(() => invoiceStore.customers
+  .find((customer) => Number(customer.id) === Number(form.customerId)) || null);
+const selectedCustomerSummary = computed(() => {
+  if (Number(selectedCustomerFinancial.value?.customerId) === Number(form.customerId)) {
+    return selectedCustomerFinancial.value.summary;
+  }
+  return {
+    balance_toman: Number(selectedCustomer.value?.balance_toman) || 0,
+    credit_toman: Number(selectedCustomer.value?.credit_toman) || 0,
+    open_list_count: Number(selectedCustomer.value?.open_list_count) || 0
+  };
 });
 
 const activeCustomerOptionId = computed(() => {
@@ -557,10 +614,12 @@ const dailyListPrice = computed(() => activeItems.value.reduce((sum, item) => (
 const estimatedListPrice = computed(() => dailyListPrice.value * estimatedBillingDays.value);
 const pendingReturnCount = computed(() => activeItems.value.filter((item) => returnEntryFor(item).returnQuantity > 0).length);
 
-const finalizeConfirmMessage = computed(() => (
-  `تحویل ${formatNumber(activeItems.value.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
-  + 'پس از ثبت، پیش‌نویس به لیست تحویل‌شده تبدیل و پیش‌فاکتور خودکار ایجاد می‌شود.'
-));
+const finalizeConfirmMessage = computed(() => {
+  const debt = Number(selectedCustomerSummary.value.balance_toman) || 0;
+  return `تحویل ${formatNumber(activeItems.value.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
+    + (debt > 0 ? `این مشتری ${formatCurrency(debt)} بدهی قبلی دارد. ` : 'این مشتری بدهی قبلی ندارد. ')
+    + 'پس از ثبت، پیش‌نویس به لیست تحویل‌شده تبدیل و پیش‌فاکتور خودکار ایجاد می‌شود.';
+});
 
 const saveStatusClass = computed(() => ({
   saving: 'bg-blue-50 text-blue-700',
@@ -585,7 +644,10 @@ onMounted(async () => {
   try {
     const [draft] = await Promise.all([
       props.initialList ? Promise.resolve(props.initialList) : draftStore.fetchDraft(draftId.value),
-      invoiceStore.customers.length ? Promise.resolve() : invoiceStore.fetchCustomers(),
+      // Financial badges in the customer search depend on the latest account
+      // summary, so this page must not reuse a customer list cached by another
+      // route before those fields were loaded or after a payment changed them.
+      invoiceStore.fetchCustomers(),
       productStore.products.length ? Promise.resolve() : productStore.fetchCatalog()
     ]);
     await hydrateDraft(draft);
@@ -646,6 +708,7 @@ async function hydrateDraft(draft) {
   await nextTick();
   hydrating.value = false;
   initialized.value = true;
+  if (form.customerId) refreshSelectedCustomerFinancial(form.customerId);
   if (!draft.delivered_at) scheduleAutosave();
 }
 
@@ -789,6 +852,7 @@ function selectCustomer(customerOption) {
   form.customerName = customerOption.name;
   customerSearchOpen.value = false;
   customerActiveIndex.value = -1;
+  refreshSelectedCustomerFinancial(customerOption.id);
 }
 
 function closeCustomerSearchImmediately() {
@@ -806,6 +870,64 @@ async function openCustomerProfile() {
   closeCustomerSearchImmediately();
   if (!(await persistDraft())) return toast.error('ذخیره لیست پیش از ورود به صفحه مشتری انجام نشد');
   router.push(`/customer/${form.customerId}`);
+}
+
+function beginCustomerChange() {
+  customerInputRef.value?.focus();
+  customerInputRef.value?.select();
+  openCustomerSearch();
+}
+
+function isExactPhoneMatch(customer) {
+  const queryPhone = normalizePhone(form.customerName);
+  return queryPhone.length >= 10 && queryPhone === normalizePhone(customer.phone);
+}
+
+async function refreshSelectedCustomerFinancial(customerId) {
+  const requestedId = Number(customerId);
+  if (!requestedId) {
+    selectedCustomerFinancial.value = null;
+    return null;
+  }
+  customerFinancialLoading.value = true;
+  try {
+    const workflow = await invoiceStore.fetchCustomerWorkflow(requestedId);
+    if (Number(form.customerId) !== requestedId) return null;
+    selectedCustomerFinancial.value = {
+      customerId: requestedId,
+      summary: {
+        balance_toman: Number(workflow.summary?.balance_toman) || 0,
+        credit_toman: Number(workflow.summary?.credit_toman) || 0,
+        open_list_count: Number(workflow.summary?.open_list_count) || 0
+      }
+    };
+    const customerIndex = invoiceStore.customers.findIndex((customer) => Number(customer.id) === requestedId);
+    if (customerIndex !== -1) {
+      invoiceStore.customers[customerIndex] = {
+        ...invoiceStore.customers[customerIndex],
+        ...selectedCustomerFinancial.value.summary
+      };
+    }
+    return selectedCustomerFinancial.value.summary;
+  } catch (_error) {
+    if (Number(form.customerId) === requestedId) {
+      toast.error(invoiceStore.error || 'بررسی وضعیت مالی مشتری انجام نشد');
+    }
+    return null;
+  } finally {
+    if (Number(form.customerId) === requestedId) customerFinancialLoading.value = false;
+  }
+}
+
+function normalizePhone(value) {
+  const digits = String(value || '')
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/\D/g, '');
+  if (digits.startsWith('0098')) return `0${digits.slice(4)}`;
+  if (digits.startsWith('98') && digits.length === 12) return `0${digits.slice(2)}`;
+  if (digits.startsWith('9') && digits.length === 10) return `0${digits}`;
+  return digits;
 }
 
 function createItemRow(item = {}) {
@@ -1272,6 +1394,8 @@ async function openFinalizeConfirm() {
     return;
   }
   if (!(await persistDraft())) return toast.error('ذخیره تغییرات پیش از ثبت تحویل انجام نشد');
+  const refreshedFinancials = await refreshSelectedCustomerFinancial(form.customerId);
+  if (!refreshedFinancials) return;
   showFinalizeConfirm.value = true;
 }
 
@@ -1304,6 +1428,7 @@ function handleCustomerSaved(customer) {
   if (!customer) return;
   form.customerId = customer.id;
   form.customerName = customer.name;
+  refreshSelectedCustomerFinancial(customer.id);
 }
 
 function combineDateTime(persianDate, time) {
@@ -1569,11 +1694,117 @@ function formatSavedTime(value) {
   white-space: nowrap;
 }
 
+.draft-customer-result__meta {
+  display: grid;
+  flex: 0 0 auto;
+  gap: .15rem;
+  text-align: left;
+}
+
+.draft-customer-result__meta strong {
+  font-size: .65rem;
+  white-space: nowrap;
+}
+
 .draft-customer-results__empty {
   padding: 1rem;
   color: #94a3b8;
   font-size: .72rem;
   text-align: center;
+}
+
+.draft-customer-account-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .85rem 1.25rem;
+  border-bottom: 1px solid #ebe4d7;
+  background: #f8fafc;
+}
+
+.draft-customer-account-card--debt {
+  background: #fff1f2;
+  box-shadow: inset -4px 0 0 #e11d48;
+}
+
+.draft-customer-account-card--clear {
+  background: #ecfdf5;
+  box-shadow: inset -4px 0 0 #059669;
+}
+
+.draft-customer-account-card__identity {
+  display: grid;
+  min-width: 10rem;
+  gap: .15rem;
+}
+
+.draft-customer-account-card__identity span,
+.draft-customer-account-card__stats small {
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.draft-customer-account-card__identity strong {
+  color: #0f172a;
+  font-size: .88rem;
+}
+
+.draft-customer-account-card__identity small {
+  color: #64748b;
+  direction: ltr;
+  font-size: .7rem;
+  text-align: right;
+}
+
+.draft-customer-account-card__stats {
+  display: flex;
+  flex: 1 1 18rem;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+}
+
+.draft-customer-account-card__stats>span {
+  display: grid;
+  min-width: 7rem;
+  gap: .2rem;
+  border: 1px solid rgb(148 163 184 / 35%);
+  border-radius: .6rem;
+  background: rgb(255 255 255 / 75%);
+  padding: .45rem .65rem;
+  text-align: center;
+}
+
+.draft-customer-account-card__stats strong {
+  color: #0f172a;
+  font-size: .76rem;
+}
+
+.draft-customer-account-card__loading {
+  flex: 1 1 auto;
+  color: #0f766e;
+  font-size: .75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.draft-customer-account-card__actions {
+  display: flex;
+  gap: .5rem;
+}
+
+.draft-customer-account-card__actions button {
+  min-height: 2.15rem;
+  border: 1px solid #b8c7c2;
+  border-radius: .55rem;
+  background: #fff;
+  padding: 0 .7rem;
+  color: #0f5f4c;
+  font-size: .68rem;
+  font-weight: 800;
 }
 
 .draft-night-before {

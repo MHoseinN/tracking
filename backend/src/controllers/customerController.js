@@ -50,10 +50,14 @@ function mapCustomerRow(row) {
 }
 
 function normalizePhone(value) {
-  return String(value || '')
+  const digits = String(value || '')
     .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
     .replace(/[\u06f0-\u06f9]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
-    .replace(/[^\d+]/g, '');
+    .replace(/\D/g, '');
+  if (digits.startsWith('0098')) return `0${digits.slice(4)}`;
+  if (digits.startsWith('98') && digits.length === 12) return `0${digits.slice(2)}`;
+  if (digits.startsWith('9') && digits.length === 10) return `0${digits}`;
+  return digits;
 }
 
 function findCustomerByPhone(phone, excludedId = null) {
@@ -70,7 +74,54 @@ function findCustomerByPhone(phone, excludedId = null) {
 // GET /api/customers
 function getAllCustomers(req, res) {
   try {
-    const customers = db.prepare('SELECT * FROM customers ORDER BY name ASC').all().map(mapCustomerRow);
+    const customers = db.prepare(`
+      SELECT c.*,
+             COALESCE(workflow.invoiced_total_toman, 0) AS workflow_invoiced_toman,
+             COALESCE(paid.paid_total_toman, 0) AS paid_total_toman,
+             COALESCE(legacy.legacy_balance_toman, 0) AS legacy_balance_toman,
+             MAX(0, COALESCE(workflow.invoiced_total_toman, 0) - COALESCE(paid.paid_total_toman, 0))
+               + COALESCE(legacy.legacy_balance_toman, 0) AS balance_toman,
+             MAX(0, COALESCE(paid.paid_total_toman, 0) - COALESCE(workflow.invoiced_total_toman, 0))
+               AS credit_toman,
+             COALESCE(open_lists.open_list_count, 0) AS open_list_count
+      FROM customers c
+      LEFT JOIN (
+        SELECT customer_id, SUM(final_amount_toman) AS invoiced_total_toman
+        FROM invoices
+        WHERE delivery_list_id IS NOT NULL AND status = 'ISSUED' AND deleted_at IS NULL
+        GROUP BY customer_id
+      ) workflow ON workflow.customer_id = c.id
+      LEFT JOIN (
+        SELECT dl.customer_id, SUM(p.amount_toman) AS paid_total_toman
+        FROM payments p
+        JOIN delivery_lists dl ON dl.id = p.delivery_list_id
+        WHERE p.voided_at IS NULL AND dl.archived_at IS NULL
+        GROUP BY dl.customer_id
+      ) paid ON paid.customer_id = c.id
+      LEFT JOIN (
+        SELECT customer_id, SUM(price) AS legacy_balance_toman
+        FROM invoices
+        WHERE delivery_list_id IS NULL AND invoice_type = 'LEGACY'
+          AND deleted_at IS NULL AND COALESCE(is_settled, 0) = 0
+        GROUP BY customer_id
+      ) legacy ON legacy.customer_id = c.id
+      LEFT JOIN (
+        SELECT customer_id, COUNT(*) AS open_list_count
+        FROM delivery_lists
+        WHERE archived_at IS NULL AND status <> 'COMPLETED'
+        GROUP BY customer_id
+      ) open_lists ON open_lists.customer_id = c.id
+      WHERE c.deleted_at IS NULL
+      ORDER BY c.name ASC
+    `).all().map((row) => ({
+      ...mapCustomerRow(row),
+      workflow_invoiced_toman: Number(row.workflow_invoiced_toman) || 0,
+      paid_total_toman: Number(row.paid_total_toman) || 0,
+      legacy_balance_toman: Number(row.legacy_balance_toman) || 0,
+      balance_toman: Number(row.balance_toman) || 0,
+      credit_toman: Number(row.credit_toman) || 0,
+      open_list_count: Number(row.open_list_count) || 0
+    }));
     res.json(customers);
   } catch (err) {
     console.error('Get customers error:', err);
@@ -183,6 +234,20 @@ function getCustomerWorkflow(req, res) {
       paid_total_toman: 0,
       balance_toman: 0
     });
+
+    const legacy = db.prepare(`
+      SELECT COUNT(*) AS invoice_count, COALESCE(SUM(price), 0) AS balance_toman
+      FROM invoices
+      WHERE customer_id = ? AND delivery_list_id IS NULL AND invoice_type = 'LEGACY'
+        AND deleted_at IS NULL AND COALESCE(is_settled, 0) = 0
+    `).get(id);
+    summary.legacy_invoice_count = Number(legacy.invoice_count) || 0;
+    summary.legacy_balance_toman = Number(legacy.balance_toman) || 0;
+    summary.balance_toman += summary.legacy_balance_toman;
+    summary.invoiced_total_toman += summary.legacy_balance_toman;
+    summary.credit_toman = Math.max(0, summary.paid_total_toman
+      - (summary.invoiced_total_toman - summary.legacy_balance_toman));
+    summary.open_list_count = lists.filter((list) => list.status !== 'COMPLETED').length;
 
     res.json({ customer: mapCustomerRow(customer), lists, summary });
   } catch (err) {

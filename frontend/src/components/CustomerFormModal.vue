@@ -1,6 +1,5 @@
 <template>
-  <AppModal :is-open="isOpen" :title="isEditMode ? 'ویرایش مشتری' : 'افزودن مشتری'"
-    description="مشخصات پایه مشتری برای ساخت و پیگیری لیست‌ها استفاده می‌شود." size="md" :busy="saving" @close="close">
+  <AppModal :is-open="isOpen" :title="isEditMode ? 'ویرایش مشتری' : 'افزودن مشتری'" size="md" :busy="saving" @close="close">
     <form id="customer-form" class="space-y-5" @submit.prevent="saveCustomer">
       <div class="grid gap-4 sm:grid-cols-2">
         <AppFormField for-id="customer-first-name" label="نام" :error="errors.first_name" required>
