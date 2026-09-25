@@ -29,7 +29,6 @@
 
     <div class="app-metric-card__content text-center">
       <strong class="app-metric-card__value" :class="`app-metric-card__value--${normalizedTone}`">{{ value }}</strong>
-      <!-- <small v-if="meta" class="app-metric-card__meta">{{ meta }}</small> -->
     </div>
   </article>
 </template>

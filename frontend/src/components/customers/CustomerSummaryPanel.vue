@@ -11,7 +11,6 @@
 
         <span class="customer-summary__identity">
           <strong>{{ customer?.name || `${draft.first_name || ''} ${draft.last_name || ''}`.trim() || 'مشتری' }}</strong>
-          <small>پیش‌نمایش مشخصات مشتری</small>
         </span>
 
         <span class="customer-summary__facts">
@@ -78,7 +77,6 @@ const emit = defineEmits(['toggle', 'update-field', 'update:notes', 'save']);
 
 const customerOverviewItems = computed(() => [
   { label: 'جمع مبلغ فاکتورها', value: props.invoicedAmount, tone: 'blue', icon: 'invoice' },
-  { label: 'تعداد فاکتورها', value: props.invoiceCount, tone: 'violet', icon: 'users' },
   { label: 'تعداد لیست‌ها', value: props.listCount, tone: 'amber', icon: 'box' }
 ]);
 const customerSettlementItems = computed(() => [
