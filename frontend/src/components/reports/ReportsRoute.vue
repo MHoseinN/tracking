@@ -1,6 +1,11 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
+      <label class="app-filter-field w-full">
+        <span class="app-filter-label">سال گزارش</span>
+        <CustomSelect :model-value="selectedYear" :options="yearSelectOptions" trigger-class="app-filter-control"
+          @update:model-value="selectedYear = $event" />
+      </label>
       <button @click="exportReports"
         class="app-button border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100 focus:ring-sky-100">
         گزارش‌گیری
@@ -20,15 +25,6 @@
       </div>
 
       <section class="app-panel relative space-y-6 p-5">
-        <div class="relative flex flex-wrap items-start justify-between gap-4">
-          <h2 class="text-3xl font-black text-slate-800">{{ sectionTitle }}</h2>
-          <label class="app-filter-field min-w-[180px]">
-            <span class="app-filter-label">سال گزارش</span>
-            <CustomSelect :model-value="selectedYear" :options="yearSelectOptions" trigger-class="app-filter-control"
-              @update:model-value="selectedYear = $event" />
-          </label>
-        </div>
-
         <AppFinancialOverview primary-label="مبلغ دریافت‌شده"
           :primary-value="formatCurrency(report.summary.total_paid_toman)"
           :primary-meta="selectedYear === 'all' ? 'مجموع عملکرد همه سال‌ها' : `عملکرد ${sectionTitle}`"
@@ -222,7 +218,6 @@ const reportOutstandingPercent = computed(() => reportInvoicedTotal.value > 0
   ? Math.min(100, Math.round((Number(report.value.summary?.outstanding_toman || 0) / reportInvoicedTotal.value) * 100)) : 0);
 const reportOverviewItems = computed(() => [
   { label: 'جمع فاکتورها', value: formatCurrency(report.value.summary?.total_invoiced_toman), tone: 'blue', icon: 'invoice' },
-  { label: 'تعداد فاکتورها', value: formatNumber(report.value.summary?.invoice_count), tone: 'violet', icon: 'users' },
   { label: 'بهترین مشتری', value: report.value.top_customers?.[0]?.customer_name || '—', tone: 'amber', icon: 'crown', meta: `${formatNumber(report.value.summary?.list_count)} لیست ثبت‌شده` }
 ]);
 const reportSettlementItems = computed(() => [

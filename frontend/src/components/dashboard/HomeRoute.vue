@@ -16,17 +16,10 @@
       <p v-if="errorMessage" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{
         errorMessage }}</p>
 
-      <AppFinancialOverview
-        primary-label="مبلغ دریافت‌شده"
-        :primary-value="formatCurrency(summary.total_paid_toman)"
-        :primary-percent="paidPercent"
-        primary-percent-label="دریافت‌شده"
-        danger-label="مانده قابل دریافت"
-        :danger-value="formatCurrency(summary.outstanding_toman)"
-        :danger-percent="outstandingPercent"
-        danger-percent-label="در انتظار"
-        :items="homeOverviewItems"
-        status-title="وضعیت وصول درآمد"
+      <AppFinancialOverview primary-label="مبلغ دریافت‌شده" :primary-value="formatCurrency(summary.total_paid_toman)"
+        :primary-percent="paidPercent" primary-percent-label="دریافت‌شده" danger-label="مانده قابل دریافت"
+        :danger-value="formatCurrency(summary.outstanding_toman)" :danger-percent="outstandingPercent"
+        danger-percent-label="در انتظار" :items="homeOverviewItems" status-title="وضعیت وصول درآمد"
         :status-items="settlementStatusItems" />
 
       <section class="grid gap-6 2xl:grid-cols-2">
@@ -81,7 +74,7 @@
                 <h2 class="text-lg font-black text-slate-900">آخرین تسویه‌ها و پرداخت‌ها</h2>
                 <span class="app-table-panel__count">{{ formatNumber(recentPayments.length) }} ردیف</span>
               </div>
-              <AppButton size="sm" variant="secondary" @click="router.push('/lists')">پیگیری در  لیست‌ها</AppButton>
+              <AppButton size="sm" variant="secondary" @click="router.push('/lists')">پیگیری در لیست‌ها</AppButton>
             </div>
           </template>
           <AppDataTable class="home-table" :column-count="5" :empty="!recentPayments.length" min-width="100%"
@@ -173,7 +166,6 @@ const outstandingPercent = computed(() => invoicedTotal.value > 0
   ? Math.min(100, Math.round((Number(summary.value.outstanding_toman || 0) / invoicedTotal.value) * 100)) : 0);
 const homeOverviewItems = computed(() => [
   { label: 'جمع فاکتورها', value: formatCurrency(summary.value.total_invoiced_toman), tone: 'blue', icon: 'invoice' },
-  { label: 'تعداد فاکتورها', value: formatNumber(summary.value.invoice_count), tone: 'violet', icon: 'users' },
   { label: 'بهترین مشتری', value: bestCustomer.value?.customer_name || '—', tone: 'amber', icon: 'crown', meta: `${formatNumber(openListCount.value)} مورد نیازمند پیگیری` }
 ]);
 const settlementStatusItems = computed(() => [

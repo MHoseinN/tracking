@@ -7,7 +7,8 @@ const boldFont = path.join(vazirmatnRoot, 'fonts', 'ttf', 'Vazirmatn-Bold.ttf');
 const PAGE = { width: 595.28, height: 841.89, margin: 32 };
 const CONTENT_WIDTH = PAGE.width - (PAGE.margin * 2);
 const TABLE_TOP = 132;
-const TABLE_BOTTOM = PAGE.height - 58;
+const TABLE_BOTTOM = PAGE.height - 76;
+const FOOTER_Y = PAGE.height - 60;
 const ROW_HEIGHT = 28;
 const columns = [
   { key: 'new_price_toman', label: 'قیمت جدید', width: 95 },
@@ -22,7 +23,18 @@ function toPersianDigits(value) {
 }
 
 function formatMoney(value) {
-  return toPersianDigits(Number(value || 0).toLocaleString('en-US'));
+  const formatted = Number(value || 0).toLocaleString('fa-IR');
+  // PDFKit's RTL layout reverses a standalone Persian-number run. Feed that
+  // run in reverse so the glyphs appear in their natural order in the PDF.
+  return Array.from(formatted).reverse().join('');
+}
+
+function formatMixedDirectionText(value) {
+  const text = String(value ?? '');
+  if (!/[\u0600-\u06ff]/u.test(text)) return text;
+  return text.replace(/[A-Za-z0-9\u0660-\u0669\u06f0-\u06f9]+/gu, (token) => (
+    Array.from(token).reverse().join('')
+  ));
 }
 
 function formatPersianDate(value) {
@@ -65,19 +77,19 @@ function drawCell(doc, x, y, width, height, text, options = {}) {
 
 function drawHeader(doc, version, collectionName, pageNumber) {
   doc.save().lineWidth(0.8).rect(20, 20, PAGE.width - 40, PAGE.height - 40).stroke('#64748b').restore();
-  drawText(doc, collectionName, PAGE.margin, 34, CONTENT_WIDTH, {
+  drawText(doc, formatMixedDirectionText(collectionName), PAGE.margin, 34, CONTENT_WIDTH, {
     align: 'center', bold: true, size: 15, lineBreak: false
   });
-  drawText(doc, version.name, PAGE.margin, 61, CONTENT_WIDTH, {
+  drawText(doc, formatMixedDirectionText(version.name), PAGE.margin, 61, CONTENT_WIDTH, {
     align: 'center', bold: true, size: 11, color: '#334155', lineBreak: false
   });
-  drawText(doc, `نسخه: ${toPersianDigits(version.version_number)}`, PAGE.width - PAGE.margin - 170, 94, 170, {
+  drawText(doc, formatMixedDirectionText(`نسخه: ${toPersianDigits(version.version_number)}`), PAGE.width - PAGE.margin - 170, 94, 170, {
     bold: true, size: 8.5, lineBreak: false
   });
-  drawText(doc, `تاریخ ثبت: ${formatPersianDate(version.effective_from)}`, PAGE.margin, 94, 235, {
+  drawText(doc, formatMixedDirectionText(`تاریخ ثبت: ${formatPersianDate(version.effective_from)}`), PAGE.margin, 94, 235, {
     size: 8.5, lineBreak: false
   });
-  drawText(doc, `صفحه ${toPersianDigits(pageNumber)}`, PAGE.margin, PAGE.height - 47, CONTENT_WIDTH, {
+  drawText(doc, formatMixedDirectionText(`صفحه ${toPersianDigits(pageNumber)}`), PAGE.margin, FOOTER_Y, CONTENT_WIDTH, {
     align: 'center', size: 7.5, color: '#64748b', lineBreak: false
   });
 }
@@ -95,10 +107,11 @@ function drawTableHeader(doc, y) {
 function drawRow(doc, item, rowNumber, y) {
   const values = {
     ...item,
-    row: toPersianDigits(rowNumber),
+    row: formatMixedDirectionText(toPersianDigits(rowNumber)),
     previous_price_toman: formatMoney(item.previous_price_toman),
     new_price_toman: formatMoney(item.new_price_toman),
-    category_name_snapshot: item.category_name_snapshot || '-'
+    product_name_snapshot: formatMixedDirectionText(item.product_name_snapshot),
+    category_name_snapshot: formatMixedDirectionText(item.category_name_snapshot || '-')
   };
   let x = PAGE.margin;
   columns.forEach((column) => {
@@ -160,4 +173,9 @@ function createProductPriceVersionPdfService(db, catalogService) {
   };
 }
 
-module.exports = { createProductPriceVersionPdfService, renderPriceVersionPdf };
+module.exports = {
+  createProductPriceVersionPdfService,
+  renderPriceVersionPdf,
+  formatMoney,
+  formatMixedDirectionText
+};

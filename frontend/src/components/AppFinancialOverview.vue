@@ -62,7 +62,7 @@
           <div v-for="status in statusItems" :key="status.label" class="financial-overview__status-item">
             <div>
               <span>{{ status.label }}</span>
-              <strong  :class="`is-${status.tone || 'success'}`">{{ status.value }}</strong>
+              <strong :class="`is-${status.tone || 'success'}`">{{ status.value }}</strong>
             </div>
             <div class="financial-overview__bar"><i :class="`is-${status.tone || 'success'}`"
                 :style="{ width: `${normalizePercent(status.percent)}%` }" /></div>
@@ -343,7 +343,7 @@ const ringStyle = computed(() => ({
 
 .financial-overview__bottom {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(19rem, 1.65fr);
+  grid-template-columns:1fr 1fr 2fr;
   gap: 1rem;
 }
 

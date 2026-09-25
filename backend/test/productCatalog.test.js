@@ -5,7 +5,11 @@ const {
   ProductCatalogError,
   createProductCatalogService
 } = require('../src/services/productCatalogService');
-const { renderPriceVersionPdf } = require('../src/services/productPriceVersionPdfService');
+const {
+  formatMixedDirectionText,
+  formatMoney,
+  renderPriceVersionPdf
+} = require('../src/services/productPriceVersionPdfService');
 
 function createDatabase() {
   const db = new Database(':memory:');
@@ -171,6 +175,18 @@ test('price version PDF contains a valid multi-product document', async () => {
   assert.ok(buffer.length > 5000);
   assert.equal(buffer.subarray(0, 4).toString(), '%PDF');
   assert.match(buffer.toString('latin1'), /%%EOF/);
+  assert.equal((buffer.toString('latin1').match(/\/Type \/Page\b/g) || []).length, 2);
+});
+
+test('price version PDF compensates for PDFKit reversing Persian number runs', () => {
+  assert.equal(formatMoney(1234567890), '۰۹۸٬۷۶۵٬۴۳۲٬۱');
+  assert.equal(formatMoney(0), '۰');
+});
+
+test('price version PDF preserves mixed Persian, Latin and numeric product names', () => {
+  assert.equal(formatMixedDirectionText('رم 160 CF'), 'رم 061 FC');
+  assert.equal(formatMixedDirectionText('دوربین NX5'), 'دوربین 5XN');
+  assert.equal(formatMixedDirectionText('Sony A7 IV'), 'Sony A7 IV');
 });
 
 test('product and category deletion are soft and protected by catalog relations', () => {
