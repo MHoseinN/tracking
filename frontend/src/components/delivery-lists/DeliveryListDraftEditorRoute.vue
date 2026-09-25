@@ -42,6 +42,14 @@
                 @keydown.escape.prevent="closeCustomerSearchImmediately" />
               <button type="button" title="ایجاد مشتری جدید" aria-label="ایجاد مشتری جدید"
                 @click="showCustomerModal = true">+</button>
+              <button v-if="form.customerId" type="button" class="draft-customer-profile-button"
+                title="مشاهده صفحه مشتری" aria-label="مشاهده صفحه مشتری"
+                @mousedown.prevent @click="openCustomerProfile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M19 5l-8 8" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" />
+                </svg>
+              </button>
             </div>
             <div v-if="customerSearchOpen" id="customer-search-results" class="draft-customer-results" role="listbox">
               <button v-for="(customerOption, customerIndex) in filteredCustomers"
@@ -792,6 +800,14 @@ function closeCustomerSearch() {
   window.setTimeout(closeCustomerSearchImmediately, 120);
 }
 
+async function openCustomerProfile() {
+  syncCustomerId();
+  if (!form.customerId) return toast.info('ابتدا یک مشتری را از فهرست انتخاب کنید');
+  closeCustomerSearchImmediately();
+  if (!(await persistDraft())) return toast.error('ذخیره لیست پیش از ورود به صفحه مشتری انجام نشد');
+  router.push(`/customer/${form.customerId}`);
+}
+
 function createItemRow(item = {}) {
   const localKey = nextLocalKey();
   rowSearchState[localKey] = {
@@ -1471,6 +1487,16 @@ function formatSavedTime(value) {
   color: var(--draft-green);
   font-size: 1.25rem;
   font-weight: 900;
+}
+
+.draft-customer-control .draft-customer-profile-button {
+  border: 1px solid #b9d5cc;
+  background: #fff;
+}
+
+.draft-customer-profile-button svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .draft-customer-results {
