@@ -26,7 +26,7 @@
         >
           <header class="app-modal-header">
             <div class="min-w-0">
-              <h2 :id="titleId" class="text-lg font-black text-slate-900">{{ title }}</h2>
+              <h2 :id="titleId" class="text-lg mt-2 font-black text-slate-900">{{ title }}</h2>
               <p v-if="description" :id="descriptionId" class="mt-1 text-xs leading-6 text-slate-500">{{ description }}</p>
             </div>
             <AppIconButton v-if="showClose" label="بستن" variant="ghost" :disabled="busy" @click="requestClose">

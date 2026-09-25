@@ -447,6 +447,7 @@ test('edits a finalized list without recreating its proforma', () => {
   const db = createDatabase();
   try {
     const service = createDeliveryListDraftService(db);
+    db.prepare("INSERT INTO customers (id, name) VALUES (2, 'مهدی باقری')").run();
     const draft = service.createDraft(1);
     const saved = service.saveDraft(draft.id, {
       version: draft.version,
@@ -460,7 +461,7 @@ test('edits a finalized list without recreating its proforma', () => {
 
     const edited = service.saveDraft(finalized.id, {
       version: finalized.version,
-      customer_id: 1,
+      customer_id: 2,
       delivered_at: '2026-08-24T19:00:00+03:30',
       expected_return_at: '2026-08-27T11:00:00+03:30',
       night_before: true,
@@ -477,11 +478,14 @@ test('edits a finalized list without recreating its proforma', () => {
     }, 1);
 
     assert.equal(edited.status, 'DELIVERED');
+    assert.equal(edited.customer_id, 2);
+    assert.equal(edited.customer_name, 'مهدی باقری');
     assert.equal(edited.night_before, true);
     assert.equal(edited.items.length, 2);
     assert.equal(edited.items[0].daily_price_toman, 1600000);
     assert.equal(edited.items[0].delivered_quantity, 3);
     assert.equal(edited.proforma.id, originalProformaId);
+    assert.equal(db.prepare('SELECT customer_id FROM invoices WHERE id = ?').get(originalProformaId).customer_id, 2);
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
     assert.equal(
       db.prepare('SELECT action FROM audit_logs ORDER BY id DESC LIMIT 1').get().action,

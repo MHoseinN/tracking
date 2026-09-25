@@ -82,7 +82,7 @@
 
         <tr v-for="(list, index) in paginatedLists" :key="list.id" class="app-table-row">
           <td class="text-center font-bold text-slate-500">{{ formatNumber(rowStartIndex + index + 1) }}</td>
-          <td class="font-black text-slate-800">{{ displayListNumber(list) }}</td>
+          <td class="text-center font-black text-slate-800">{{ displayListNumber(list) }}</td>
           <td>{{ formatDate(list.delivered_at) }}</td>
           <td>
             <AppStatusButton group="list" :status="list.status" :loading="isActionLoading(list, 'list')"

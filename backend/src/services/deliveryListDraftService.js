@@ -488,6 +488,17 @@ function createDeliveryListDraftService(db) {
         `).run(item.id, id);
       });
 
+      // Ownership belongs to the delivery list, not to the customer profile.
+      // Keep every invoice attached to the list under the same customer so
+      // customer reports and financial statistics do not retain the old owner.
+      if (draft.status !== 'DRAFT' && Number(draft.customer_id) !== Number(customer.customerId)) {
+        db.prepare(`
+          UPDATE invoices
+          SET customer_id = ?, updated_at = CURRENT_TIMESTAMP, version = version + 1
+          WHERE delivery_list_id = ? AND deleted_at IS NULL
+        `).run(customer.customerId, id);
+      }
+
       if (draft.status !== 'DRAFT') {
         const state = db.prepare(`
           SELECT

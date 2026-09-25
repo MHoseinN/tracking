@@ -284,7 +284,7 @@ body {
 }
 
 .app-shell__actions-content > * { width:100%; }
-.app-shell__actions-content .app-button { width:100%; justify-content:space-between; border-color:#d8cfba; }
+.app-shell__actions-content .app-button { width:100%; justify-content:center; border-color:#d8cfba; text-align:center; }
 
 .app-shell--nav-collapsed .app-shell__nav .app-shell__label-block,
 .app-shell--nav-collapsed .app-shell__nav .app-shell__label-text,
@@ -598,7 +598,7 @@ body {
 }
 
 .app-modal-header {
-  @apply flex shrink-0 items-start justify-between gap-4 border-b px-6 py-5;
+  @apply flex shrink-0 items-start justify-between gap-4 border-b px-6 py-2;
   border-color:#e7dfcb;
   background:#fffdf8;
 }

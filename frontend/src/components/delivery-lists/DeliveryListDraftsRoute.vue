@@ -65,29 +65,29 @@
         <tr v-for="(draft, index) in paginatedDrafts" :key="draft.id" class="app-table-row">
           <td class="text-center font-bold text-slate-500">{{ formatNumber(rowStartIndex + index + 1) }}</td>
           <td class="font-bold text-slate-900">{{ draft.customer_name || 'نامشخص' }}</td>
-          <td>{{ formatDate(draft.delivered_at) }}</td>
-          <td>
+          <td class="text-center">{{ formatDate(draft.delivered_at) }}</td>
+          <td class="text-center">
             <AppStatusButton group="list" :status="draft.status" :loading="isActionLoading(draft, 'list')"
               :aria-label="`مدیریت وضعیت لیست ${draft.list_number || draft.id}`" @click="manageListStatus(draft)" />
           </td>
-          <td>
+          <td class="text-center">
             <AppStatusButton group="invoice" :status="draft.invoice_status" :loading="isActionLoading(draft, 'invoice')"
               :aria-label="`مدیریت فاکتور لیست ${draft.list_number || draft.id}`" @click="manageInvoice(draft)" />
           </td>
-          <td>
+          <td class="text-center">
             <AppStatusButton v-if="draft.invoice_status !== 'NONE' && draft.invoice_status !== 'PROFORMA'" group="send"
               :status="draft.invoice_send_status" :loading="isActionLoading(draft, 'send')"
               :aria-label="`مدیریت ارسال فاکتور لیست ${draft.list_number || draft.id}`"
               @click="manageInvoiceSend(draft)" />
             <AppStatusBadge v-else group="send" :status="draft.invoice_send_status" />
           </td>
-          <td>
+          <td class="text-center">
             <AppStatusButton v-if="draft.status !== 'DRAFT'" group="settlement" :status="draft.settlement_status"
               :loading="isActionLoading(draft, 'settlement')"
               :aria-label="`مدیریت تسویه لیست ${draft.list_number || draft.id}`" @click="openSettlement(draft)" />
             <AppStatusBadge v-else group="settlement" :status="draft.settlement_status" />
           </td>
-          <td class="font-black text-slate-800">
+          <td class="text-center font-black text-slate-800">
             {{ hasIssuedInvoice(draft) ? formatCurrency(draft.invoice_total_toman) : '—' }}
           </td>
           <td>
@@ -100,7 +100,7 @@
                 </svg>
               </AppIconButton>
               <AppIconButton v-if="draft.status !== 'DRAFT'" label="ویرایش لیست" size="sm" variant="primary"
-                @click="router.push(`/lists/${draft.id}`)">
+                :loading="isActionLoading(draft, 'edit')" @click="openEditModal(draft)">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" />
@@ -135,6 +135,8 @@
       @close="closeInvoiceSendModal" @save="handleInvoiceSend" @request-unsent="invoiceToResetSend = sendInvoice" />
     <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
       @close="showSettlementModal = false" @record="handleRecordPayment" @void="handleVoidPayment" />
+    <DeliveryListEditModal :is-open="Boolean(editingList)" :list="editingList" :customers="invoiceStore.customers"
+      :saving="editSaving" @close="closeEditModal" @save="handleEditSave" />
     <ConfirmModal :is-open="Boolean(invoiceToResetSend)" title="لغو وضعیت ارسال فاکتور"
       :message="`فاکتور ${invoiceToResetSend?.invoice_number || ''} دوباره به وضعیت «ارسال‌نشده» برگردد؟ این تغییر در تاریخچه ثبت می‌شود.`"
       :loading="updatingSendStatus" confirm-text="بله، ارسال‌نشده شود" loading-text="در حال ثبت..."
@@ -159,10 +161,12 @@ import AppStatusButton from '../ui/AppStatusButton.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryInvoiceSendModal from './DeliveryInvoiceSendModal.vue';
+import DeliveryListEditModal from './DeliveryListEditModal.vue';
 import DeliverySettlementModal from './DeliverySettlementModal.vue';
 import { deliveryListService } from '../../modules/delivery-lists/api/deliveryList.service';
 import { usePaginatedList } from '../../composables/usePaginatedList';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
+import { useInvoiceStore } from '../../stores/invoiceStore';
 import { toPersianDate } from '../../utils/dateConverter';
 import { normalizeNumericSearch } from '../../utils/numberSearch';
 import { STATUS_GROUPS } from '../../utils/statusStyles';
@@ -170,6 +174,7 @@ import { STATUS_GROUPS } from '../../utils/statusStyles';
 const router = useRouter();
 const toast = useToast();
 const draftStore = useDeliveryListStore();
+const invoiceStore = useInvoiceStore();
 const tableSectionRef = ref(null);
 const searchQuery = ref('');
 const filtersExpanded = ref(false);
@@ -196,6 +201,8 @@ const invoiceToResetSend = ref(null);
 const showSettlementModal = ref(false);
 const settlementSummary = ref(null);
 const settlementSaving = ref(false);
+const editingList = ref(null);
+const editSaving = ref(false);
 let stopRealtime = null;
 let syncInFlight = false;
 
@@ -310,6 +317,37 @@ async function confirmDelete() {
   if (!result.success) return toast.error(result.message);
   toast.success('رکورد لیست حذف شد');
   draftToDelete.value = null;
+}
+
+async function openEditModal(list) {
+  if (actionLoadingKey.value || editSaving.value) return;
+  setActionLoading(list, 'edit');
+  const [detailResult, customersResult] = await Promise.all([
+    draftStore.getListDetails(list.id),
+    invoiceStore.customers.length
+      ? Promise.resolve(true)
+      : invoiceStore.fetchCustomers().then(() => true).catch(() => false)
+  ]);
+  setActionLoading();
+  if (!detailResult.success) return toast.error(detailResult.message);
+  if (!customersResult) return toast.error(invoiceStore.error || 'دریافت فهرست مشتریان انجام نشد');
+  editingList.value = detailResult.data;
+}
+
+function closeEditModal() {
+  if (editSaving.value) return;
+  editingList.value = null;
+}
+
+async function handleEditSave(payload) {
+  if (!editingList.value || editSaving.value) return;
+  editSaving.value = true;
+  const result = await draftStore.saveDraft(editingList.value.id, payload);
+  editSaving.value = false;
+  if (!result.success) return toast.error(result.message);
+  editingList.value = null;
+  await loadLists({ silent: true, notify: false });
+  toast.success('تغییرات لیست ذخیره شد');
 }
 
 async function manageListStatus(list) {
