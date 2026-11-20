@@ -373,34 +373,46 @@
       :description="isFocusedDamageEdit ? focusedReturnEditItem?.product_name_snapshot || '' : 'تاریخ برگشت و نتیجه بررسی سلامت را اصلاح کنید'"
       size="lg" :busy="savingReturnEdit" @close="closeReturnEventEditor">
       <div class="return-event-editor">
-        <div v-if="!isFocusedDamageEdit && !returnEventIsInvoiced(editingReturnEvent)" class="return-confirm-fields">
-          <label class="draft-field"><span class="draft-field__label">تاریخ برگشت</span>
-            <JalaliDatePicker v-model="editReturnDate" input-class="draft-field__control" />
-          </label>
-          <label class="draft-field"><span class="draft-field__label">ساعت برگشت</span>
-            <TimePicker24 v-model="editReturnTime" input-class="draft-field__control" />
-          </label>
-        </div>
+        <section v-if="!isFocusedDamageEdit && !returnEventIsInvoiced(editingReturnEvent)" class="return-edit-section">
+          <div class="return-edit-section__heading">
+            <strong>زمان دریافت</strong>
+            <span>تغییر این زمان برای همه اقلام این نوبت دریافت اعمال می‌شود.</span>
+          </div>
+          <div class="return-edit-datetime">
+            <div class="return-edit-field"><span>تاریخ برگشت</span>
+              <JalaliDatePicker v-model="editReturnDate" input-class="return-edit-control" />
+            </div>
+            <div class="return-edit-field"><span>ساعت برگشت</span>
+              <TimePicker24 v-model="editReturnTime" input-class="return-edit-control" />
+            </div>
+          </div>
+        </section>
         <div v-else-if="!isFocusedDamageEdit" class="invoiced-return-notice">
           تاریخ این برگشت در فاکتور استفاده شده و ثابت می‌ماند؛ نتیجه بررسی سلامت و شرح خسارت قابل اصلاح است.
         </div>
-        <div v-for="item in visibleEditReturnItems" :key="item.id" class="return-health-row"
+        <div v-if="!isFocusedDamageEdit" class="return-edit-section__heading">
+          <strong>اقلام دریافت‌شده</strong>
+          <span>{{ formatNumber(visibleEditReturnItems.length) }} محصول در این نوبت</span>
+        </div>
+        <section v-for="item in visibleEditReturnItems" :key="item.id" class="return-health-row"
           :class="{ 'return-health-row--single': isFocusedDamageEdit }">
           <div class="return-health-row__title"><strong>{{ item.product_name_snapshot }}</strong>
-            <span>جمع برگشتی: {{ formatNumber(item.total_quantity) }}</span>
+            <span>جمع برگشتی: {{ formatNumber(item.total_quantity) }} عدد</span>
           </div>
-          <label><span>تعداد خسارتی</span><input v-model.number="item.damaged_quantity" type="number" min="0"
-              :max="item.total_quantity" :data-return-damage-item="item.id" /></label>
-          <div v-if="!isFocusedDamageEdit" class="return-health-row__healthy"><span>سالم</span><strong>{{
-            formatNumber(item.total_quantity - normalizedDamageQuantity(item)) }}</strong></div>
-          <label class="return-health-row__notes"><span>شرح خسارت</span>
-            <input v-model.trim="item.damage_notes" type="text" maxlength="2000"
-              :disabled="normalizedDamageQuantity(item) === 0"
-              :placeholder="normalizedDamageQuantity(item) ? 'نوع و شرح خسارت' : 'بدون خسارت'" /></label>
-        </div>
-        <label v-if="!isFocusedDamageEdit" class="draft-field"><span class="draft-field__label">یادداشت این برگشت</span>
-          <textarea v-model.trim="editReturnNotes" class="draft-field__control !h-20 py-2"
-            maxlength="5000"></textarea></label>
+          <div class="return-health-row__fields">
+            <label><span>تعداد خسارتی</span><input v-model.number="item.damaged_quantity" type="number" min="0"
+                :max="item.total_quantity" :data-return-damage-item="item.id" /></label>
+            <div v-if="!isFocusedDamageEdit" class="return-health-row__healthy"><span>تعداد سالم</span><strong>{{
+              formatNumber(item.total_quantity - normalizedDamageQuantity(item)) }}</strong></div>
+            <label class="return-health-row__notes"><span>شرح خسارت</span>
+              <input v-model.trim="item.damage_notes" type="text" maxlength="2000"
+                :disabled="normalizedDamageQuantity(item) === 0"
+                :placeholder="normalizedDamageQuantity(item) ? 'نوع و شرح خسارت' : 'بدون خسارت'" /></label>
+          </div>
+        </section>
+        <label v-if="!isFocusedDamageEdit" class="return-edit-notes"><span>یادداشت این برگشت</span>
+          <textarea v-model.trim="editReturnNotes" rows="3" maxlength="5000"
+            placeholder="توضیحات تکمیلی این نوبت دریافت"></textarea></label>
       </div>
       <template #footer>
         <button type="button" class="app-button-secondary" :disabled="savingReturnEdit"
@@ -2709,7 +2721,84 @@ function formatSavedTime(value) {
 
 .return-event-editor {
   display: grid;
+  min-width: 0;
+  gap: 1.25rem;
+}
+
+.return-event-editor > * {
+  min-width: 0;
+}
+
+.return-edit-section {
+  display: grid;
+  min-width: 0;
   gap: 1rem;
+  border: 1px solid #dbe5e1;
+  border-radius: .7rem;
+  background: #f8fbf9;
+  padding: 1rem;
+}
+
+.return-edit-section__heading {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .25rem .75rem;
+}
+
+.return-edit-section__heading strong {
+  color: #1e293b;
+  font-size: .85rem;
+}
+
+.return-edit-section__heading span {
+  color: #64748b;
+  font-size: .72rem;
+  line-height: 1.7;
+}
+
+.return-edit-datetime {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.return-edit-field,
+.return-edit-notes {
+  display: grid;
+  min-width: 0;
+  gap: .4rem;
+  color: #475569;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.return-edit-field :deep(.jalali-picker),
+.return-edit-field :deep(.time-picker-24) {
+  min-width: 0;
+  width: 100%;
+}
+
+.return-edit-field :deep(.return-edit-control),
+.return-edit-notes textarea {
+  width: 100%;
+  min-width: 0;
+  height: 2.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: .5rem;
+  background: #fff;
+  padding: 0 .75rem;
+  color: #1e293b;
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+.return-edit-notes textarea {
+  height: auto;
+  min-height: 5.5rem;
+  padding: .7rem .75rem;
+  resize: vertical;
 }
 
 .invoiced-return-notice {
@@ -2724,24 +2813,35 @@ function formatSavedTime(value) {
 
 .return-health-row {
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) 8rem 5rem minmax(12rem, 1.3fr);
-  align-items: end;
-  gap: .65rem;
+  min-width: 0;
+  gap: .85rem;
   border: 1px solid #e2e8f0;
   border-radius: .7rem;
   background: #f8fafc;
-  padding: .75rem;
+  padding: 1rem;
 }
 
 .return-health-row--single {
-  grid-template-columns: minmax(8rem, 1fr) 7rem minmax(11rem, 1.4fr);
   border-color: #fed7aa;
   background: #fffaf3;
   box-shadow: 0 0 0 3px rgba(251, 146, 60, .1);
 }
 
+.return-health-row__fields {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 8rem) minmax(0, 6rem) minmax(0, 1fr);
+  align-items: end;
+  gap: .75rem;
+}
+
+.return-health-row--single .return-health-row__fields {
+  grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+}
+
 .return-health-row label {
   display: grid;
+  min-width: 0;
   gap: .3rem;
   color: #64748b;
   font-size: .68rem;
@@ -2769,13 +2869,17 @@ function formatSavedTime(value) {
 }
 
 .return-health-row__title {
-  display: grid;
-  gap: .25rem;
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .25rem .65rem;
 }
 
 .return-health-row__title strong {
   color: #1e293b;
-  font-size: .78rem;
+  font-size: .85rem;
+  overflow-wrap: anywhere;
 }
 
 .return-health-row__title span {
@@ -2785,6 +2889,7 @@ function formatSavedTime(value) {
 
 .return-health-row__healthy {
   display: grid;
+  min-width: 0;
   height: 2.35rem;
   place-items: center;
   border-radius: .5rem;
@@ -2798,8 +2903,13 @@ function formatSavedTime(value) {
 }
 
 @media (max-width: 767px) {
-  .return-health-row {
-    grid-template-columns: 1fr 1fr;
+  .return-edit-datetime {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .return-health-row__fields,
+  .return-health-row--single .return-health-row__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .return-health-row__notes {
