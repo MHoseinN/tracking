@@ -434,7 +434,7 @@
         </label>
       </div>
       <template #footer>
-        <button type="button" class="app-button-secondary" @click="useOverallItemSchedule">استفاده از تاریخ کلی</button>
+        <button type="button" class="app-button-secondary" @click="useOverallItemSchedule">بدون تاریخ جداگانه</button>
         <button type="button" class="app-button-primary" @click="saveItemSchedule">ذخیره تاریخ محصول</button>
       </template>
     </AppModal>
@@ -804,8 +804,7 @@ function buildPayload() {
       daily_price_toman: Math.max(0, Math.round(Number(item.daily_price_toman) || 0)),
       delivered_quantity: Math.max(1, Math.round(Number(item.delivered_quantity) || 1)),
       remaining_expected_return_at: !isDraft.value && currentRemaining(item) > 0
-        ? combineDateTime(item.remainingExpectedReturnDate || form.expectedReturnDate,
-          item.remainingExpectedReturnTime || form.expectedReturnTime || timeFromMinutes(billingCutoffMinutes.value))
+        ? combineDateTime(item.remainingExpectedReturnDate, item.remainingExpectedReturnTime)
         : null,
       notes: item.notes || null
     }))
@@ -1335,12 +1334,6 @@ async function submitInlineReturn() {
   }
   const selectedItems = activeItems.value.filter((item) => returnEntryFor(item).returnQuantity > 0);
   if (!selectedItems.length) return toast.error('حداقل یک قلم را برای برگشت انتخاب کنید');
-  const hasRemaining = selectedItems.some((item) => remainingAfterReturn(item) > 0);
-  const expectedReturnAt = combineDateTime(form.expectedReturnDate, form.expectedReturnTime);
-  if (hasRemaining && (!expectedReturnAt || Date.parse(expectedReturnAt) < Date.parse(returnedAt))) {
-    showReturnConfirm.value = false;
-    return toast.error('برای اقلام مانده، تاریخ برگشت تقریبی لیست را بعد از زمان این برگشت قرار دهید');
-  }
   for (const item of selectedItems) {
     const state = returnEntryFor(item);
     if (state.damagedQuantity > 0 && !state.damageNotes.trim()) {
@@ -1360,7 +1353,7 @@ async function submitInlineReturn() {
         healthy_quantity: state.returnQuantity - state.damagedQuantity,
         damaged_quantity: state.damagedQuantity,
         remaining_expected_return_at: remainingAfterReturn(item) > 0
-          ? expectedReturnAt
+          ? combineDateTime(item.remainingExpectedReturnDate, item.remainingExpectedReturnTime)
           : null,
         damage_notes: state.damageNotes || null
       };

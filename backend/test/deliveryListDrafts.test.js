@@ -527,7 +527,7 @@ test('calculates cutoff boundaries and night-before exactly', () => {
   assert.equal(calculateChargedDays({ ...tenAmCutoff, returnedAt: '2026-11-23T08:00:00+03:30' }), 2);
 });
 
-test('records partial and complete healthy returns with independent charged days', () => {
+test('records a partial return after the original estimate without requiring a new date', () => {
   const db = createDatabase();
   try {
     const service = createDeliveryListDraftService(db);
@@ -536,32 +536,23 @@ test('records partial and complete healthy returns with independent charged days
       version: draft.version,
       customer_id: 1,
       delivered_at: '2026-08-24T18:00:00+03:30',
-      expected_return_at: '2026-08-27T11:00:00+03:30',
+      expected_return_at: '2026-08-25T11:00:00+03:30',
       items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 3 }]
     });
     const finalized = service.finalizeDraft(draft.id, saved.version, 1);
     const itemId = finalized.items[0].id;
 
-    assert.throws(() => service.recordReturn(draft.id, {
-      returned_at: '2026-08-25T11:00:00+03:30',
-      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
-    }, 1), /تاریخ پیگیری مانده/);
-
     const partial = service.recordReturn(draft.id, {
-      returned_at: '2026-08-25T11:00:00+03:30',
-      items: [{
-        delivery_list_item_id: itemId,
-        healthy_quantity: 1,
-        remaining_expected_return_at: '2026-08-26T11:00:00+03:30'
-      }]
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: itemId, healthy_quantity: 1 }]
     }, 1);
     assert.equal(partial.status, 'REMAINING');
     assert.equal(partial.items[0].remaining_quantity, 2);
-    assert.equal(partial.items[0].remaining_expected_return_at, '2026-08-26T11:00:00+03:30');
-    assert.equal(partial.return_events[0].items[0].system_calculated_days, 1);
+    assert.equal(partial.items[0].remaining_expected_return_at, null);
+    assert.equal(partial.return_events[0].items[0].system_calculated_days, 2);
 
     const completed = service.recordReturn(draft.id, {
-      returned_at: '2026-08-26T11:00:00+03:30',
+      returned_at: '2026-08-27T11:00:00+03:30',
       items: [{ delivery_list_item_id: itemId, healthy_quantity: 2 }]
     }, 1);
     assert.equal(completed.status, 'COMPLETED');
@@ -569,7 +560,7 @@ test('records partial and complete healthy returns with independent charged days
     assert.equal(completed.items[0].remaining_expected_return_at, null);
     assert.equal(completed.items[0].item_status, 'RETURNED');
     assert.equal(completed.return_events.length, 2);
-    assert.equal(completed.return_events[0].items[0].final_charged_days, 2);
+    assert.equal(completed.return_events[0].items[0].final_charged_days, 3);
   } finally {
     db.close();
   }

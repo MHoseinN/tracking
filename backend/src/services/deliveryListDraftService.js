@@ -932,14 +932,8 @@ function createDeliveryListDraftService(db) {
       }
       const remainingAfterReturn = Number(listItem.remaining_quantity) - total;
       const remainingExpectedReturnAt = nullableText(item.remaining_expected_return_at);
-      if (remainingAfterReturn > 0 && !remainingExpectedReturnAt) {
-        throw new DeliveryListDraftError(`تاریخ پیگیری مانده «${listItem.product_name_snapshot}» الزامی است`);
-      }
-      if (remainingExpectedReturnAt) {
-        const followUpTime = Date.parse(remainingExpectedReturnAt);
-        if (!Number.isFinite(followUpTime) || followUpTime < Date.parse(returnedAt)) {
-          throw new DeliveryListDraftError(`تاریخ پیگیری مانده «${listItem.product_name_snapshot}» نامعتبر است`);
-        }
+      if (remainingExpectedReturnAt && !Number.isFinite(Date.parse(remainingExpectedReturnAt))) {
+        throw new DeliveryListDraftError(`تاریخ پیگیری مانده «${listItem.product_name_snapshot}» نامعتبر است`);
       }
       return {
         itemId,
