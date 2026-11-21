@@ -82,6 +82,12 @@ const routes = [
     }
   },
   {
+    path: '/damaged-assets',
+    name: 'DamagedAssets',
+    component: () => import('./components/damaged-assets/DamagedAssetsRoute.vue'),
+    meta: { requiresAuth: true, roles: ['MANAGER', 'ADMIN'], title: 'اموال خسارتی', subtitle: 'پیگیری خسارت، تعمیر و بدهی تعمیرکننده‌ها' }
+  },
+  {
     path: '/lists',
     name: 'DeliveryListDrafts',
     component: () => import('./components/delivery-lists/DeliveryListDraftsRoute.vue'),

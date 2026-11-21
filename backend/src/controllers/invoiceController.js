@@ -158,6 +158,10 @@ function updateInvoice(req, res) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
+    if (db.prepare('SELECT 1 FROM damaged_assets WHERE invoice_id = ? LIMIT 1').get(id)) {
+      return res.status(409).json({ message: 'این فاکتور دارای خسارت ثبت‌شده است و ویرایش مستقیم آن مجاز نیست' });
+    }
+
     // Verify customer exists if being changed
     if (customer_id) {
       const customer = db.prepare('SELECT id FROM customers WHERE id = ?').get(customer_id);
@@ -206,6 +210,10 @@ function deleteInvoice(req, res) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
+    if (db.prepare('SELECT 1 FROM damaged_assets WHERE invoice_id = ? OR related_invoice_id = ? LIMIT 1').get(id, id)) {
+      return res.status(409).json({ message: 'این فاکتور به پرونده اموال خسارتی متصل است و قابل حذف نیست' });
+    }
+
     db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
     res.json({ message: 'Invoice deleted successfully' });
   } catch (err) {
@@ -235,6 +243,13 @@ function updateInvoiceStatus(req, res) {
     }
 
     db.prepare(`UPDATE invoices SET ${field} = ? WHERE id = ?`).run(value ? 1 : 0, id);
+    if (field === 'is_shipped') {
+      db.prepare(`UPDATE invoices SET send_status = ? WHERE id = ?`).run(value ? 'SENT' : 'NOT_SENT', id);
+      require('../routes/damagedAssetRoutes').syncInvoiceAssets(Number(id));
+    }
+    if (field === 'is_settled') {
+      db.prepare(`UPDATE invoices SET settlement_status = ? WHERE id = ?`).run(value ? 'PAID' : 'UNPAID', id);
+    }
 
     const updated = db.prepare(`${invoiceQuery} WHERE ${legacyInvoiceCondition} AND i.id = ?`).get(id);
     res.json(normalizeInvoiceNotesValue(updated));

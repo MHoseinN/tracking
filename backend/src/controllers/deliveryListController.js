@@ -131,6 +131,7 @@ function updateInvoiceSendStatus(req, res) {
       req.body,
       req.user.id
     );
+    require('../routes/damagedAssetRoutes').syncInvoiceAssets(Number(req.params.invoiceId));
     deliveryListEvents.publish({ action: 'INVOICE_SEND_UPDATED', list_id: Number(req.params.id) });
     return res.json({ invoice, list: draftService.getList(req.params.id) });
   } catch (error) { return handleError(error, res); }

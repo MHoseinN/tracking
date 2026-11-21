@@ -14,6 +14,7 @@ const productCatalogRoutes = require('./routes/productCatalogRoutes');
 const deliveryListRoutes = require('./routes/deliveryListRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const damagedAssetRoutes = require('./routes/damagedAssetRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,7 @@ app.use('/api/products', apiLimiter, productCatalogRoutes);
 app.use('/api/delivery-lists', apiLimiter, deliveryListRoutes);
 app.use('/api/settings', apiLimiter, settingsRoutes);
 app.use('/api/reports', apiLimiter, reportRoutes);
+app.use('/api/damaged-assets', apiLimiter, damagedAssetRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

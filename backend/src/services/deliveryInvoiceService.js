@@ -250,6 +250,10 @@ function createDeliveryInvoiceService(db) {
 
   function updateInvoice(listId, invoiceId, payload = {}, actorUserId) {
     const existing = getInvoice(listId, invoiceId);
+    if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'damaged_assets'").get()
+      && db.prepare('SELECT 1 FROM damaged_assets WHERE invoice_id = ? LIMIT 1').get(existing.id)) {
+      throw new DeliveryListDraftError('فاکتور دارای خسارت ثبت‌شده از صفحه اموال خسارتی است و ویرایش مستقیم آن مجاز نیست');
+    }
     const inputLines = Array.isArray(payload.lines) ? payload.lines : [];
     if (inputLines.length !== existing.lines.length) {
       throw new DeliveryListDraftError('تمام ردیف‌های فاکتور باید برای ویرایش ارسال شوند');

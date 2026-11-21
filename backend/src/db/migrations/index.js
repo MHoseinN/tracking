@@ -6,6 +6,7 @@ const internalUserNamesMigration = require('./005-internal-user-names');
 const productPriceVersionsMigration = require('./006-product-price-versions');
 const removeLostItemConceptMigration = require('./007-remove-lost-item-concept');
 const itemReturnFollowUpMigration = require('./008-item-return-follow-up');
+const damagedAssetsMigration = require('./009-damaged-assets');
 
 const migrations = [
   deliveryWorkflowMigration,
@@ -15,7 +16,8 @@ const migrations = [
   internalUserNamesMigration,
   productPriceVersionsMigration,
   removeLostItemConceptMigration,
-  itemReturnFollowUpMigration
+  itemReturnFollowUpMigration,
+  damagedAssetsMigration
 ];
 
 function ensureMigrationTable(db) {

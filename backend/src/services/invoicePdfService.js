@@ -322,7 +322,7 @@ function drawPageFrame(doc, pageNumber) {
 function renderInvoicePdf(data) {
   const { invoice, lines, adjustments } = data;
   const isProforma = invoice._document_type === 'PROFORMA';
-  const documentTitle = isProforma ? 'پیش‌فاکتور' : 'صورتحساب اجاره تجهیزات';
+  const documentTitle = isProforma ? 'پیش‌فاکتور' : invoice._damage_only ? 'فاکتور خسارت' : 'صورتحساب اجاره تجهیزات';
   const doc = new PDFDocument({
     size: 'A4',
     margins: { top: PAGE.margin, right: PAGE.margin, bottom: 52, left: PAGE.margin },
