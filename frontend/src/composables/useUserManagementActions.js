@@ -75,13 +75,13 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
 
     if (!result.success) {
       customer.account_status = previousStatus;
-      toast.error(result.message || 'به‌روزرسانی وضعیت حساب با خطا مواجه شد');
+      toast.error(result.message || 'به‌روزرسانی وضعیت مشتری با خطا مواجه شد');
       return;
     }
 
-    toast.success('وضعیت حساب با موفقیت ثبت شد');
+    toast.success('وضعیت مشتری با موفقیت ثبت شد');
     showUndo({
-      title: 'وضعیت حساب تغییر کرد',
+      title: 'وضعیت مشتری تغییر کرد',
       message: 'در صورت نیاز، بازگردانی کن.',
       handler: async () => {
         const revertResult = await invoiceStore.updateCustomer(
@@ -91,7 +91,7 @@ export function useUserManagementActions({ invoiceStore, toast, reloadOverview, 
         if (!revertResult.success) throw new Error(revertResult.message);
 
         await refreshCustomers();
-        toast.success('وضعیت حساب بازگردانی شد');
+        toast.success('وضعیت مشتری بازگردانی شد');
       }
     });
     await refreshCustomers();

@@ -14,8 +14,8 @@
         </span>
 
         <span class="customer-summary__facts">
-          <span class="customer-summary__fact"><small>نام</small><strong>{{ draft.first_name || '—' }}</strong></span>
-          <span class="customer-summary__fact"><small>نام خانوادگی</small><strong>{{ draft.last_name || '—' }}</strong></span>
+          <span class="customer-summary__fact"><small>وضعیت مشتری</small><strong>{{ draft.account_status || 'تعیین نشده' }}</strong></span>
+          <span class="customer-summary__fact"><small>وضعیت مالی</small><strong>{{ financialStatus }}</strong></span>
           <span class="customer-summary__fact"><small>شماره تماس</small><strong dir="ltr">{{ draft.phone || customer?.phone || '—' }}</strong></span>
           <span class="customer-summary__fact"><small>معرف</small><strong>{{ draft.referrer || customer?.referrer || '—' }}</strong></span>
         </span>
@@ -34,7 +34,7 @@
         @update:notes="$emit('update:notes', $event)" @save="$emit('save')" />
     </section>
 
-    <AppFinancialOverview
+    <AppFinancialOverview v-if="showStats"
       primary-label="مبلغ تسویه‌شده"
       :primary-value="settledAmount"
       primary-meta="مجموع پرداخت‌های معتبر این مشتری"
@@ -45,7 +45,7 @@
       :danger-percent="remainingPercent"
       danger-percent-label="در انتظار"
       :items="customerOverviewItems"
-      status-title="وضعیت حساب مشتری"
+      status-title="روند تسویه مشتری"
       :status-items="customerSettlementItems" />
   </section>
 </template>
@@ -57,6 +57,8 @@ import CustomerProfileEditor from './CustomerProfileEditor.vue';
 
 const props = defineProps({
   customer: { type: Object, default: null },
+  showStats: { type: Boolean, default: false },
+  financialStatus: { type: String, default: 'بدون بدهی' },
   settledAmount: { type: String, required: true },
   remainingAmount: { type: String, required: true },
   invoicedAmount: { type: String, required: true },

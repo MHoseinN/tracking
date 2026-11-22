@@ -15,19 +15,21 @@
           <label class="app-filter-field"><span class="app-filter-label">جست‌وجوی مشتری</span>
             <input v-model.trim="searchQuery" class="app-filter-control" type="search" placeholder="نام مشتری یا شماره تماس" /></label>
           <template #advanced>
-            <label class="app-filter-field"><span class="app-filter-label">وضعیت حساب</span>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت مشتری</span>
               <CustomSelect v-model="statusFilter" :options="accountStatusFilterOptions" trigger-class="app-filter-control" /></label>
+            <label class="app-filter-field"><span class="app-filter-label">وضعیت مالی</span>
+              <CustomSelect v-model="financialFilter" :options="financialFilterOptions" trigger-class="app-filter-control" /></label>
             <label class="app-filter-field"><span class="app-filter-label">وضعیت شماره تماس</span>
               <CustomSelect v-model="phoneFilter" :options="phoneFilterOptions" trigger-class="app-filter-control" /></label>
           </template>
           <template #actions><AppButton variant="secondary" @click="clearFilters">پاک‌کردن فیلترها</AppButton></template>
         </AppFilterBar>
       </template>
-      <AppDataTable class="customers-table" :column-count="8" :loading="loading" :empty="!sortedRows.length"
+      <AppDataTable class="customers-table" :column-count="9" :loading="loading" :empty="!sortedRows.length"
         min-width="100%" loading-message="در حال دریافت مشتریان..." empty-message="مشتری‌ای با این فیلتر پیدا نشد.">
         <template #head>
           <tr>
-            <th>ردیف</th><th>نام مشتری</th><th>وضعیت حساب</th>
+            <th>ردیف</th><th>نام مشتری</th><th>وضعیت مشتری</th><th>وضعیت مالی</th>
             <th :aria-sort="sortAriaValue('list_count')">
               <button type="button" class="customer-sort-button" @click="toggleSort('list_count')">
                 تعداد لیست
@@ -54,15 +56,15 @@
               :disabled="statusSavingId === row.id" :trigger-class="statusTriggerClass(row.account_status)"
               @update:model-value="handleStatusChange(row, $event)" />
           </td>
+          <td class="text-center font-bold" :class="financialStatusClass(row)">{{ financialStatus(row) }}</td>
           <td class="text-center font-bold">{{ formatNumber(row.list_count) }}</td>
           <td class="text-center font-black text-slate-800">{{ formatCurrency(row.total_invoices_amount) }}</td>
           <td class="text-center" dir="ltr">{{ row.phone || '—' }}</td>
           <td class="text-center">{{ row.referrer || '—' }}</td>
           <td>
-            <div class="flex items-center justify-center gap-1">
-              <AppIconButton label="مشاهده جزئیات" size="sm" @click="navigateToCustomer(row.id)">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
-              </AppIconButton>
+            <div class="flex flex-wrap items-center justify-center gap-1">
+              <AppButton variant="secondary" size="sm" @click="navigateToCustomer(row.id, 'account')">حساب</AppButton>
+              <AppButton variant="info" size="sm" @click="navigateToCustomer(row.id, 'stats')">آمار</AppButton>
               <AppIconButton label="ویرایش مشتری" size="sm" variant="primary" @click="openEditModal(row)">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" /></svg>
               </AppIconButton>
@@ -119,6 +121,7 @@ const tableSectionRef = ref(null);
 const searchQuery = ref('');
 const filtersExpanded = ref(false);
 const statusFilter = ref('all');
+const financialFilter = ref('all');
 const phoneFilter = ref('all');
 const defaultSorts = { list_count: 'desc', total_invoices_amount: 'desc' };
 const defaultSortPriority = ['total_invoices_amount', 'list_count'];
@@ -126,9 +129,11 @@ const sortStorageKey = 'customers-table-sorts-v1';
 const savedSortState = loadSortState();
 const sorts = reactive({ ...defaultSorts, ...savedSortState.sorts });
 const sortPriority = ref(savedSortState.priority);
-const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
+const accountStatusOptions = ['خوش حساب', 'پرداخت نقدی', 'بد حساب'];
 const accountStatusSelectOptions = computed(() => [{ label: 'بدون وضعیت', value: '' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
 const accountStatusFilterOptions = computed(() => [{ label: 'همه وضعیت‌ها', value: 'all' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
+const financialFilterOptions = [{ label: 'همه وضعیت‌ها', value: 'all' },
+  { label: 'بدهکار', value: 'debtor' }, { label: 'طلبکار', value: 'creditor' }, { label: 'بدون بدهی', value: 'clear' }];
 const phoneFilterOptions = [
   { label: 'همه مشتریان', value: 'all' },
   { label: 'دارای شماره تماس', value: 'with-phone' },
@@ -149,6 +154,7 @@ const filteredRows = computed(() => rows.value.filter((row) => {
   const hasPhone = Boolean(normalizedPhone);
   return (!query || name.includes(query) || (phoneQuery && normalizedPhone.includes(phoneQuery)))
     && (statusFilter.value === 'all' || row.account_status === statusFilter.value)
+    && (financialFilter.value === 'all' || financialStatusKey(row) === financialFilter.value)
     && (phoneFilter.value === 'all'
       || (phoneFilter.value === 'with-phone' && hasPhone)
       || (phoneFilter.value === 'without-phone' && !hasPhone));
@@ -168,7 +174,7 @@ const sortedRows = computed(() => filteredRows.value
 const { currentPage, pageSize, pageSizeOptions: pageSizeSelectOptions, totalRows, totalPages, rowStartIndex,
   paginatedItems: paginatedRows, visiblePageNumbers, goToPage } = usePaginatedList(sortedRows, {
   initialPageSize: 15, pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, statusFilter, phoneFilter], scrollTarget: tableSectionRef
+  resetSources: [searchQuery, statusFilter, financialFilter, phoneFilter], scrollTarget: tableSectionRef
 });
 const { undoState, clearUndo, showUndo, handleUndo } = useUndoAction({ onError: (error) => toast.error(error.message || 'بازگردانی با خطا مواجه شد') });
 const { statusSavingId, showForm, selectedCustomer, showDeleteConfirm, deletingCustomer, deleteConfirmMessage,
@@ -177,8 +183,11 @@ const { statusSavingId, showForm, selectedCustomer, showDeleteConfirm, deletingC
 
 function formatNumber(value) { return Math.round(Number(value) || 0).toLocaleString('fa-IR'); }
 function formatCurrency(value) { return `${formatNumber(value)} تومان`; }
+function financialStatusKey(row) { const net = Number(row.net_balance_toman || 0); return net > 0 ? 'debtor' : net < 0 ? 'creditor' : 'clear'; }
+function financialStatus(row) { return { debtor: 'بدهکار', creditor: 'طلبکار', clear: 'بدون بدهی' }[financialStatusKey(row)]; }
+function financialStatusClass(row) { return { debtor: 'text-rose-700', creditor: 'text-blue-700', clear: 'text-emerald-700' }[financialStatusKey(row)]; }
 function statusTriggerClass(status) { return ['customers-status-control', status ? getAccountStatusTone(status) : 'border-slate-300 bg-white text-slate-500']; }
-function navigateToCustomer(id) { router.push({ name: 'CustomerDetail', params: { id } }); }
+function navigateToCustomer(id, view = 'account') { router.push({ name: 'CustomerDetail', params: { id }, query: { view } }); }
 function toggleSort(key) {
   sorts[key] = sorts[key] === 'desc' ? 'asc' : 'desc';
   sortPriority.value = [key, ...sortPriority.value.filter((item) => item !== key)];
@@ -210,7 +219,7 @@ function resetSorts() {
   saveSortState();
 }
 function clearFilters() {
-  searchQuery.value = ''; statusFilter.value = 'all'; phoneFilter.value = 'all';
+  searchQuery.value = ''; statusFilter.value = 'all'; financialFilter.value = 'all'; phoneFilter.value = 'all';
   resetSorts();
   currentPage.value = 1;
 }
@@ -223,8 +232,8 @@ async function loadOverview() {
 }
 function exportCustomers() {
   exportRowsToExcel({ fileName: 'customers-export', sheetTitle: 'فهرست مشتریان',
-    headers: ['نام', 'نام خانوادگی', 'وضعیت حساب', 'تعداد لیست', 'مبلغ کل', 'شماره تماس', 'معرف'],
-    rows: sortedRows.value.map((row) => [row.first_name || '', row.last_name || '', row.account_status || '',
+    headers: ['نام', 'نام خانوادگی', 'وضعیت مشتری', 'وضعیت مالی', 'تعداد لیست', 'مبلغ کل', 'شماره تماس', 'معرف'],
+    rows: sortedRows.value.map((row) => [row.first_name || '', row.last_name || '', row.account_status || '', financialStatus(row),
       row.list_count, row.total_invoices_amount, row.phone || '', row.referrer || '']) });
 }
 onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCustomers()]); });
@@ -234,27 +243,29 @@ onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCus
 .customers-table :deep(.app-table) { width: 100%; table-layout: fixed; }
 .customers-table :deep(.app-table-wrapper) { overflow-x: hidden; }
 .customers-table :deep(th), .customers-table :deep(td) { padding: .65rem .45rem; vertical-align: middle; }
-.customers-table :deep(th:nth-child(1)) { width: 5%; }
-.customers-table :deep(th:nth-child(2)) { width: 17%; }
-.customers-table :deep(th:nth-child(3)) { width: 14%; }
-.customers-table :deep(th:nth-child(4)) { width: 8%; }
-.customers-table :deep(th:nth-child(5)) { width: 15%; }
+.customers-table :deep(th:nth-child(1)) { width: 4%; }
+.customers-table :deep(th:nth-child(2)) { width: 15%; }
+.customers-table :deep(th:nth-child(3)) { width: 11%; }
+.customers-table :deep(th:nth-child(4)) { width: 10%; }
+.customers-table :deep(th:nth-child(5)) { width: 7%; }
 .customers-table :deep(th:nth-child(6)) { width: 13%; }
-.customers-table :deep(th:nth-child(7)) { width: 12%; }
-.customers-table :deep(th:nth-child(8)) { width: 16%; }
+.customers-table :deep(th:nth-child(7)) { width: 10%; }
+.customers-table :deep(th:nth-child(8)) { width: 10%; }
+.customers-table :deep(th:nth-child(9)) { width: 20%; }
 .customers-table :deep(.customer-sort-button) { display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: .35rem; font: inherit; color: inherit; }
 .customers-table :deep(.customer-sort-button:hover) { color: #4338ca; }
 .customers-table :deep(.customer-sort-button:focus-visible) { border-radius: .35rem; outline: 2px solid #818cf8; outline-offset: 2px; }
 .customers-table :deep(.customer-sort-icon) { min-width: 1rem; color: #6366f1; font-size: .85rem; }
 .customers-table :deep(.customers-status-control) { width: 100%; min-width: 0; height: 2.25rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: 0 .5rem; font-size: .72rem; }
 @media (max-width: 1023px) {
-  .customers-table :deep(th:nth-child(4)), .customers-table :deep(td:nth-child(4)),
-  .customers-table :deep(th:nth-child(7)), .customers-table :deep(td:nth-child(7)) { display: none; }
-  .customers-table :deep(th:nth-child(1)) { width: 8%; }
-  .customers-table :deep(th:nth-child(2)) { width: 27%; }
-  .customers-table :deep(th:nth-child(3)) { width: 22%; }
-  .customers-table :deep(th:nth-child(5)) { width: 23%; }
-  .customers-table :deep(th:nth-child(6)) { width: 20%; }
-  .customers-table :deep(th:nth-child(8)) { width: 20%; }
+  .customers-table :deep(th:nth-child(5)), .customers-table :deep(td:nth-child(5)),
+  .customers-table :deep(th:nth-child(8)), .customers-table :deep(td:nth-child(8)) { display: none; }
+  .customers-table :deep(th:nth-child(1)) { width: 6%; }
+  .customers-table :deep(th:nth-child(2)) { width: 20%; }
+  .customers-table :deep(th:nth-child(3)) { width: 15%; }
+  .customers-table :deep(th:nth-child(4)) { width: 14%; }
+  .customers-table :deep(th:nth-child(6)) { width: 12%; }
+  .customers-table :deep(th:nth-child(7)) { width: 11%; }
+  .customers-table :deep(th:nth-child(9)) { width: 22%; }
 }
 </style>

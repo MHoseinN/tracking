@@ -28,9 +28,9 @@
           @input="$emit('update-field', 'referrer', $event.target.value)" />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت حساب</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">وضعیت مشتری</label>
         <CustomSelect :model-value="draft.account_status" :options="accountStatusSelectOptions"
-          placeholder="وضعیت حساب"
+          placeholder="وضعیت مشتری"
           trigger-class="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow-md"
           @update:model-value="$emit('update-field', 'account_status', $event)" />
       </div>

@@ -2,13 +2,13 @@ import { computed, ref } from 'vue';
 import { useFormState } from './useFormState';
 import { getDuplicatePhoneError, validateCustomerIdentity } from '../utils/validators/customerValidators';
 
-const ACCOUNT_STATUS_OPTIONS = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
+const ACCOUNT_STATUS_OPTIONS = ['خوش حساب', 'پرداخت نقدی', 'بد حساب'];
 const EMPTY_PROFILE = { first_name: '', last_name: '', phone: '', referrer: '', account_status: '' };
 
 export function useCustomerProfileForm({ customer, allCustomers, customerId, invoiceStore, toast, reloadCustomers }) {
   const customerNotesDraft = ref('');
   const accountStatusSelectOptions = [
-    { label: 'وضعیت حساب', value: '' },
+    { label: 'وضعیت مشتری', value: '' },
     ...ACCOUNT_STATUS_OPTIONS.map((option) => ({ label: option, value: option }))
   ];
   const {

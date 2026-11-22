@@ -113,7 +113,7 @@
           :class="Number(selectedCustomerSummary.balance_toman) > 0
             ? 'draft-customer-account-card--debt' : 'draft-customer-account-card--clear'">
           <div class="draft-customer-account-card__identity">
-            <span>وضعیت حساب مشتری</span>
+            <span>وضعیت مالی مشتری</span>
             <strong>{{ selectedCustomer?.name || form.customerName }}</strong>
             <small>{{ selectedCustomer?.phone || 'شماره تماس ثبت نشده' }}</small>
           </div>

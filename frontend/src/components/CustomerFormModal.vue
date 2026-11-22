@@ -22,8 +22,8 @@
         <template #default="{ controlId }"><input :id="controlId" v-model.trim="form.referrer"
           type="text" maxlength="255" class="app-input h-12" /></template>
       </AppFormField>
-      <AppFormField label="وضعیت حساب">
-        <CustomSelect v-model="form.account_status" :options="accountStatusSelectOptions" placeholder="وضعیت حساب"
+      <AppFormField label="وضعیت مشتری">
+        <CustomSelect v-model="form.account_status" :options="accountStatusSelectOptions" placeholder="وضعیت مشتری"
           trigger-class="app-input h-12" />
       </AppFormField>
     </form>
@@ -54,7 +54,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved']);
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
-const accountStatusOptions = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
+const accountStatusOptions = ['خوش حساب', 'پرداخت نقدی', 'بد حساب'];
 const accountStatusSelectOptions = computed(() => [{ label: 'بدون وضعیت', value: '' }, ...accountStatusOptions.map((value) => ({ label: value, value }))]);
 const { form, errors, saving, setValues, submit } = useFormState({
   first_name: '', last_name: '', phone: '', referrer: '', account_status: ''

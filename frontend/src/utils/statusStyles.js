@@ -90,8 +90,6 @@ export function getAccountStatusTone(status) {
       return 'border-rose-300 text-rose-700 bg-rose-50';
     case 'پرداخت نقدی':
       return 'border-blue-300 text-blue-700 bg-blue-50';
-    case 'هماهنگی با مدیر':
-      return 'border-amber-300 text-amber-700 bg-amber-50';
     default:
       return 'border-gray-300 text-gray-500 bg-white';
   }

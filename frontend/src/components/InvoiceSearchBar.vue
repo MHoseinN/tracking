@@ -12,7 +12,7 @@
           @update:modelValue="$emit('update:dateModelValue', $event)" />
       </label>
       <label class="app-filter-field">
-        <span class="app-filter-label">وضعیت حساب</span>
+        <span class="app-filter-label">وضعیت فاکتور</span>
         <CustomSelect :model-value="filterModelValue" :options="filterOptions" trigger-class="app-filter-control"
           @update:model-value="$emit('update:filterModelValue', $event)" />
       </label>

@@ -1,13 +1,16 @@
 <template>
   <div ref="tableSectionRef" class="space-y-5">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block :loading="creatingList" @click="createListForCustomer">ایجاد لیست برای مشتری
+      <AppButton variant="primary" block :loading="creatingList" @click="createListForCustomer">لیست جدید
       </AppButton>
+      <AppButton :variant="view === 'account' ? 'primary' : 'secondary'" block @click="setView('account')">حساب</AppButton>
+      <AppButton :variant="view === 'stats' ? 'primary' : 'secondary'" block @click="setView('stats')">آمار</AppButton>
       <AppButton variant="info" block @click="exportCustomerLists">گزارش‌گیری</AppButton>
       <AppButton variant="secondary" block @click="router.push('/users')">بازگشت به مشتریان</AppButton>
     </Teleport>
 
-    <CustomerSummaryPanel :customer="customer" :settled-amount="formatCurrency(summary.paid_total_toman)"
+    <CustomerSummaryPanel :customer="customer" :show-stats="view === 'stats'" :financial-status="financialStatus"
+      :settled-amount="formatCurrency(summary.paid_total_toman)"
       :remaining-amount="formatCurrency(summary.balance_toman)"
       :invoiced-amount="formatCurrency(summary.invoiced_total_toman)"
       :invoice-count="formatNumber(summary.invoice_count)" :list-count="formatNumber(summary.list_count)"
@@ -17,7 +20,7 @@
       :changed="customerFormChanged" :saving="customerFormSaving" @toggle="isCustomerInfoOpen = !isCustomerInfoOpen"
       @update-field="updateProfileField" @update:notes="customerNotesDraft = $event" @save="saveCustomerForm" />
 
-    <AppTablePanel>
+    <AppTablePanel v-if="view === 'account'">
       <template #filters>
         <AppFilterBar :expanded="filtersExpanded" collapsible columns-class="md:grid-cols-2 xl:grid-cols-4"
           advanced-columns-class="md:grid-cols-4" @update:expanded="filtersExpanded = $event">
@@ -139,7 +142,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppPagination from '../AppPagination.vue';
 import ConfirmModal from '../ConfirmModal.vue';
@@ -166,10 +169,17 @@ import { normalizeNumericSearch } from '../../utils/numberSearch';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const invoiceStore = useInvoiceStore();
 const deliveryListStore = useDeliveryListStore();
 const customerId = computed(() => Number(props.id));
+const view = computed(() => route.query.view === 'stats' ? 'stats' : 'account');
+const financialStatus = computed(() => {
+  const net = Number(summary.value.invoiced_total_toman || 0) - Number(summary.value.paid_total_toman || 0);
+  return net > 0 ? 'بدهکار' : net < 0 ? 'طلبکار' : 'بدون بدهی';
+});
+function setView(nextView) { router.push({ name: 'CustomerDetail', params: { id: customerId.value }, query: { view: nextView } }); }
 const customer = ref(null);
 const lists = ref([]);
 const allCustomers = ref([]);

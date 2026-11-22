@@ -36,7 +36,7 @@ router.post('/', [
     if (hasLegacyName || (hasFirstName && hasLastName)) return true;
     throw new Error('Customer first_name and last_name are required');
   }),
-  body('account_status').optional().isIn(['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'])
+  body('account_status').optional().isIn(['خوش حساب', 'پرداخت نقدی', 'بد حساب'])
 ], createCustomer);
 
 // PUT /api/customers/:id
@@ -49,7 +49,7 @@ router.put('/:id', [
     if (hasLegacyName || (hasFirstName && hasLastName)) return true;
     throw new Error('Customer first_name and last_name are required');
   }),
-  body('account_status').optional().isIn(['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'])
+  body('account_status').optional().isIn(['خوش حساب', 'پرداخت نقدی', 'بد حساب'])
 ], updateCustomer);
 
 // PATCH /api/customers/:id/profile
@@ -58,7 +58,7 @@ router.patch('/:id/profile', [
   body('last_name').optional().isString().isLength({ min: 1, max: 100 }),
   body('phone').optional({ nullable: true }).isString().isLength({ max: 50 }),
   body('referrer').optional({ nullable: true }).isString().isLength({ max: 255 }),
-  body('account_status').optional({ nullable: true }).isIn(['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'])
+  body('account_status').optional({ nullable: true }).isIn(['خوش حساب', 'پرداخت نقدی', 'بد حساب'])
 ], updateCustomerProfile);
 
 // PATCH /api/customers/:id/notes

@@ -122,7 +122,7 @@ test('migrates legacy data and is idempotent', () => {
 
     assert.equal(
       db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get().count,
-      11
+      12
     );
     assert.equal(db.prepare('SELECT role FROM users WHERE id = 1').get().role, 'MANAGER');
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name = 'phone'").get().count, 1);
@@ -201,6 +201,42 @@ test('migrates legacy data and is idempotent', () => {
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   } finally {
     db.close();
+  }
+});
+
+test('customer financial status uses outstanding invoices and removes the retired manual status', () => {
+  const db = createLegacyDatabase();
+  db.exec(`ALTER TABLE customers ADD COLUMN account_status TEXT;
+    UPDATE customers SET account_status = 'هماهنگی با مدیر' WHERE id = 1;
+    UPDATE invoices SET is_settled = 0, price = 500 WHERE id = 1;`);
+  const databasePath = require.resolve('../src/db/database');
+  const controllerPath = require.resolve('../src/controllers/customerController');
+  const previousDatabase = require.cache[databasePath];
+  const previousController = require.cache[controllerPath];
+  try {
+    runMigrations(db);
+    assert.equal(db.prepare('SELECT account_status FROM customers WHERE id = 1').get().account_status, null);
+    for (const column of ['first_name', 'last_name', 'phone', 'referrer']) {
+      if (!db.prepare("SELECT 1 FROM pragma_table_info('customers') WHERE name = ?").get(column)) {
+        db.exec(`ALTER TABLE customers ADD COLUMN ${column} TEXT`);
+      }
+    }
+    require.cache[databasePath] = { id: databasePath, filename: databasePath, loaded: true, exports: db };
+    delete require.cache[controllerPath];
+    const controller = require(controllerPath);
+    let overview;
+    controller.getCustomersOverview({}, { json: (result) => { overview = result; } });
+    assert.equal(overview[0].net_balance_toman, 500);
+    let workflow;
+    controller.getCustomerWorkflow({ params: { id: 1 } }, {
+      json: (result) => { workflow = result; },
+      status: (code) => { throw new Error(`Unexpected status ${code}`); }
+    });
+    assert.equal(workflow.summary.net_balance_toman, 500);
+  } finally {
+    db.close();
+    if (previousDatabase) require.cache[databasePath] = previousDatabase; else delete require.cache[databasePath];
+    if (previousController) require.cache[controllerPath] = previousController; else delete require.cache[controllerPath];
   }
 });
 

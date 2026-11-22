@@ -1,7 +1,7 @@
 const db = require('../db/database');
 const { validationResult } = require('express-validator');
 
-const ACCOUNT_STATUS_VALUES = ['خوش حساب', 'بد حساب', 'پرداخت نقدی', 'هماهنگی با مدیر'];
+const ACCOUNT_STATUS_VALUES = ['خوش حساب', 'پرداخت نقدی', 'بد حساب'];
 
 function normalizeCustomerPayload(body = {}) {
   const legacyName = String(body.name || '').trim();
@@ -159,7 +159,21 @@ function getCustomersOverview(req, res) {
             AND i.delivery_list_id IS NOT NULL
             AND i.status = 'ISSUED'
             AND i.deleted_at IS NULL
-        ) AS total_invoices_amount
+        ) AS total_invoices_amount,
+        (SELECT COALESCE(SUM(i.final_amount_toman), 0)
+           FROM invoices i
+          WHERE i.customer_id = c.id AND i.delivery_list_id IS NULL
+            AND i.invoice_type <> 'LEGACY' AND i.status = 'ISSUED' AND i.deleted_at IS NULL
+        ) AS standalone_invoices_amount,
+        (SELECT COALESCE(SUM(i.price), 0)
+           FROM invoices i
+          WHERE i.customer_id = c.id AND i.delivery_list_id IS NULL
+            AND i.invoice_type = 'LEGACY' AND i.deleted_at IS NULL AND COALESCE(i.is_settled, 0) = 0
+        ) AS legacy_balance_toman,
+        (SELECT COALESCE(SUM(p.amount_toman), 0)
+           FROM payments p JOIN delivery_lists dl ON dl.id = p.delivery_list_id
+          WHERE dl.customer_id = c.id AND p.voided_at IS NULL AND dl.archived_at IS NULL
+        ) AS paid_total_toman
       FROM customers c
       WHERE c.deleted_at IS NULL
       ORDER BY total_invoices_amount DESC, invoice_count DESC, c.created_at DESC
@@ -169,7 +183,11 @@ function getCustomersOverview(req, res) {
       ...mapCustomerRow(row),
       list_count: Number(row.list_count) || 0,
       invoice_count: Number(row.invoice_count) || 0,
-      total_invoices_amount: Number(row.total_invoices_amount) || 0
+      total_invoices_amount: Number(row.total_invoices_amount) || 0,
+      net_balance_toman: Number(row.total_invoices_amount || 0)
+        + Number(row.standalone_invoices_amount || 0)
+        + Number(row.legacy_balance_toman || 0)
+        - Number(row.paid_total_toman || 0)
     }));
 
     res.json(normalized);
@@ -245,6 +263,13 @@ function getCustomerWorkflow(req, res) {
     summary.legacy_balance_toman = Number(legacy.balance_toman) || 0;
     summary.balance_toman += summary.legacy_balance_toman;
     summary.invoiced_total_toman += summary.legacy_balance_toman;
+    const standalone = db.prepare(`SELECT COUNT(*) AS invoice_count, COALESCE(SUM(final_amount_toman), 0) AS amount
+      FROM invoices WHERE customer_id = ? AND delivery_list_id IS NULL AND invoice_type <> 'LEGACY'
+        AND status = 'ISSUED' AND deleted_at IS NULL`).get(id);
+    summary.invoice_count += Number(standalone.invoice_count) || 0;
+    summary.invoiced_total_toman += Number(standalone.amount) || 0;
+    summary.balance_toman += Number(standalone.amount) || 0;
+    summary.net_balance_toman = summary.invoiced_total_toman - summary.paid_total_toman;
     summary.credit_toman = Math.max(0, summary.paid_total_toman
       - (summary.invoiced_total_toman - summary.legacy_balance_toman));
     summary.open_list_count = lists.filter((list) => list.status !== 'COMPLETED').length;

@@ -9,6 +9,7 @@ const itemReturnFollowUpMigration = require('./008-item-return-follow-up');
 const damagedAssetsMigration = require('./009-damaged-assets');
 const syncDamagedAssetsMigration = require('./010-sync-damaged-assets');
 const softDeleteDamagedAssetsMigration = require('./011-soft-delete-damaged-assets');
+const removeManagerCustomerStatusMigration = require('./012-remove-manager-customer-status');
 
 const migrations = [
   deliveryWorkflowMigration,
@@ -21,7 +22,8 @@ const migrations = [
   itemReturnFollowUpMigration,
   damagedAssetsMigration,
   syncDamagedAssetsMigration,
-  softDeleteDamagedAssetsMigration
+  softDeleteDamagedAssetsMigration,
+  removeManagerCustomerStatusMigration
 ];
 
 function ensureMigrationTable(db) {
