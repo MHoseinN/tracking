@@ -568,6 +568,49 @@ test('records a partial return after the original estimate without requiring a n
   }
 });
 
+test('recalculates returned days and issued invoice when night-before changes in either direction', () => {
+  const db = createDatabase();
+  try {
+    const lists = createDeliveryListDraftService(db);
+    const invoices = createDeliveryInvoiceService(db);
+    const draft = lists.createDraft(1);
+    const payload = {
+      customer_id: 1,
+      delivered_at: '2026-08-24T20:00:00+03:30',
+      expected_return_at: '2026-08-25T12:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
+    };
+    const saved = lists.saveDraft(draft.id, { ...payload, version: draft.version });
+    const delivered = lists.finalizeDraft(draft.id, saved.version, 1);
+    const returned = lists.recordReturn(draft.id, {
+      returned_at: '2026-08-25T12:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }]
+    }, 1);
+    assert.equal(returned.return_events[0].items[0].final_charged_days, 2);
+    const night = lists.saveDraft(draft.id, { ...payload, version: returned.version, night_before: true }, 1);
+    assert.equal(night.return_events[0].items[0].system_calculated_days, 1);
+    assert.equal(night.return_events[0].items[0].final_charged_days, 1);
+    assert.equal(invoices.getPreview(draft.id).lines[0].charged_days, 1);
+    const issued = invoices.issueInvoice(draft.id, {
+      lines: invoices.getPreview(draft.id).lines,
+      discount_percent_basis_points: 1000
+    }, 1);
+    assert.equal(issued.final_amount_toman, 1350000);
+    invoices.updateSendStatus(draft.id, issued.id, { send_status: 'SENT', channel: 'MANUAL' }, 1);
+    const billed = lists.getList(draft.id);
+    const day = lists.saveDraft(draft.id, { ...payload, version: billed.version, night_before: false }, 1);
+    assert.equal(day.return_events[0].items[0].final_charged_days, 2);
+    const updated = invoices.getInvoice(draft.id, issued.id);
+    assert.equal(updated.lines[0].charged_days, 2);
+    assert.equal(updated.subtotal_toman, 3000000);
+    assert.equal(updated.final_amount_toman, 2700000);
+    assert.equal(updated.send_status, 'NOT_SENT');
+    assert.equal(day.invoice_send_status, 'NOT_SENT');
+  } finally {
+    db.close();
+  }
+});
+
 test('edits an unbilled return date and reclassifies healthy items as damaged', () => {
   const db = createDatabase();
   try {

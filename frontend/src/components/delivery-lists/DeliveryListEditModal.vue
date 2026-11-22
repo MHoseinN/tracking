@@ -45,6 +45,10 @@
           <span>ساعت تحویل</span>
           <TimePicker24 v-model="form.deliveryTime" input-class="edit-control" />
         </label>
+        <label class="edit-field edit-field--full flex items-center gap-3">
+          <input v-model="form.nightBefore" type="checkbox" :disabled="saving" class="h-4 w-4 accent-emerald-700" />
+          <span>شب قبل؛ روز تحویل در محاسبه اجاره منظور نشود</span>
+        </label>
         <label class="edit-field">
           <span>تاریخ تقریبی برگشت</span>
           <JalaliDatePicker v-model="form.expectedReturnDate" input-class="edit-control" />
@@ -94,6 +98,7 @@ const form = reactive({
   customerName: '',
   deliveryDate: '',
   deliveryTime: '',
+  nightBefore: false,
   expectedReturnDate: '',
   expectedReturnTime: '',
   dailyTotal: '',
@@ -126,6 +131,7 @@ watch(() => [props.isOpen, props.list], ([open, list]) => {
     || list.customer_name || list.customer_name_snapshot || '';
   form.deliveryDate = datePart(list.delivered_at);
   form.deliveryTime = timePart(list.delivered_at);
+  form.nightBefore = Boolean(list.night_before);
   form.expectedReturnDate = datePart(list.expected_return_at);
   form.expectedReturnTime = timePart(list.expected_return_at);
   form.items = (list.items || []).filter((item) => Number(item.product_id) > 0).map((item) => ({ ...item }));
@@ -153,7 +159,7 @@ function submitForm() {
     customer_name_snapshot: customer.name,
     delivered_at: combineDateTime(form.deliveryDate, form.deliveryTime),
     expected_return_at: combineDateTime(form.expectedReturnDate, form.expectedReturnTime),
-    night_before: Boolean(props.list.night_before),
+    night_before: form.nightBefore,
     notes: props.list.notes || null,
     items: pricedItems.map((item) => ({
       id: Number(item.id) || null,

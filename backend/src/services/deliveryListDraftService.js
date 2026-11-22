@@ -101,6 +101,88 @@ function applyIssuedInvoiceTotal(db, listId, targetTotal) {
   return { previousTotal, targetTotal, changed: true };
 }
 
+function recalculateReturnedDays(db, listId, deliveredAt, nightBefore, actorUserId) {
+  const rows = db.prepare(`
+    SELECT return_event_items.id, return_event_items.system_calculated_days,
+           return_event_items.final_charged_days, return_event_items.day_override_reason,
+           return_events.returned_at, invoice_lines.id AS invoice_line_id,
+           invoice_lines.invoice_id, invoice_lines.quantity,
+           invoice_lines.billing_from_at,
+           invoice_lines.charged_days AS invoice_charged_days,
+           invoice_lines.unit_price_toman
+    FROM return_event_items
+    JOIN return_events ON return_events.id = return_event_items.return_event_id
+      AND return_events.deleted_at IS NULL
+    JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+      AND delivery_list_items.deleted_at IS NULL
+    LEFT JOIN invoice_lines ON invoice_lines.return_event_item_id = return_event_items.id
+      AND invoice_lines.line_type = 'RENTAL' AND invoice_lines.deleted_at IS NULL
+    WHERE delivery_list_items.delivery_list_id = ? AND return_event_items.deleted_at IS NULL
+  `).all(listId);
+  if (!rows.length) return;
+  const cutoffMinutes = db.prepare('SELECT billing_cutoff_minutes_snapshot FROM delivery_lists WHERE id = ?').get(listId).billing_cutoff_minutes_snapshot;
+  const changedInvoiceIds = new Set();
+  const updateReturn = db.prepare(`UPDATE return_event_items
+    SET system_calculated_days = ?, final_charged_days = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?`);
+  const updateLine = db.prepare(`UPDATE invoice_lines
+    SET billing_from_at = ?, charged_days = ?, line_total_toman = ?,
+        updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+  rows.forEach((row) => {
+    const systemDays = calculateChargedDays({ deliveredAt, returnedAt: row.returned_at, cutoffMinutes, nightBefore });
+    const finalDays = row.day_override_reason ? Number(row.final_charged_days) : systemDays;
+    if (systemDays !== Number(row.system_calculated_days) || finalDays !== Number(row.final_charged_days)) {
+      updateReturn.run(systemDays, finalDays, row.id);
+    }
+    // A separately edited invoice day count is an explicit billing override.
+    if (row.invoice_line_id) {
+      const invoiceDays = Number(row.invoice_charged_days) === Number(row.final_charged_days)
+        ? finalDays : Number(row.invoice_charged_days);
+      if (invoiceDays !== Number(row.invoice_charged_days) || deliveredAt !== row.billing_from_at) {
+        updateLine.run(deliveredAt, invoiceDays,
+          Number(row.quantity) * invoiceDays * Number(row.unit_price_toman), row.invoice_line_id);
+        changedInvoiceIds.add(Number(row.invoice_id));
+      }
+    }
+  });
+  const invoice = db.prepare(`SELECT id, invoice_number, subtotal_toman, extra_charges_toman,
+    discount_percent_basis_points, discount_amount_toman, rounding_adjustment_toman, final_amount_toman
+    FROM invoices WHERE id = ? AND status = 'ISSUED' AND deleted_at IS NULL`);
+  changedInvoiceIds.forEach((invoiceId) => {
+    const current = invoice.get(invoiceId);
+    if (!current) return;
+    const subtotal = Number(db.prepare(`SELECT COALESCE(SUM(line_total_toman), 0) AS total
+      FROM invoice_lines WHERE invoice_id = ? AND deleted_at IS NULL`).get(invoiceId).total);
+    const oldGross = Number(current.subtotal_toman) + Number(current.extra_charges_toman);
+    const gross = subtotal + Number(current.extra_charges_toman);
+    const oldPercent = Math.floor(oldGross * Number(current.discount_percent_basis_points) / 10000);
+    const percent = Math.floor(gross * Number(current.discount_percent_basis_points) / 10000);
+    const fixedDiscount = Number(current.discount_amount_toman) - oldPercent;
+    const discount = percent + fixedDiscount;
+    const finalAmount = gross - discount + Number(current.rounding_adjustment_toman);
+    if (discount > gross || finalAmount < 0) {
+      throw new DeliveryListDraftError('با تغییر شب قبل، تخفیف فاکتور از مبلغ آن بیشتر می‌شود؛ ابتدا تخفیف فاکتور را اصلاح کنید', 409);
+    }
+    db.prepare(`UPDATE invoices SET subtotal_toman = ?, discount_amount_toman = ?,
+      final_amount_toman = ?, price = ?, send_status = 'NOT_SENT',
+      updated_at = CURRENT_TIMESTAMP, version = version + 1 WHERE id = ?`)
+      .run(subtotal, discount, finalAmount, finalAmount, invoiceId);
+    db.prepare(`UPDATE invoice_adjustments SET amount_toman = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE invoice_id = ? AND adjustment_type = 'DISCOUNT_PERCENT' AND deleted_at IS NULL`)
+      .run(-percent, invoiceId);
+    db.prepare(`INSERT INTO audit_logs (actor_user_id, entity_type, entity_id, action, before_json, after_json, metadata_json)
+      VALUES (?, 'INVOICE', ?, 'RECALCULATE_NIGHT_BEFORE', ?, ?, ?)`)
+      .run(actorUserId, String(invoiceId),
+        JSON.stringify({ subtotal_toman: current.subtotal_toman, final_amount_toman: current.final_amount_toman }),
+        JSON.stringify({ subtotal_toman: subtotal, final_amount_toman: finalAmount }),
+        JSON.stringify({ delivery_list_id: Number(listId) }));
+  });
+  if (changedInvoiceIds.size) {
+    require('./deliverySettlementService').recalculateSettlementStatus(db, listId);
+    require('./deliveryInvoiceService').recalculateInvoiceSendStatus(db, listId);
+  }
+}
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 function addCalendarDays(dateText, days) {
@@ -648,6 +730,12 @@ function createDeliveryListDraftService(db) {
       const invoicePriceChange = draft.status !== 'DRAFT' && requestedTotal !== null
         ? applyIssuedInvoiceTotal(db, id, requestedTotal)
         : null;
+
+      if (draft.status !== 'DRAFT'
+        && (Boolean(draft.night_before) !== Boolean(nightBefore)
+          || String(draft.delivered_at || '') !== String(deliveredAt || ''))) {
+        recalculateReturnedDays(db, id, deliveredAt, Boolean(nightBefore), actorUserId);
+      }
 
       if (draft.status !== 'DRAFT') {
         const state = db.prepare(`
