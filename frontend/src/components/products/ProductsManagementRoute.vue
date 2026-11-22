@@ -1,8 +1,8 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
+      <AppButton variant="secondary" block @click="router.push('/products')">بازگشت به محصولات</AppButton>
       <AppButton variant="primary" block @click="openProductModal()">افزودن محصول</AppButton>
-      <AppButton variant="info" block @click="showPriceVersionsModal = true">نسخه‌های قیمت</AppButton>
       <AppButton variant="primary" block @click="openCategoryModal()">افزودن دسته‌بندی</AppButton>
       <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)">ویرایش دسته‌بندی</AppButton>
       <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">افزودن زیرشاخه</AppButton>
@@ -15,7 +15,7 @@
 
       <section ref="tableSectionRef" class="space-y-6">
         <ProductCatalogList :category-name="selectedCategoryObject?.name" :search-query="productSearch"
-          :products="paginatedItems" :loading="catalogStore.loading" :total-rows="totalRows"
+          :products="paginatedItems" :loading="catalogStore.loading" editable :total-rows="totalRows"
           :row-start-index="rowStartIndex" :page-size="pageSize" :page-size-options="pageSizeOptions"
           :current-page="currentPage" :total-pages="totalPages" :visible-page-numbers="visiblePageNumbers"
           @update:search-query="productSearch = $event"
@@ -30,9 +30,6 @@
 
     <ProductFormModal :is-open="showProductModal" :product="selectedProduct" :categories="flatCategoryOptions"
       :saving="savingProduct" @close="closeProductModal" @save="handleSaveProduct" />
-
-    <ProductPriceVersionsModal :is-open="showPriceVersionsModal" :products="catalogStore.products"
-      @close="showPriceVersionsModal = false" @catalog-changed="loadData" />
 
     <ConfirmModal :is-open="showDeleteCategoryModal" title="حذف دسته‌بندی"
       :message="selectedCategoryObject ? `آیا دسته‌بندی «${selectedCategoryObject.name}» حذف شود؟` : 'آیا این دسته‌بندی حذف شود؟'"
@@ -49,6 +46,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '../ConfirmModal.vue';
 import AppButton from '../ui/AppButton.vue';
@@ -57,19 +55,18 @@ import ProductFormModal from './ProductFormModal.vue';
 import UndoBar from '../UndoBar.vue';
 import ProductCatalogList from './ProductCatalogList.vue';
 import ProductCatalogSidebar from './ProductCatalogSidebar.vue';
-import ProductPriceVersionsModal from './ProductPriceVersionsModal.vue';
 import { useProductCatalogStore } from '../../stores/productCatalogStore';
 import { usePaginatedList } from '../../composables/usePaginatedList';
 import { useUndoAction } from '../../composables/useUndoAction';
 import { useProductCatalogActions } from '../../composables/useProductCatalogActions';
 
 const toast = useToast();
+const router = useRouter();
 const catalogStore = useProductCatalogStore();
 
 const productSearch = ref('');
 const selectedCategoryId = ref(null);
 const tableSectionRef = ref(null);
-const showPriceVersionsModal = ref(false);
 
 onMounted(async () => {
   await loadData();

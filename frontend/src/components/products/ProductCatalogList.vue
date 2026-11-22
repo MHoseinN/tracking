@@ -7,7 +7,8 @@
             @input="$emit('update:search-query', $event.target.value)" /></label>
       </AppFilterBar>
     </template>
-    <AppDataTable class="products-table" :column-count="5" :loading="loading" :empty="!products.length" min-width="100%"
+    <AppDataTable class="products-table" :class="editable ? 'products-table--editable' : 'products-table--readonly'"
+      :column-count="editable ? 5 : 4" :loading="loading" :empty="!products.length" min-width="100%"
       loading-message="در حال بارگذاری محصولات..." empty-message="محصولی با این فیلتر پیدا نشد.">
       <template #head>
         <tr>
@@ -15,7 +16,7 @@
           <th>نام محصول</th>
           <th>دسته‌بندی</th>
           <th>قیمت یک روز</th>
-          <th>عملیات</th>
+          <th v-if="editable">عملیات</th>
         </tr>
       </template>
 
@@ -24,7 +25,7 @@
         <td class="font-black text-slate-900">{{ product.name }}</td>
         <td>{{ product.category_name || 'بدون دسته‌بندی' }}</td>
         <td class="text-center font-black text-emerald-700">{{ formatPrice(product.daily_price_toman) }}</td>
-        <td>
+        <td v-if="editable">
           <div class="flex items-center justify-center gap-1">
             <AppIconButton label="ویرایش محصول" size="sm" variant="primary" @click="$emit('edit', product)">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,6 +61,7 @@ import AppTablePanel from '../ui/AppTablePanel.vue';
 defineProps({
   categoryName: { type: String, default: '' }, searchQuery: { type: String, default: '' },
   products: { type: Array, default: () => [] }, loading: { type: Boolean, default: false },
+  editable: { type: Boolean, default: false },
   totalRows: { type: Number, default: 0 }, rowStartIndex: { type: Number, default: 0 },
   pageSize: { type: Number, required: true }, pageSizeOptions: { type: Array, default: () => [] },
   currentPage: { type: Number, required: true }, totalPages: { type: Number, required: true },
@@ -85,25 +87,30 @@ function formatPrice(value) { return `${Math.round(Number(value) || 0).toLocaleS
   vertical-align: middle;
 }
 
-.products-table :deep(th:nth-child(1)) {
+.products-table--editable :deep(th:nth-child(1)) {
   width: 8%;
 }
 
-.products-table :deep(th:nth-child(2)) {
+.products-table--editable :deep(th:nth-child(2)) {
   width: 30%;
 }
 
-.products-table :deep(th:nth-child(3)) {
+.products-table--editable :deep(th:nth-child(3)) {
   width: 24%;
 }
 
-.products-table :deep(th:nth-child(4)) {
+.products-table--editable :deep(th:nth-child(4)) {
   width: 23%;
 }
 
-.products-table :deep(th:nth-child(5)) {
+.products-table--editable :deep(th:nth-child(5)) {
   width: 15%;
 }
+
+.products-table--readonly :deep(th:nth-child(1)) { width: 8%; }
+.products-table--readonly :deep(th:nth-child(2)) { width: 38%; }
+.products-table--readonly :deep(th:nth-child(3)) { width: 27%; }
+.products-table--readonly :deep(th:nth-child(4)) { width: 27%; }
 
 @media (max-width: 767px) {
 
@@ -112,20 +119,23 @@ function formatPrice(value) { return `${Math.round(Number(value) || 0).toLocaleS
     display: none;
   }
 
-  .products-table :deep(th:nth-child(1)) {
+  .products-table--editable :deep(th:nth-child(1)) {
     width: 10%;
   }
 
-  .products-table :deep(th:nth-child(2)) {
+  .products-table--editable :deep(th:nth-child(2)) {
     width: 40%;
   }
 
-  .products-table :deep(th:nth-child(4)) {
+  .products-table--editable :deep(th:nth-child(4)) {
     width: 30%;
   }
 
-  .products-table :deep(th:nth-child(5)) {
+  .products-table--editable :deep(th:nth-child(5)) {
     width: 20%;
   }
+  .products-table--readonly :deep(th:nth-child(1)) { width: 12%; }
+  .products-table--readonly :deep(th:nth-child(2)) { width: 52%; }
+  .products-table--readonly :deep(th:nth-child(4)) { width: 36%; }
 }
 </style>

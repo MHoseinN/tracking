@@ -63,12 +63,22 @@ const routes = [
   },
   {
     path: '/products',
-    name: 'ProductsManagement',
-    component: () => import('./components/products/ProductsManagementRoute.vue'),
+    name: 'ProductsCatalog',
+    component: () => import('./components/products/ProductsCatalogRoute.vue'),
     meta: {
       requiresAuth: true,
       title: 'محصولات',
       subtitle: 'نام، دسته‌بندی و قیمت روزانه محصولات'
+    }
+  },
+  {
+    path: '/products/manage',
+    name: 'ProductsManagement',
+    component: () => import('./components/products/ProductsManagementRoute.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'مدیریت محصولات',
+      subtitle: 'افزودن و ویرایش محصول، دسته‌بندی، زیرشاخه و نسخه‌های قیمت'
     }
   },
   {
