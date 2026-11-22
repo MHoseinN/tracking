@@ -93,6 +93,15 @@ function getInvoicePreview(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+function excludeInvoiceItems(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const result = invoiceService.excludeReturnItems(req.params.id, req.body.return_event_item_ids, req.user.id);
+    deliveryListEvents.publish({ action: 'INVOICE_ITEMS_EXCLUDED', list_id: Number(req.params.id) });
+    return res.json({ ...result, list: draftService.getList(req.params.id) });
+  } catch (error) { return handleError(error, res); }
+}
+
 function issueInvoice(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try {
@@ -254,6 +263,7 @@ module.exports = {
   updateReturnEvent,
   getInvoicePreview,
   issueInvoice,
+  excludeInvoiceItems,
   getIssuedInvoice,
   updateIssuedInvoice,
   updateInvoiceSendStatus,

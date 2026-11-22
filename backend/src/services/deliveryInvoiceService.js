@@ -85,6 +85,7 @@ function createDeliveryInvoiceService(db) {
        AND invoice_lines.deleted_at IS NULL
       WHERE delivery_lists.id = ?
         AND return_event_items.deleted_at IS NULL
+        AND return_event_items.invoice_excluded_at IS NULL
         AND invoice_lines.id IS NULL
       ORDER BY return_events.returned_at, return_event_items.id
     `).all(listId);
@@ -97,18 +98,47 @@ function createDeliveryInvoiceService(db) {
     return { list, lines, subtotal_toman: subtotal };
   }
 
-  function normalizeLines(listId, payloadLines) {
+  function excludeReturnItems(listId, returnItemIds, actorUserId) {
+    getList(listId);
+    if (!Array.isArray(returnItemIds) || !returnItemIds.length) {
+      throw new DeliveryListDraftError('اقلام بدون هزینه را انتخاب کنید');
+    }
+    const available = new Set(unbilledReturnLines(listId).map((line) => Number(line.return_event_item_id)));
+    const ids = returnItemIds.map(Number);
+    if (new Set(ids).size !== ids.length || ids.some((id) => !Number.isInteger(id) || !available.has(id))) {
+      throw new DeliveryListDraftError('اقلام بدون هزینه نامعتبر یا تکراری‌اند');
+    }
+    db.transaction(() => {
+      const exclude = db.prepare(`UPDATE return_event_items
+        SET invoice_excluded_at = CURRENT_TIMESTAMP, invoice_excluded_by_user_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND invoice_excluded_at IS NULL`);
+      ids.forEach((id) => exclude.run(actorUserId, id));
+      db.prepare(`INSERT INTO audit_logs (actor_user_id, entity_type, entity_id, action, after_json, metadata_json)
+        VALUES (?, 'DELIVERY_LIST', ?, 'EXCLUDE_INVOICE_ITEMS', ?, ?)`).run(actorUserId, String(listId),
+        JSON.stringify({ excluded_return_event_item_ids: ids }), JSON.stringify({ delivery_list_id: Number(listId) }));
+    })();
+    return { excluded_return_event_item_ids: ids };
+  }
+
+  function normalizeLines(listId, payloadLines, excludedReturnItemIds = []) {
     const available = unbilledReturnLines(listId);
     if (!available.length) {
       throw new DeliveryListDraftError('مرجوعی جدیدی برای صدور فاکتور وجود ندارد', 409);
     }
     const availableById = new Map(available.map((line) => [Number(line.return_event_item_id), line]));
-    const input = Array.isArray(payloadLines) && payloadLines.length ? payloadLines : available;
+    if (!Array.isArray(excludedReturnItemIds)) throw new DeliveryListDraftError('اقلام حذف‌شده از فاکتور نامعتبرند');
+    const excludedIds = excludedReturnItemIds.map(Number);
+    const excluded = new Set(excludedIds);
+    if (excluded.size !== excludedIds.length || excludedIds.some((id) => !Number.isInteger(id) || !availableById.has(id))) {
+      throw new DeliveryListDraftError('اقلام حذف‌شده از فاکتور نامعتبر یا تکراری‌اند');
+    }
+    const input = Array.isArray(payloadLines) ? payloadLines : available.filter((line) => !excluded.has(Number(line.return_event_item_id)));
+    if (!input.length) throw new DeliveryListDraftError('برای صدور فاکتور دست‌کم یک قلم باید انتخاب شود');
     const seen = new Set();
     const normalized = input.map((line) => {
       const id = Number(line.return_event_item_id);
       const source = availableById.get(id);
-      if (!source || seen.has(id)) throw new DeliveryListDraftError('ردیف فاکتور نامعتبر یا تکراری است');
+      if (!source || seen.has(id) || excluded.has(id)) throw new DeliveryListDraftError('ردیف فاکتور نامعتبر یا تکراری است');
       seen.add(id);
       const chargedDays = Number(line.charged_days ?? source.charged_days);
       const unitPrice = Number(line.unit_price_toman ?? source.unit_price_toman);
@@ -125,10 +155,10 @@ function createDeliveryInvoiceService(db) {
         line_total_toman: Number(source.quantity) * chargedDays * unitPrice
       };
     });
-    if (normalized.length !== available.length) {
+    if (normalized.length + excluded.size !== available.length) {
       throw new DeliveryListDraftError('تمام اقلام برگشتیِ فاکتورنشده باید در این مرحله بررسی شوند');
     }
-    return normalized;
+    return { lines: normalized, excludedIds };
   }
 
   function normalizeExtras(extras) {
@@ -378,7 +408,7 @@ function createDeliveryInvoiceService(db) {
 
   function issueInvoice(listId, payload = {}, actorUserId) {
     const list = getList(listId);
-    const lines = normalizeLines(list.id, payload.lines);
+    const { lines, excludedIds } = normalizeLines(list.id, payload.lines, payload.excluded_return_event_item_ids);
     const extras = normalizeExtras(payload.extras);
     const discountBasisPoints = nonNegativeInteger(payload.discount_percent_basis_points, 'درصد تخفیف');
     if (discountBasisPoints > 10000) throw new DeliveryListDraftError('درصد تخفیف نمی‌تواند بیشتر از صد درصد باشد');
@@ -462,6 +492,10 @@ function createDeliveryInvoiceService(db) {
         line.description, line.quantity, line.billing_from_at, line.billing_to_at,
         line.charged_days, line.unit_price_toman, line.line_total_toman, index
       ));
+      const excludeReturnItem = db.prepare(`UPDATE return_event_items
+        SET invoice_excluded_at = CURRENT_TIMESTAMP, invoice_excluded_by_user_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND invoice_excluded_at IS NULL`);
+      excludedIds.forEach((id) => excludeReturnItem.run(actorUserId, id));
 
       const insertAdjustment = db.prepare(`
         INSERT INTO invoice_adjustments (
@@ -509,7 +543,7 @@ function createDeliveryInvoiceService(db) {
         ) VALUES (?, 'INVOICE', ?, 'ISSUE_INVOICE', ?, ?)
       `).run(actorUserId, String(invoiceId),
         JSON.stringify({ invoice_number: number, final_amount_toman: finalAmount }),
-        JSON.stringify({ delivery_list_id: list.id, line_count: lines.length }));
+        JSON.stringify({ delivery_list_id: list.id, line_count: lines.length, excluded_return_event_item_ids: excludedIds }));
     });
     issue();
 
@@ -522,7 +556,7 @@ function createDeliveryInvoiceService(db) {
     `).get(invoiceId);
   }
 
-  return { getPreview, issueInvoice, getInvoice, updateInvoice, updateSendStatus };
+  return { getPreview, excludeReturnItems, issueInvoice, getInvoice, updateInvoice, updateSendStatus };
 }
 
 module.exports = { createDeliveryInvoiceService, recalculateInvoiceSendStatus };

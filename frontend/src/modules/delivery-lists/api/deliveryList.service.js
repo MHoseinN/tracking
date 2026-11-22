@@ -111,6 +111,7 @@ export const deliveryListService = {
   recordReturn(id, payload) { return api.post(`/delivery-lists/${id}/returns`, payload); },
   updateReturnEvent(id, returnEventId, payload) { return api.put(`/delivery-lists/${id}/returns/${returnEventId}`, payload); },
   getInvoicePreview(id) { return api.get(`/delivery-lists/${id}/invoice-preview`); },
+  excludeInvoiceItems(id, returnItemIds) { return api.post(`/delivery-lists/${id}/invoice-exclusions`, { return_event_item_ids: returnItemIds }); },
   issueInvoice(id, payload) { return api.post(`/delivery-lists/${id}/invoices`, payload); },
   getInvoice(id, invoiceId) { return api.get(`/delivery-lists/${id}/invoices/${invoiceId}`); },
   updateInvoice(id, invoiceId, payload) {

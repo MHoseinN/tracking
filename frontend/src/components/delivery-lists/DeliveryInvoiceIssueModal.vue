@@ -15,10 +15,12 @@
         <div class="space-y-6 p-6">
           <section>
             <h3 class="mb-3 text-sm font-black text-slate-800">اقلام قابل صدور</h3>
+            <p class="mb-3 text-xs text-slate-500">تیک اقلام بدون هزینه را بردارید تا در فاکتور نیایند؛ رفت‌وبرگشت آن‌ها در لیست حفظ می‌شود.</p>
             <div class="overflow-x-auto">
               <table class="w-full min-w-[1050px] border-collapse border border-slate-300">
                 <thead class="bg-slate-100">
                   <tr>
+                    <th class="border border-slate-300 px-3 py-3 text-center text-xs">در فاکتور</th>
                     <th class="border border-slate-300 px-3 py-3 text-right text-xs">نام محصول</th>
                     <th class="border border-slate-300 px-3 py-3 text-right text-xs">تاریخ برگشت واقعی</th>
                     <th class="border border-slate-300 px-3 py-3 text-right text-xs">تعداد</th>
@@ -28,18 +30,19 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in rows" :key="row.return_event_item_id">
+                  <tr v-for="row in rows" :key="row.return_event_item_id" :class="!row.include_in_invoice ? 'bg-slate-50 text-slate-400' : ''">
+                    <td class="border border-slate-300 px-3 py-3 text-center"><input v-model="row.include_in_invoice" type="checkbox" :aria-label="`نمایش ${row.description} در فاکتور`" class="h-4 w-4 accent-emerald-700" /></td>
                     <td class="border border-slate-300 px-3 py-3 text-sm font-bold text-slate-800">{{ row.description }}
                     </td>
                     <td class="border border-slate-300 px-3 py-3 text-sm text-slate-600">{{
                       formatDateTime(row.billing_to_at) }}</td>
                     <td class="border border-slate-300 px-3 py-3 text-sm">{{ formatNumber(row.quantity) }}</td>
                     <td class="border border-slate-300 p-2"><input v-model.number="row.charged_days" type="number"
-                        min="1" class="h-10 w-24 rounded border border-slate-300 px-2" /></td>
+                        min="1" :disabled="!row.include_in_invoice" class="h-10 w-24 rounded border border-slate-300 px-2" /></td>
                     <td class="border border-slate-300 p-2"><input v-model.number="row.unit_price_toman" type="number"
-                        min="0" class="h-10 w-40 rounded border border-slate-300 px-2" /></td>
+                        min="0" :disabled="!row.include_in_invoice" class="h-10 w-40 rounded border border-slate-300 px-2" /></td>
                     <td class="border border-slate-300 px-3 py-3 text-sm font-black text-indigo-700">{{
-                      formatCurrency(lineTotal(row)) }}</td>
+                      row.include_in_invoice ? formatCurrency(lineTotal(row)) : 'حذف از فاکتور' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -138,15 +141,15 @@
         <footer class="sticky bottom-0 flex justify-end gap-3 border-t border-slate-300 bg-white px-6 py-4">
           <button type="button" class="app-button-secondary" :disabled="saving" @click="$emit('close')">انصراف</button>
           <button type="button" class="app-button-primary" :disabled="saving || !rows.length"
-            @click="validateAndConfirm">بررسی نهایی و صدور</button>
+            @click="validateAndConfirm">{{ onlyExclusions ? 'ثبت اقلام بدون هزینه' : 'بررسی نهایی و صدور' }}</button>
         </footer>
       </div>
     </div>
   </Teleport>
 
-  <ConfirmModal :is-open="confirming" title="صدور قطعی فاکتور"
-    message="پس از صدور، اقلام این مرحله فاکتورشده محسوب می‌شوند. آیا اطلاعات جدول را تأیید می‌کنید؟" :loading="saving"
-    confirm-text="بله، فاکتور صادر شود" loading-text="در حال صدور..." @confirm="emitIssue"
+  <ConfirmModal :is-open="confirming" :title="onlyExclusions ? 'ثبت اقلام بدون هزینه' : 'صدور قطعی فاکتور'"
+    :message="onlyExclusions ? 'این اقلام در سابقه برگشت لیست می‌مانند و فاکتوری برای آن‌ها صادر نمی‌شود. ثبت شوند؟' : 'پس از صدور، اقلام این مرحله فاکتورشده محسوب می‌شوند. آیا اطلاعات جدول را تأیید می‌کنید؟'" :loading="saving"
+    :confirm-text="onlyExclusions ? 'بله، ثبت شود' : 'بله، فاکتور صادر شود'" loading-text="در حال ثبت..." @confirm="emitIssue"
     @cancel="confirming = false" />
 </template>
 
@@ -160,7 +163,7 @@ const props = defineProps({
   preview: { type: Object, default: null },
   saving: { type: Boolean, default: false }
 });
-const emit = defineEmits(['close', 'issue']);
+const emit = defineEmits(['close', 'issue', 'exclude']);
 const rows = ref([]);
 const extras = ref([]);
 const discountPercent = ref(0);
@@ -171,7 +174,9 @@ const errorMessage = ref('');
 const confirming = ref(false);
 let extraKey = 0;
 
-const subtotal = computed(() => rows.value.reduce((sum, row) => sum + lineTotal(row), 0));
+const includedRows = computed(() => rows.value.filter((row) => row.include_in_invoice));
+const onlyExclusions = computed(() => rows.value.length > 0 && includedRows.value.length === 0);
+const subtotal = computed(() => includedRows.value.reduce((sum, row) => sum + lineTotal(row), 0));
 const extraTotal = computed(() => extras.value.reduce((sum, row) => sum + Math.max(0, Number(row.amount_toman) || 0), 0));
 const gross = computed(() => subtotal.value + extraTotal.value);
 const percentDiscountAmount = computed(() => Math.floor(gross.value * Math.max(0, Number(discountPercent.value) || 0) / 100));
@@ -184,7 +189,7 @@ watch(() => [props.isOpen, props.preview], ([open]) => {
 }, { deep: true });
 
 function reset() {
-  rows.value = (props.preview?.lines || []).map((line) => ({ ...line }));
+  rows.value = (props.preview?.lines || []).map((line) => ({ ...line, include_in_invoice: true }));
   extras.value = [];
   discountPercent.value = 0;
   discountAmount.value = 0;
@@ -205,8 +210,9 @@ function lineTotal(row) {
 function validateAndConfirm() {
   errorMessage.value = '';
   if (!rows.value.length) return setError('مرجوعی فاکتورنشده‌ای وجود ندارد');
-  if (rows.value.some((row) => !Number.isInteger(Number(row.charged_days)) || Number(row.charged_days) < 1)) return setError('تعداد روز تمام ردیف‌ها باید حداقل یک باشد');
-  if (rows.value.some((row) => !Number.isInteger(Number(row.unit_price_toman)) || Number(row.unit_price_toman) < 0)) return setError('قیمت واحد تمام ردیف‌ها باید معتبر باشد');
+  if (onlyExclusions.value) { confirming.value = true; return; }
+  if (includedRows.value.some((row) => !Number.isInteger(Number(row.charged_days)) || Number(row.charged_days) < 1)) return setError('تعداد روز تمام ردیف‌ها باید حداقل یک باشد');
+  if (includedRows.value.some((row) => !Number.isInteger(Number(row.unit_price_toman)) || Number(row.unit_price_toman) < 0)) return setError('قیمت واحد تمام ردیف‌ها باید معتبر باشد');
   if (Number(discountPercent.value) < 0 || Number(discountPercent.value) > 100) return setError('درصد تخفیف باید بین صفر تا صد باشد');
   if (extras.value.some((row) => !row.description || Number(row.amount_toman) < 1)) return setError('شرح و مبلغ تمام هزینه‌های اضافی را کامل کنید');
   if (totalDiscount.value > gross.value || finalAmount.value < 0) return setError('تخفیف از مبلغ فاکتور بیشتر است');
@@ -215,12 +221,17 @@ function validateAndConfirm() {
 }
 
 function emitIssue() {
+  if (onlyExclusions.value) {
+    emit('exclude', rows.value.map((row) => row.return_event_item_id));
+    return;
+  }
   emit('issue', {
-    lines: rows.value.map((row) => ({
+    lines: includedRows.value.map((row) => ({
       return_event_item_id: row.return_event_item_id,
       charged_days: Math.round(Number(row.charged_days)),
       unit_price_toman: Math.round(Number(row.unit_price_toman))
     })),
+    excluded_return_event_item_ids: rows.value.filter((row) => !row.include_in_invoice).map((row) => row.return_event_item_id),
     extras: extras.value.map((row) => ({ type: row.type, description: row.description, amount_toman: Math.round(Number(row.amount_toman)) })),
     discount_percent_basis_points: Math.round(Number(discountPercent.value || 0) * 100),
     discount_amount_toman: Math.round(Number(discountAmount.value) || 0),

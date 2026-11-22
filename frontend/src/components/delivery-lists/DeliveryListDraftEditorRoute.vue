@@ -327,6 +327,7 @@
                 <b>{{ item.product_name_snapshot }}</b>
                 {{ formatNumber(Number(item.healthy_quantity) + Number(item.damaged_quantity)) }} عدد
                 <small v-if="Number(item.damaged_quantity)">({{ formatNumber(item.damaged_quantity) }} خسارتی)</small>
+                <small v-if="item.invoice_excluded_at">(بدون هزینه، خارج از فاکتور)</small>
               </span>
             </div>
           </article>

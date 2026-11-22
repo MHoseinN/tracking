@@ -196,6 +196,18 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       }
     },
 
+    async excludeInvoiceItems(id, returnItemIds) {
+      this.saving = true;
+      try {
+        const response = (await deliveryListService.excludeInvoiceItems(id, returnItemIds)).data;
+        this.currentDraft = response.list;
+        replaceDraft(this.lists, response.list);
+        return { success: true, data: response };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ثبت اقلام بدون هزینه انجام نشد') };
+      } finally { this.saving = false; }
+    },
+
     async getInvoice(id, invoiceId) {
       try {
         return { success: true, data: (await deliveryListService.getInvoice(id, invoiceId)).data };

@@ -147,6 +147,8 @@ function createDatabase() {
       damage_notes TEXT,
       issue_resolved_at TEXT,
       issue_resolved_by_user_id INTEGER,
+      invoice_excluded_at TEXT,
+      invoice_excluded_by_user_id INTEGER,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       deleted_at TEXT,
@@ -907,6 +909,67 @@ test('issues a primary invoice for returned items and a supplement after the rem
   } finally {
     db.close();
   }
+});
+
+test('excludes a tracked return item from the invoice without removing its return record', () => {
+  const db = createDatabase();
+  try {
+    const listService = createDeliveryListDraftService(db);
+    const invoiceService = createDeliveryInvoiceService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version, customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-25T11:00:00+03:30',
+      items: [
+        { product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 },
+        { product_id: 2, daily_price_toman: 0, delivered_quantity: 1 }
+      ]
+    });
+    const delivered = listService.finalizeDraft(draft.id, saved.version, 1);
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: delivered.items.map((item) => ({ delivery_list_item_id: item.id, healthy_quantity: 1 }))
+    }, 1);
+    const preview = invoiceService.getPreview(draft.id);
+    assert.equal(preview.lines.length, 2);
+    const included = preview.lines.find((line) => line.unit_price_toman > 0);
+    const excluded = preview.lines.find((line) => line.unit_price_toman === 0);
+    const invoice = invoiceService.issueInvoice(draft.id, {
+      lines: [included], excluded_return_event_item_ids: [excluded.return_event_item_id]
+    }, 1);
+    assert.equal(invoice.subtotal_toman, 1500000);
+    assert.equal(invoiceService.getInvoice(draft.id, invoice.id).lines.length, 1);
+    assert.equal(invoiceService.getPreview(draft.id).lines.length, 0);
+    const returned = listService.getList(draft.id).return_events.flatMap((event) => event.items);
+    assert.ok(returned.find((item) => item.id === excluded.return_event_item_id).invoice_excluded_at);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM return_event_items WHERE id = ?').get(excluded.return_event_item_id).count, 1);
+  } finally { db.close(); }
+});
+
+test('records a return as nonbillable when no invoice needs to be issued', () => {
+  const db = createDatabase();
+  try {
+    const listService = createDeliveryListDraftService(db);
+    const invoiceService = createDeliveryInvoiceService(db);
+    const draft = listService.createDraft(1);
+    const saved = listService.saveDraft(draft.id, {
+      version: draft.version, customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-25T11:00:00+03:30',
+      items: [{ product_id: 2, daily_price_toman: 0, delivered_quantity: 1 }]
+    });
+    const delivered = listService.finalizeDraft(draft.id, saved.version, 1);
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }]
+    }, 1);
+    const id = invoiceService.getPreview(draft.id).lines[0].return_event_item_id;
+    invoiceService.excludeReturnItems(draft.id, [id], 1);
+    assert.equal(invoiceService.getPreview(draft.id).lines.length, 0);
+    assert.ok(listService.getList(draft.id).return_events[0].items[0].invoice_excluded_at);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM invoices WHERE delivery_list_id = ? AND status = 'ISSUED'").get(draft.id).count, 0);
+  } finally { db.close(); }
 });
 
 test('records deposits, completes settlement after final invoice and recalculates after voiding', () => {

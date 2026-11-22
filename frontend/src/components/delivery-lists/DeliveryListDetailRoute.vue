@@ -101,7 +101,7 @@
     </div>
 
     <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
-      @close="showInvoiceModal = false" @issue="handleIssueInvoice" />
+      @close="showInvoiceModal = false" @issue="handleIssueInvoice" @exclude="handleExcludeInvoiceItems" />
     <DeliveryProformaPreviewModal :is-open="showProformaModal" :list-number="list?.list_number"
       :pdf-url="proformaPdfUrl" :loading="loadingProforma" :downloading="downloadingProforma"
       @close="closeProforma" @download="downloadPreparedProforma" />
@@ -184,7 +184,7 @@ const returnReceiverNames = computed(() => {
     .filter(Boolean);
   return [...new Set(names)].join('، ') || 'هنوز برگشتی ثبت نشده';
 });
-const canIssueInvoice = computed(() => returnRows.value.some((item) => !item.rental_invoice_id));
+const canIssueInvoice = computed(() => returnRows.value.some((item) => !item.rental_invoice_id && !item.invoice_excluded_at));
 const listStatus = computed(() => ({
   DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },
   REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
@@ -293,6 +293,17 @@ async function handleIssueInvoice(payload) {
   list.value = result.data.list;
   showInvoiceModal.value = false;
   toast.success(`فاکتور ${result.data.invoice.invoice_number} صادر شد`);
+}
+
+async function handleExcludeInvoiceItems(ids) {
+  if (issuingInvoice.value) return;
+  issuingInvoice.value = true;
+  const result = await listStore.excludeInvoiceItems(list.value.id, ids);
+  issuingInvoice.value = false;
+  if (!result.success) return toast.error(result.message);
+  list.value = result.data.list;
+  showInvoiceModal.value = false;
+  toast.success('اقلام بدون هزینه ثبت شدند و در سابقه برگشت باقی ماندند');
 }
 
 async function openSettlement() {

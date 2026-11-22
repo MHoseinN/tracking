@@ -213,6 +213,7 @@ function createDeliveryListDraftService(db) {
              return_event_items.day_override_reason,
              return_event_items.damage_notes,
              return_event_items.issue_resolved_at,
+             return_event_items.invoice_excluded_at,
              (SELECT invoice_lines.invoice_id
                 FROM invoice_lines
                WHERE invoice_lines.return_event_item_id = return_event_items.id
@@ -251,6 +252,7 @@ function createDeliveryListDraftService(db) {
         day_override_reason: row.day_override_reason,
         damage_notes: row.damage_notes,
         issue_resolved_at: row.issue_resolved_at,
+        invoice_excluded_at: row.invoice_excluded_at,
         rental_invoice_id: row.rental_invoice_id
       });
     });

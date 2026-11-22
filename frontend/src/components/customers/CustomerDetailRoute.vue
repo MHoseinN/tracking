@@ -128,7 +128,7 @@
     </AppTablePanel>
 
     <DeliveryInvoiceIssueModal :is-open="showInvoiceIssueModal" :preview="invoicePreview" :saving="issuingInvoice"
-      @close="closeInvoiceIssueModal" @issue="handleIssueInvoice" />
+      @close="closeInvoiceIssueModal" @issue="handleIssueInvoice" @exclude="handleExcludeInvoiceItems" />
     <DeliveryInvoiceSendModal :is-open="showInvoiceSendModal" :invoice="sendInvoice" :saving="updatingSendStatus"
       @close="closeInvoiceSendModal" @save="handleInvoiceSend" @request-unsent="invoiceToResetSend = sendInvoice" />
     <DeliverySettlementModal :is-open="showSettlementModal" :summary="settlementSummary" :saving="settlementSaving"
@@ -353,6 +353,17 @@ async function handleIssueInvoice(payload) {
   closeInvoiceIssueModal();
   await loadWorkflow();
   toast.success(`فاکتور ${result.data.invoice.invoice_number} صادر شد`);
+}
+
+async function handleExcludeInvoiceItems(ids) {
+  if (!invoiceTargetList.value || issuingInvoice.value) return;
+  issuingInvoice.value = true;
+  const result = await deliveryListStore.excludeInvoiceItems(invoiceTargetList.value.id, ids);
+  issuingInvoice.value = false;
+  if (!result.success) return toast.error(result.message);
+  closeInvoiceIssueModal();
+  await loadWorkflow();
+  toast.success('اقلام بدون هزینه ثبت شدند و در سابقه برگشت باقی ماندند');
 }
 
 async function manageInvoiceSend(list) {

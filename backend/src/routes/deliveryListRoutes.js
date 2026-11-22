@@ -13,6 +13,7 @@ const {
   recordReturn,
   updateReturnEvent,
   getInvoicePreview,
+  excludeInvoiceItems,
   issueInvoice,
   getIssuedInvoice,
   updateIssuedInvoice,
@@ -83,6 +84,11 @@ router.put('/:id/returns/:returnEventId', [
   body('items.*.damage_notes').optional({ nullable: true }).isString().isLength({ max: 2000 })
 ], updateReturnEvent);
 router.get('/:id/invoice-preview', [idValidation], getInvoicePreview);
+router.post('/:id/invoice-exclusions', [
+  idValidation,
+  body('return_event_item_ids').isArray({ min: 1, max: 500 }),
+  body('return_event_item_ids.*').isInt({ min: 1 })
+], excludeInvoiceItems);
 router.post('/:id/invoices', [
   idValidation,
   body('issued_at').optional().isISO8601(),
@@ -91,6 +97,8 @@ router.post('/:id/invoices', [
   body('lines.*.return_event_item_id').optional().isInt({ min: 1 }),
   body('lines.*.charged_days').optional().isInt({ min: 1 }),
   body('lines.*.unit_price_toman').optional().isInt({ min: 0 }),
+  body('excluded_return_event_item_ids').optional().isArray({ max: 500 }),
+  body('excluded_return_event_item_ids.*').optional().isInt({ min: 1 }),
   body('extras').optional().isArray({ max: 100 }),
   body('extras.*.type').optional().isIn(['DAMAGE', 'TRANSPORT', 'OTHER']),
   body('extras.*.description').optional().isString().isLength({ min: 1, max: 1000 }),
