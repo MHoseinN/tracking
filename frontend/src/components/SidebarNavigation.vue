@@ -76,6 +76,7 @@ defineEmits(['toggle-sidebar', 'toggle-group', 'navigate', 'close-mobile']);
 const route = useRoute();
 
 function isActiveRoute(item) {
+  if (item.to === '/damaged-assets' && route.path.startsWith('/damaged-assets')) return true;
   if (item.to === '/users' && route.path.startsWith('/customer/')) return true;
   if (item.to === '/lists' && route.path.startsWith('/lists')) return true;
   return route.path === item.to;
@@ -83,6 +84,7 @@ function isActiveRoute(item) {
 
 function isGroupActive(group) {
   if (!group.items?.length && group.to) {
+    if (group.to === '/damaged-assets') return route.path.startsWith('/damaged-assets');
     if (group.to === '/users') return route.path === '/users' || route.path.startsWith('/customer/');
     if (group.to === '/lists') return route.path.startsWith('/lists');
     return route.path === group.to;

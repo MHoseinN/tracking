@@ -88,6 +88,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['MANAGER', 'ADMIN'], title: 'اموال خسارتی', subtitle: 'پیگیری خسارت، تعمیر و بدهی تعمیرکننده‌ها' }
   },
   {
+    path: '/damaged-assets/repairers',
+    name: 'Repairers',
+    component: () => import('./components/damaged-assets/RepairersRoute.vue'),
+    meta: { requiresAuth: true, roles: ['MANAGER', 'ADMIN'], title: 'تعمیرکننده‌ها و پرداخت‌ها', subtitle: 'مدیریت مراکز خدمات، بدهی‌ها و پرداخت‌ها' }
+  },
+  {
     path: '/lists',
     name: 'DeliveryListDrafts',
     component: () => import('./components/delivery-lists/DeliveryListDraftsRoute.vue'),
