@@ -34,7 +34,7 @@ const date = (value, label) => {
   return parsed.toISOString();
 };
 const optionalId = (value, label) => value == null || value === '' ? null : positiveId(value, label);
-const find = (table, id) => db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(positiveId(id, 'شناسه'));
+const find = (table, id) => db.prepare(`SELECT * FROM ${table} WHERE id = ?${table === 'damaged_assets' ? ' AND deleted_at IS NULL' : ''}`).get(positiveId(id, 'شناسه'));
 const ensure = (row, label) => { if (!row) throw new InputError(`${label} پیدا نشد`, 404); return row; };
 const run = (handler) => (req, res) => {
   try { const result = handler(req); res.status(result?.created ? 201 : 200).json(result?.data ?? result); }
@@ -61,7 +61,7 @@ function allocations(repairerId) {
     due: assets.reduce((sum, asset) => sum + asset.repair_cost_toman, 0) - payments.reduce((sum, payment) => sum + payment.amount_toman, 0) };
 }
 
-function assets() {
+function assets(includeDeleted = false) {
   const rows = db.prepare(`SELECT a.*, r.name AS repairer_name, c.name AS customer_name,
     l.list_number, i.invoice_number, i.send_status AS invoice_send_status,
     i.parent_invoice_id
@@ -70,7 +70,8 @@ function assets() {
     LEFT JOIN customers c ON c.id = a.customer_id
     LEFT JOIN delivery_lists l ON l.id = a.delivery_list_id
     LEFT JOIN invoices i ON i.id = a.invoice_id
-    ORDER BY a.created_at DESC, a.id DESC`).all();
+    WHERE (? = 1 OR a.deleted_at IS NULL)
+    ORDER BY a.created_at DESC, a.id DESC`).all(includeDeleted ? 1 : 0);
   const cache = new Map();
   return rows.map((row) => {
     if (row.repairer_id && !cache.has(row.repairer_id)) cache.set(row.repairer_id, allocations(row.repairer_id));
@@ -116,7 +117,12 @@ function syncInvoiceAssets(invoiceId) {
     .all(invoiceId).forEach((row) => syncReturnItem(row.return_event_item_id));
 }
 
-router.get('/', run(() => ({ assets: assets() })));
+router.get('/', run((req) => ({ assets: assets(req.query.include_deleted === 'true') })));
+router.get('/customer-invoices/:customerId', run((req) => ({ invoices: db.prepare(`
+  SELECT id, invoice_number, invoice_type, issued_at, date, description, delivery_list_id,
+    send_status, settlement_status FROM invoices
+  WHERE customer_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+  ORDER BY COALESCE(issued_at, date) DESC, id DESC`).all(positiveId(req.params.customerId, 'مشتری')) })));
 router.get('/candidates', run(() => ({ candidates: db.prepare(`SELECT rei.id AS return_event_item_id,
   re.delivery_list_id, dli.product_id, dli.product_name_snapshot, dl.customer_id,
   dl.list_number, rei.damage_notes, rei.damaged_quantity - COUNT(a.id) AS unregistered_quantity
@@ -167,9 +173,11 @@ router.post('/', run((req) => db.transaction(() => {
   let listId = null;
   let customerId = optionalId(req.body.customer_id, 'مشتری');
   let relatedInvoiceId = optionalId(req.body.related_invoice_id, 'فاکتور مرتبط');
+  let caseType = String(req.body.case_type || '').toUpperCase();
+  let incidentAt = req.body.incident_at ? date(req.body.incident_at, 'تاریخ خسارت یا سرویس') : null;
   if (returnId) {
     const source = ensure(db.prepare(`SELECT rei.damaged_quantity, rei.damage_notes, dli.product_id,
-      re.delivery_list_id, dl.customer_id, COUNT(a.id) AS registered
+      re.delivery_list_id, re.returned_at, dl.customer_id, COUNT(a.id) AS registered
       FROM return_event_items rei JOIN return_events re ON re.id = rei.return_event_id
       JOIN delivery_list_items dli ON dli.id = rei.delivery_list_item_id
       JOIN delivery_lists dl ON dl.id = re.delivery_list_id
@@ -179,24 +187,36 @@ router.post('/', run((req) => db.transaction(() => {
     listId = source.delivery_list_id;
     customerId = source.customer_id;
     relatedInvoiceId = null;
+    caseType = 'DAMAGE';
+    incidentAt = source.returned_at;
+  } else {
+    if (!['DAMAGE', 'SERVICE'].includes(caseType)) throw new InputError('نوع پرونده را انتخاب کنید');
+    if (!incidentAt) throw new InputError('تاریخ خسارت یا سرویس را وارد کنید');
   }
   if (customerId) ensure(find('customers', customerId), 'مشتری');
   if (relatedInvoiceId) {
     const invoice = ensure(db.prepare(`SELECT id, customer_id, status FROM invoices WHERE id = ? AND deleted_at IS NULL`).get(relatedInvoiceId), 'فاکتور مرتبط');
     if (invoice.customer_id !== customerId || invoice.status !== 'ISSUED') throw new InputError('فاکتور مرتبط با مشتری پرونده سازگار نیست');
   }
-  if (!returnId && customerId && !relatedInvoiceId) throw new InputError('برای پرونده مستقل مشتری، فاکتور مرتبط را انتخاب کنید');
   const id = db.prepare(`INSERT INTO damaged_assets (product_id, product_name_snapshot, asset_number,
-    customer_id, related_invoice_id, delivery_list_id, return_event_item_id, issue_description, created_by_user_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(product.id, product.name, assetNumber,
-      customerId, relatedInvoiceId, listId, returnId, issue, req.user.id).lastInsertRowid;
+    case_type, incident_at, customer_id, related_invoice_id, delivery_list_id,
+    return_event_item_id, issue_description, created_by_user_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(product.id, product.name, assetNumber,
+      caseType, incidentAt, customerId, relatedInvoiceId, listId, returnId, issue, req.user.id).lastInsertRowid;
   return { created: true, data: find('damaged_assets', id) };
+})()));
+
+router.delete('/:id', run((req) => db.transaction(() => {
+  const asset = ensure(find('damaged_assets', req.params.id), 'پرونده');
+  db.prepare('UPDATE damaged_assets SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(asset.id);
+  return { success: true };
 })()));
 
 router.patch('/:id', run((req) => db.transaction(() => {
   const asset = ensure(find('damaged_assets', req.params.id), 'پرونده');
   if (asset.invoice_id) throw new InputError('پرونده فاکتورشده قابل ویرایش نیست');
   const operation = required(req.body.operation, 'عملیات');
+  if (operation !== 'details' && !asset.asset_number) throw new InputError('ابتدا شماره اموال این قلم را تکمیل کنید');
   if (operation === 'details') {
     db.prepare(`UPDATE damaged_assets SET asset_number = ?, issue_description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
       .run(required(req.body.asset_number, 'شماره اموال'), required(req.body.issue_description, 'شرح ایراد'), asset.id);
@@ -234,8 +254,9 @@ router.post('/:id/invoice', run((req) => db.transaction(() => {
   const last = asset.related_invoice_id
     ? db.prepare(`SELECT * FROM invoices WHERE id = ? AND customer_id = ? AND status = 'ISSUED' AND deleted_at IS NULL`)
       .get(asset.related_invoice_id, asset.customer_id)
-    : db.prepare(`SELECT * FROM invoices WHERE customer_id = ? AND delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
-      ORDER BY issued_at DESC, id DESC LIMIT 1`).get(asset.customer_id, asset.delivery_list_id);
+    : asset.delivery_list_id ? db.prepare(`SELECT * FROM invoices WHERE customer_id = ? AND delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+      ORDER BY issued_at DESC, id DESC LIMIT 1`).get(asset.customer_id, asset.delivery_list_id)
+      : null;
   let invoiceId;
   let adjustmentAdded = false;
   if (!last && asset.delivery_list_id) {

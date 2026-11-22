@@ -72,7 +72,7 @@
         <p class="text-xs text-slate-500">پرداخت از قدیمی‌ترین بدهی‌های این تعمیرکننده کسر می‌شود.</p>
         <div><h3 class="mb-2 font-bold">وضعیت اقلام تعمیری</h3>
           <div v-for="asset in repairerAssets" :key="asset.id" class="flex flex-wrap justify-between gap-2 border-b py-2 text-sm">
-            <span>{{ asset.product_name_snapshot }} · اموال {{ asset.asset_number }}</span>
+            <span>{{ asset.product_name_snapshot }} · اموال {{ asset.asset_number }}<span v-if="asset.deleted_at" class="mr-2 text-xs text-slate-500">(پرونده حذف‌شده)</span></span>
             <span>هزینه {{ fmt(asset.repair_cost_toman) }} · مانده {{ fmt(asset.repair_due_toman) }} تومان</span>
           </div><p v-if="!repairerAssets.length" class="text-sm text-slate-500">قلمی ثبت نشده است.</p></div>
         <div><h3 class="mb-2 font-bold">تاریخچه پرداخت‌ها</h3>
@@ -135,7 +135,7 @@ const totalCost = (repairer) => assets.value.filter((asset) => asset.repairer_id
   .reduce((sum, asset) => sum + Number(asset.repair_cost_toman || 0), 0);
 async function refresh() {
   loading.value = true;
-  try { const [repairerResult, assetResult] = await Promise.all([service.getRepairers(), service.getAssets()]);
+  try { const [repairerResult, assetResult] = await Promise.all([service.getRepairers(), service.getAssets(true)]);
     repairers.value = repairerResult.data.repairers; assets.value = assetResult.data.assets; }
   catch (error) { toast.error(getApiErrorMessage(error)); } finally { loading.value = false; }
 }

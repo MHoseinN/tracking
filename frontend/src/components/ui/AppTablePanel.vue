@@ -10,7 +10,7 @@
           <p v-if="description" class="mt-1 text-xs leading-6 text-slate-500">{{ description }}</p>
         </div>
       </slot>
-      <div v-if="$slots.filters" class="mt-4">
+      <div v-if="$slots.filters" :class="title || description ? 'mt-4' : ''">
         <slot name="filters" />
       </div>
     </header>

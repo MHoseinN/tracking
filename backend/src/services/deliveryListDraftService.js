@@ -962,7 +962,7 @@ function createDeliveryListDraftService(db) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
       normalizedItems.forEach((item) => {
-        insertItem.run(
+        const inserted = insertItem.run(
           eventResult.lastInsertRowid,
           item.itemId,
           item.healthy,
@@ -972,6 +972,7 @@ function createDeliveryListDraftService(db) {
           item.overrideReason,
           item.damageNotes
         );
+        require('./damagedAssetSyncService').syncDamagedReturnItem(db, Number(inserted.lastInsertRowid));
         db.prepare(`
           UPDATE delivery_list_items
           SET remaining_expected_return_at = ?, updated_at = CURRENT_TIMESTAMP
@@ -1115,6 +1116,7 @@ function createDeliveryListDraftService(db) {
       normalizedItems.forEach(({ existing, healthy, damaged, damageNotes }) => {
         const finalDays = existing.day_override_reason ? Number(existing.final_charged_days) : systemDays;
         updateItem.run(healthy, damaged, systemDays, finalDays, damageNotes, damaged, damaged, existing.id, event.id);
+        require('./damagedAssetSyncService').syncDamagedReturnItem(db, existing.id);
       });
 
       const state = db.prepare(`
