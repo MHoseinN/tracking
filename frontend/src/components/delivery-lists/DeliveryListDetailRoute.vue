@@ -12,8 +12,8 @@
         @click="requestReturnEntry">ثبت برگشت اقلام</button>
       <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full"
         :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
-      <button v-if="list?.change_history?.length" type="button" class="app-button-secondary w-full"
-        @click="showHistoryModal = true">تاریخچه ویرایش لیست</button>
+      <button v-if="historyEntries.length" type="button" class="app-button-secondary w-full"
+        @click="showHistoryModal = true">تاریخچه لیست</button>
       <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
         :disabled="loadingSettlement" @click="openSettlement">{{ loadingSettlement ? 'در حال دریافت...' : 'مدیریت پرداخت و تسویه' }}</button>
       <button type="button" class="app-button-primary w-full" @click="createNewDraft">ایجاد لیست جدید</button>
@@ -80,10 +80,10 @@
       </section>
     </div>
 
-    <AppModal title="تاریخچه ویرایش لیست" description="تغییرات ثبت‌شده به تفکیک کاربر و نقش" size="lg"
+    <AppModal title="تاریخچه لیست" description="تحویل، دریافت و ویرایش اطلاعات لیست به ترتیب زمان" size="lg"
       :is-open="showHistoryModal" @close="showHistoryModal = false">
       <div class="divide-y divide-slate-100">
-        <article v-for="entry in list?.change_history || []" :key="entry.id"
+        <article v-for="entry in historyEntries" :key="entry.id"
           class="grid gap-3 py-4 md:grid-cols-[8rem_minmax(0,1fr)_8rem]">
           <div class="min-w-0">
             <strong class="block truncate text-sm text-slate-800">{{ entry.actor_name }}</strong>
@@ -91,12 +91,18 @@
               {{ roleLabel(entry.actor_role) }}
             </span>
           </div>
-          <ul class="space-y-2">
-            <li v-for="change in historyChanges(entry)" :key="change"
-              class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-6 text-slate-700">
-              {{ change }}
-            </li>
-          </ul>
+          <div>
+            <strong class="mb-2 block text-sm text-slate-800">{{ historyActionLabel(entry.action) }}</strong>
+            <ul class="space-y-2">
+              <li v-for="change in historyChanges(entry)" :key="change"
+                class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-6 text-slate-700">
+                {{ change }}
+              </li>
+            </ul>
+            <button v-if="entry.return_event_id && entry.return_event && entry.action === 'RECORD_RETURN'"
+              type="button" class="mt-2 text-xs font-bold text-teal-700 underline"
+              @click="editHistoryReturn(entry.return_event_id)">اصلاح برگشت و سلامت اقلام</button>
+          </div>
           <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatDateTime(entry.created_at) }}</time>
         </article>
       </div>
@@ -126,7 +132,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
@@ -192,6 +198,8 @@ const returnReceiverNames = computed(() => {
   return [...new Set(names)].join('، ') || 'هنوز برگشتی ثبت نشده';
 });
 const canIssueInvoice = computed(() => pendingInvoiceCount.value > 0);
+const historyEntries = computed(() => (list.value?.activity_history || [])
+  .filter((entry) => historyChanges(entry).length > 0));
 const listStatus = computed(() => ({
   DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },
   REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },
@@ -231,6 +239,12 @@ function requestFinalizeDelivery() {
 
 function requestReturnEntry() {
   editorRef.value?.openReturnEntry();
+}
+
+async function editHistoryReturn(eventId) {
+  showHistoryModal.value = false;
+  await nextTick();
+  editorRef.value?.openReturnEventEditorById(eventId);
 }
 
 async function openProforma() {
@@ -486,27 +500,77 @@ function roleLabel(role) {
   return role === 'MANAGER' ? 'مدیر' : 'ادمین';
 }
 
+function historyActionLabel(action) {
+  return {
+    FINALIZE_DELIVERY: 'ثبت تحویل لیست',
+    UPDATE_DELIVERY_LIST: 'ویرایش اطلاعات لیست',
+    RECORD_RETURN: 'ثبت دریافت اقلام',
+    UPDATE_RETURN_EVENT: 'اصلاح برگشت و وضعیت سلامت'
+  }[action] || 'تغییر لیست';
+}
+
+function returnItemName(item, entry) {
+  return item.product_name_snapshot || entry.return_event?.items?.find((row) =>
+    Number(row.id) === Number(item.id))?.product_name_snapshot || 'محصول';
+}
+
 function historyChanges(entry) {
   const before = entry.before || {};
   const after = entry.after || {};
+  if (entry.action === 'FINALIZE_DELIVERY') {
+    const lines = [`لیست ${after.list_number || ''} برای ${after.customer_name || list.value?.customer_name || 'مشتری'} تحویل شد.`];
+    if (after.delivered_at) lines.push(`زمان تحویل: ${formatDateTime(after.delivered_at)}`);
+    if (after.items?.length) after.items.forEach((item) => lines.push(
+      `${item.product_name_snapshot}: ${formatNumber(item.delivered_quantity)} عدد تحویل شد`
+    ));
+    else lines.push('تعداد اولیه اقلام در این سابقه قدیمی ثبت نشده است.');
+    return lines;
+  }
+  if (entry.action === 'RECORD_RETURN') {
+    const lines = [`زمان برگشت: ${formatDateTime(after.returned_at)}`];
+    const items = after.items?.length ? after.items : entry.return_event?.items || [];
+    items.forEach((item) => lines.push(
+      `${returnItemName(item, entry)}: ${formatNumber(Number(item.healthy_quantity) + Number(item.damaged_quantity))} عدد دریافت شد${Number(item.damaged_quantity) ? `، ${formatNumber(item.damaged_quantity)} عدد خسارتی` : ''}`
+    ));
+    if (!after.items?.length && items.length) lines.push('جزئیات اقلام از وضعیت فعلی برگشت نمایش داده شده‌اند.');
+    return lines;
+  }
+  if (entry.action === 'UPDATE_RETURN_EVENT') {
+    const lines = [];
+    if (before.returned_at !== after.returned_at) lines.push(
+      `زمان برگشت: ${formatDateTime(before.returned_at)} ← ${formatDateTime(after.returned_at)}`
+    );
+    const beforeById = new Map((before.items || []).map((item) => [Number(item.id), item]));
+    (after.items || []).forEach((item) => {
+      const previous = beforeById.get(Number(item.id));
+      if (!previous) return;
+      const name = returnItemName(item, entry);
+      const previousTotal = Number(previous.healthy_quantity) + Number(previous.damaged_quantity);
+      const currentTotal = Number(item.healthy_quantity) + Number(item.damaged_quantity);
+      if (previousTotal !== currentTotal) lines.push(
+        `تعداد برگشتی ${name}: ${formatNumber(previousTotal)} ← ${formatNumber(currentTotal)}`
+      );
+      if (Number(previous.damaged_quantity) !== Number(item.damaged_quantity)) lines.push(
+        `تعداد خسارتی ${name}: ${formatNumber(previous.damaged_quantity)} ← ${formatNumber(item.damaged_quantity)}`
+      );
+    });
+    if (before.notes !== undefined && before.notes !== after.notes) lines.push(
+      `توضیحات برگشت: ${before.notes || 'بدون توضیح'} ← ${after.notes || 'بدون توضیح'}`
+    );
+    return lines.length ? lines : ['وضعیت سلامت یا توضیحات این برگشت اصلاح شد؛ جزئیات قدیمی ثبت نشده است.'];
+  }
   const itemChanges = (entry.item_changes || []).map((change) => {
     const name = `«${change.product_name || 'محصول'}»`;
-    if (change.type === 'ADDED') return `${name} افزوده شد؛ تعداد ${formatNumber(change.quantity_after)}، قیمت روزانه ${formatCurrency(change.daily_price_after)}`;
-    if (change.type === 'REMOVED') return `${name} حذف شد؛ تعداد قبلی ${formatNumber(change.quantity_before)}، قیمت روزانه ${formatCurrency(change.daily_price_before)}`;
+    if (change.type === 'ADDED') return `${name} افزوده شد؛ تعداد ${formatNumber(change.quantity_after)}`;
+    if (change.type === 'REMOVED') return `${name} حذف شد؛ تعداد قبلی ${formatNumber(change.quantity_before)}`;
     if (change.type === 'QUANTITY') return `تعداد ${name}: ${formatNumber(change.before)} ← ${formatNumber(change.after)}`;
-    if (change.type === 'PRICE') return `قیمت روزانه ${name}: ${formatCurrency(change.before)} ← ${formatCurrency(change.after)}`;
     if (change.type === 'REMAINING_RETURN_AT') return `زمان برگشت مانده ${name}: ${formatDateTime(change.before)} ← ${formatDateTime(change.after)}`;
     if (change.type === 'NOTES') return `توضیحات ${name}: ${change.before || 'بدون توضیح'} ← ${change.after || 'بدون توضیح'}`;
     return null;
   }).filter(Boolean);
   const changes = (entry.changed_fields || []).flatMap((field) => {
     if (field === 'OWNER') return [`مشتری: ${before.customer_name || '—'} ← ${after.customer_name || '—'}`];
-    if (field === 'TOTAL_PRICE') {
-      if (Number(before.total_price_toman) !== Number(after.total_price_toman)) {
-        return [`مجموع قیمت: ${formatCurrency(before.total_price_toman)} ← ${formatCurrency(after.total_price_toman)}`];
-      }
-      return itemChanges.length ? [] : ['قیمت اقلام تغییر کرده است؛ جزئیات این ویرایش قدیمی ثبت نشده است.'];
-    }
+    if (field === 'TOTAL_PRICE') return [];
     if (field === 'DELIVERED_AT') return [`زمان تحویل: ${formatDateTime(before.delivered_at)} ← ${formatDateTime(after.delivered_at)}`];
     if (field === 'EXPECTED_RETURN_AT') return [`زمان تقریبی برگشت: ${formatDateTime(before.expected_return_at)} ← ${formatDateTime(after.expected_return_at)}`];
     if (field === 'ITEMS') return itemChanges.length ? [] : ['اقلام لیست تغییر کرده‌اند؛ جزئیات این ویرایش قدیمی ثبت نشده است.'];

@@ -304,7 +304,7 @@
           </div>
         </footer>
 
-        <section v-if="!isDraft && registeredReturnEvents.length" class="return-history-panel">
+        <section v-if="!embedded && !isDraft && registeredReturnEvents.length" class="return-history-panel">
           <div class="return-history-panel__heading">
             <div><strong>سوابق دریافت و بررسی سلامت</strong><span>تاریخ برگشت و وضعیت سلامت اقلام قابل اصلاح است.</span>
             </div>
@@ -498,7 +498,7 @@ const props = defineProps({
   initialList: { type: Object, default: null }
 });
 const emit = defineEmits(['saved', 'finalized']);
-defineExpose({ openFinalizeConfirm, openReturnEntry });
+defineExpose({ openFinalizeConfirm, openReturnEntry, openReturnEventEditorById });
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -1140,6 +1140,11 @@ function returnEventIsInvoiced(event) {
 
 function normalizedDamageQuantity(item) {
   return Math.min(Number(item.total_quantity) || 0, Math.max(0, Math.round(Number(item.damaged_quantity) || 0)));
+}
+
+function openReturnEventEditorById(eventId) {
+  const event = registeredReturnEvents.value.find((item) => Number(item.id) === Number(eventId));
+  if (event) openReturnEventEditor(event);
 }
 
 async function openReturnEventEditor(event, focusItemId = null) {

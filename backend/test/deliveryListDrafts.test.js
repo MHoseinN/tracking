@@ -670,6 +670,13 @@ test('edits an unbilled return date and reclassifies healthy items as damaged', 
     assert.equal(edited.return_events[0].items[0].damaged_quantity, 1);
     assert.equal(edited.return_events[0].items[0].damage_notes, 'شکستگی پایه');
     assert.equal(edited.return_events[0].items[0].system_calculated_days, 2);
+    assert.deepEqual(edited.activity_history.slice(0, 3).map((entry) => entry.action),
+      ['UPDATE_RETURN_EVENT', 'RECORD_RETURN', 'FINALIZE_DELIVERY']);
+    assert.equal(edited.activity_history[0].actor_name, 'مدیر');
+    assert.equal(edited.activity_history[0].after.items[0].product_name_snapshot,
+      edited.items[0].product_name_snapshot);
+    assert.equal(edited.activity_history[1].after.items[0].healthy_quantity, 2);
+    assert.equal(edited.activity_history[2].after.items[0].delivered_quantity, 2);
     assert.throws(() => service.updateReturnEvent(draft.id, event.id, {
       returned_at: '2026-08-26T11:00:00+03:30',
       items: [{ id: event.items[0].id, healthy_quantity: 2, damaged_quantity: 1, damage_notes: 'اضافه' }]

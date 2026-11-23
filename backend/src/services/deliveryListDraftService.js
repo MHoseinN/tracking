@@ -398,7 +398,7 @@ function createDeliveryListDraftService(db) {
       ORDER BY sort_order, id
     `);
     invoices.forEach((invoice) => { invoice.lines = lineStatement.all(invoice.id); });
-    const changeHistory = db.prepare(`
+    const activityHistory = db.prepare(`
       SELECT audit_logs.id, audit_logs.action, audit_logs.before_json,
              audit_logs.after_json, audit_logs.metadata_json, audit_logs.created_at,
              COALESCE(users.display_name, users.username, 'کاربر سیستم') AS actor_name,
@@ -407,27 +407,36 @@ function createDeliveryListDraftService(db) {
       LEFT JOIN users ON users.id = audit_logs.actor_user_id
       WHERE audit_logs.entity_type = 'DELIVERY_LIST'
         AND audit_logs.entity_id = ?
-        AND audit_logs.action = 'UPDATE_DELIVERY_LIST'
+        AND audit_logs.action IN ('FINALIZE_DELIVERY', 'UPDATE_DELIVERY_LIST',
+          'RECORD_RETURN', 'UPDATE_RETURN_EVENT')
       ORDER BY audit_logs.id DESC
       LIMIT 200
-    `).all(String(id)).map((entry) => ({
-      id: entry.id,
-      action: entry.action,
-      actor_name: entry.actor_name,
-      actor_role: entry.actor_role,
-      created_at: entry.created_at,
-      before: parseJson(entry.before_json, {}),
-      after: parseJson(entry.after_json, {}),
-      changed_fields: parseJson(entry.metadata_json, {}).changed_fields || [],
-      item_changes: parseJson(entry.metadata_json, {}).item_changes || []
-    })).filter((entry) => entry.changed_fields.length || entry.item_changes.length).slice(0, 30);
+    `).all(String(id)).map((entry) => {
+      const metadata = parseJson(entry.metadata_json, {});
+      return {
+        id: entry.id,
+        action: entry.action,
+        actor_name: entry.actor_name,
+        actor_role: entry.actor_role,
+        created_at: entry.created_at,
+        before: parseJson(entry.before_json, {}),
+        after: parseJson(entry.after_json, {}),
+        changed_fields: metadata.changed_fields || [],
+        item_changes: metadata.item_changes || [],
+        return_event_id: metadata.return_event_id || null,
+        return_event: metadata.return_event_id
+          ? returnEventsById.get(Number(metadata.return_event_id)) || null : null
+      };
+    }).filter((entry) => entry.action !== 'UPDATE_DELIVERY_LIST'
+      || entry.changed_fields.length || entry.item_changes.length).slice(0, 50);
     return {
       ...list,
       items,
       proforma,
       invoices,
       return_events: [...returnEventsById.values()],
-      change_history: changeHistory
+      activity_history: activityHistory,
+      change_history: activityHistory.filter((entry) => entry.action === 'UPDATE_DELIVERY_LIST')
     };
   }
 
@@ -1009,7 +1018,11 @@ function createDeliveryListDraftService(db) {
       `).run(
         actorUserId,
         String(id),
-        JSON.stringify({ status: 'DELIVERED', list_number: listNumber }),
+        JSON.stringify({ status: 'DELIVERED', list_number: listNumber,
+          customer_name: customer.name, delivered_at: draft.delivered_at,
+          items: db.prepare(`SELECT product_name_snapshot, delivered_quantity
+            FROM delivery_list_items WHERE delivery_list_id = ? AND deleted_at IS NULL
+            ORDER BY id`).all(id) }),
         JSON.stringify({ invoice_id: Number(invoiceResult.lastInsertRowid), daily_rate_total_toman: dailyRateTotal })
       );
     });
@@ -1173,7 +1186,13 @@ function createDeliveryListDraftService(db) {
       `).run(
         actorUserId,
         String(id),
-        JSON.stringify({ status: nextStatus, returned_at: returnedAt }),
+        JSON.stringify({ status: nextStatus, returned_at: returnedAt,
+          items: db.prepare(`SELECT delivery_list_items.product_name_snapshot,
+            return_event_items.healthy_quantity, return_event_items.damaged_quantity
+            FROM return_event_items JOIN delivery_list_items
+              ON delivery_list_items.id = return_event_items.delivery_list_item_id
+            WHERE return_event_items.return_event_id = ? AND return_event_items.deleted_at IS NULL
+            ORDER BY return_event_items.id`).all(eventResult.lastInsertRowid) }),
         JSON.stringify({ return_event_id: Number(eventResult.lastInsertRowid), system_calculated_days: systemDays })
       );
     });
@@ -1193,6 +1212,7 @@ function createDeliveryListDraftService(db) {
 
     const existingItems = db.prepare(`
       SELECT return_event_items.id, return_event_items.delivery_list_item_id,
+             delivery_list_items.product_name_snapshot,
              return_event_items.healthy_quantity, return_event_items.damaged_quantity,
              return_event_items.final_charged_days, return_event_items.day_override_reason,
              return_event_items.damage_notes,
@@ -1202,6 +1222,7 @@ function createDeliveryListDraftService(db) {
                  AND invoice_lines.deleted_at IS NULL
              ) AS is_invoiced
       FROM return_event_items
+      JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
       WHERE return_event_items.return_event_id = ? AND return_event_items.deleted_at IS NULL
       ORDER BY return_event_items.id
     `).all(event.id);
@@ -1307,8 +1328,12 @@ function createDeliveryListDraftService(db) {
       `).run(
         actorUserId,
         String(id),
-        JSON.stringify({ returned_at: event.returned_at, items: existingItems.map((item) => ({ id: item.id, healthy_quantity: item.healthy_quantity, damaged_quantity: item.damaged_quantity })) }),
-        JSON.stringify({ returned_at: returnedAt, items: normalizedItems.map(({ existing, healthy, damaged }) => ({ id: existing.id, healthy_quantity: healthy, damaged_quantity: damaged })) }),
+        JSON.stringify({ returned_at: event.returned_at, notes: event.notes, items: existingItems.map((item) => ({
+          id: item.id, product_name_snapshot: item.product_name_snapshot,
+          healthy_quantity: item.healthy_quantity, damaged_quantity: item.damaged_quantity })) }),
+        JSON.stringify({ returned_at: returnedAt, notes: nullableText(payload.notes), items: normalizedItems.map(({ existing, healthy, damaged }) => ({
+          id: existing.id, product_name_snapshot: existing.product_name_snapshot,
+          healthy_quantity: healthy, damaged_quantity: damaged })) }),
         JSON.stringify({ return_event_id: Number(event.id) })
       );
     })();
