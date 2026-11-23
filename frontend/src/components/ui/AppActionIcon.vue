@@ -15,7 +15,7 @@ const iconPaths = {
   account: ['M3 6h18v14H3z', 'M3 10h18', 'M16 15h2'],
   chart: ['M4 20V4', 'M4 20h16', 'm8 15 3-4 3 2 5-6'],
   download: ['M12 3v12', 'm7 10 5 5 5-5', 'M4 17v3h16v-3'],
-  history: ['M4 10a8 8 0 1 1-1 5', 'M4 4v6h6', 'M12 7v5l3 2'],
+  history: ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z', 'M12 7v5l3 2'],
   document: ['M6 3h9l4 4v14H6z', 'M15 3v5h4', 'M9 12h7', 'M9 16h7'],
   documentAdd: ['M6 3h9l4 4v14H6z', 'M15 3v5h4', 'M12 11v7', 'M8.5 14.5h7'],
   edit: ['M4 20h4l11-11-4-4L4 16v4Z', 'm13 7 4 4'],

@@ -62,8 +62,11 @@
           <td class="text-center">{{ row.referrer || '—' }}</td>
           <td>
             <div class="flex flex-wrap items-center justify-center gap-1">
-              <AppButton variant="secondary" size="sm" @click="navigateToCustomer(row.id, 'account')">حساب</AppButton>
-              <AppButton variant="info" size="sm" @click="navigateToCustomer(row.id, 'stats')">آمار</AppButton>
+              <AppIconButton label="مشاهده صفحه مشتری" size="sm" variant="secondary" @click="navigateToCustomer(row.id)">
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+                </svg>
+              </AppIconButton>
               <AppIconButton label="ویرایش مشتری" size="sm" variant="primary" @click="openEditModal(row)">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 15H9v-3z" /></svg>
               </AppIconButton>
@@ -186,7 +189,7 @@ function financialStatusKey(row) { const net = Number(row.net_balance_toman || 0
 function financialStatus(row) { return { debtor: 'بدهکار', creditor: 'طلبکار', clear: 'بدون بدهی' }[financialStatusKey(row)]; }
 function financialStatusClass(row) { return { debtor: 'text-rose-700', creditor: 'text-blue-700', clear: 'text-emerald-700' }[financialStatusKey(row)]; }
 function statusTriggerClass(status) { return ['customers-status-control', status ? getAccountStatusTone(status) : 'border-slate-300 bg-white text-slate-500']; }
-function navigateToCustomer(id, view = 'account') { router.push({ name: 'CustomerDetail', params: { id }, query: { view } }); }
+function navigateToCustomer(id) { router.push({ name: 'CustomerDetail', params: { id } }); }
 function toggleSort(key) {
   sorts[key] = sorts[key] === 'desc' ? 'asc' : 'desc';
   sortPriority.value = [key, ...sortPriority.value.filter((item) => item !== key)];
@@ -243,14 +246,14 @@ onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCus
 .customers-table :deep(.app-table-wrapper) { overflow-x: hidden; }
 .customers-table :deep(th), .customers-table :deep(td) { padding: .65rem .45rem; vertical-align: middle; }
 .customers-table :deep(th:nth-child(1)) { width: 4%; }
-.customers-table :deep(th:nth-child(2)) { width: 15%; }
+.customers-table :deep(th:nth-child(2)) { width: 18%; }
 .customers-table :deep(th:nth-child(3)) { width: 11%; }
 .customers-table :deep(th:nth-child(4)) { width: 10%; }
 .customers-table :deep(th:nth-child(5)) { width: 7%; }
 .customers-table :deep(th:nth-child(6)) { width: 13%; }
-.customers-table :deep(th:nth-child(7)) { width: 10%; }
-.customers-table :deep(th:nth-child(8)) { width: 10%; }
-.customers-table :deep(th:nth-child(9)) { width: 20%; }
+.customers-table :deep(th:nth-child(7)) { width: 12%; }
+.customers-table :deep(th:nth-child(8)) { width: 13%; }
+.customers-table :deep(th:nth-child(9)) { width: 12%; }
 .customers-table :deep(.customer-sort-button) { display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: .35rem; font: inherit; color: inherit; }
 .customers-table :deep(.customer-sort-button:hover) { color: #4338ca; }
 .customers-table :deep(.customer-sort-button:focus-visible) { border-radius: .35rem; outline: 2px solid #818cf8; outline-offset: 2px; }
@@ -260,11 +263,11 @@ onMounted(async () => { await Promise.all([loadOverview(), invoiceStore.fetchCus
   .customers-table :deep(th:nth-child(5)), .customers-table :deep(td:nth-child(5)),
   .customers-table :deep(th:nth-child(8)), .customers-table :deep(td:nth-child(8)) { display: none; }
   .customers-table :deep(th:nth-child(1)) { width: 6%; }
-  .customers-table :deep(th:nth-child(2)) { width: 20%; }
+  .customers-table :deep(th:nth-child(2)) { width: 24%; }
   .customers-table :deep(th:nth-child(3)) { width: 15%; }
   .customers-table :deep(th:nth-child(4)) { width: 14%; }
   .customers-table :deep(th:nth-child(6)) { width: 12%; }
   .customers-table :deep(th:nth-child(7)) { width: 11%; }
-  .customers-table :deep(th:nth-child(9)) { width: 22%; }
+  .customers-table :deep(th:nth-child(9)) { width: 18%; }
 }
 </style>
