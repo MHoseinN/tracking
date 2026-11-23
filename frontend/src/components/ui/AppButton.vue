@@ -13,12 +13,14 @@
     </svg>
     <slot name="leading" />
     <span v-if="$slots.default" class="min-w-0 truncate"><slot /></span>
+    <AppActionIcon v-if="icon" :name="icon" />
     <slot name="trailing" />
   </component>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import AppActionIcon from './AppActionIcon.vue';
 
 const props = defineProps({
   tag: { type: [String, Object], default: 'button' },
@@ -34,6 +36,7 @@ const props = defineProps({
     validator: (value) => ['sm', 'md', 'lg'].includes(value)
   },
   loading: { type: Boolean, default: false },
+  icon: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
   block: { type: Boolean, default: false }
 });

@@ -2,12 +2,13 @@
   <div>
     <Teleport to="#app-shell-actions">
       <button type="button" class="app-button-primary w-full" :disabled="loading || saving" @click="openConfirm">
-        ذخیره تنظیمات
+        ذخیره تنظیمات<AppActionIcon name="save" />
       </button>
       <button type="button" class="app-button-secondary w-full" :disabled="backupLoading" @click="showBackupConfirm = true">
         {{ backupLoading ? 'در حال تهیه بکاپ...' : 'دریافت فایل بکاپ' }}
+        <AppActionIcon name="backup" />
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت به خانه</button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/home')">بازگشت<AppActionIcon name="back" /></button>
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال دریافت تنظیمات..." />
@@ -53,6 +54,7 @@ import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import TimePicker24 from '../TimePicker24.vue';
+import AppActionIcon from '../ui/AppActionIcon.vue';
 import { settingsService } from '../../modules/settings/api/settings.service';
 import { systemService } from '../../modules/system/api/system.service';
 import { getApiErrorMessage } from '../../utils/apiError';

@@ -1,10 +1,10 @@
 <template>
   <div ref="tableSectionRef" class="space-y-5">
     <Teleport to="#app-shell-actions">
-      <AppButton :variant="view === 'account' ? 'primary' : 'secondary'" block @click="setView('account')">حساب</AppButton>
-      <AppButton :variant="view === 'stats' ? 'primary' : 'secondary'" block @click="setView('stats')">آمار</AppButton>
-      <AppButton variant="info" block @click="exportCustomerLists">گزارش‌گیری</AppButton>
-      <AppButton variant="secondary" block @click="router.push('/users')">بازگشت به مشتریان</AppButton>
+      <AppButton :variant="view === 'account' ? 'primary' : 'secondary'" icon="account" block @click="setView('account')">حساب</AppButton>
+      <AppButton :variant="view === 'stats' ? 'primary' : 'secondary'" icon="chart" block @click="setView('stats')">آمار</AppButton>
+      <AppButton variant="info" icon="download" block @click="exportCustomerLists">گزارش‌گیری</AppButton>
+      <AppButton variant="secondary" icon="back" block @click="router.push('/users')">بازگشت</AppButton>
     </Teleport>
 
     <CustomerSummaryPanel :customer="customer" :show-stats="view === 'stats'" :financial-status="financialStatus"

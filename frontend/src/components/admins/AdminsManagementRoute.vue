@@ -1,7 +1,7 @@
 <template>
   <div ref="tableSectionRef">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block @click="openAddModal">افزودن ادمین</AppButton>
+      <AppButton variant="primary" icon="userAdd" block @click="openAddModal">افزودن ادمین</AppButton>
     </Teleport>
 
     <AppTablePanel title="مدیریت ادمین‌ها">

@@ -1,7 +1,7 @@
 <template>
   <div ref="tableSectionRef">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="info" block @click="exportCustomers">گزارش‌گیری</AppButton>
+      <AppButton variant="info" icon="download" block @click="exportCustomers">گزارش‌گیری</AppButton>
     </Teleport>
 
     <p v-if="errorMessage" class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ errorMessage }}</p>

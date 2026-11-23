@@ -1,7 +1,7 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block @click="router.push('/lists')">رفتن به  لیست‌ها</AppButton>
+      <AppButton variant="primary" icon="document" block @click="router.push('/lists')">رفتن به لیست‌ها</AppButton>
       <AppButton variant="info" block @click="exportInvoices">
         گزارش‌گیری
         <template #trailing><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

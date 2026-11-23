@@ -1,8 +1,8 @@
 <template>
   <div ref="tableRef" class="space-y-5">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="secondary" block @click="router.push('/damaged-assets')">بازگشت به اموال خسارتی</AppButton>
-      <AppButton variant="primary" block @click="openRepairer()">افزودن تعمیرکننده</AppButton>
+      <AppButton variant="secondary" icon="back" block @click="router.push('/damaged-assets')">بازگشت</AppButton>
+      <AppButton variant="primary" icon="userAdd" block @click="openRepairer()">افزودن تعمیرکننده</AppButton>
     </Teleport>
 
     <AppTablePanel title="تعمیرکننده‌ها و مراکز خدمات" :count="loading ? null : filteredRepairers.length"

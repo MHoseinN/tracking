@@ -29,8 +29,24 @@
         </div>
 
         <div class="app-shell__global-actions flex w-full flex-col gap-2">
-          <AppButton variant="primary" block :loading="creatingList" @click="createNewList">لیست جدید</AppButton>
-          <AppButton variant="secondary" block @click="openCustomerForm">مشتری جدید</AppButton>
+          <AppButton variant="primary" block :loading="creatingList" @click="createNewList">
+            لیست جدید
+            <template #trailing>
+              <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 4.5h8M8 2.75h8a2 2 0 0 1 2 2v15a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.75v-15a2 2 0 0 1 2-2Z" />
+                <path stroke-linecap="round" d="M12 9v7m-3.5-3.5h7" />
+              </svg>
+            </template>
+          </AppButton>
+          <AppButton variant="secondary" block @click="openCustomerForm">
+            مشتری جدید
+            <template #trailing>
+              <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10" cy="8" r="3.25" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 19a6.5 6.5 0 0 1 13 0M19 8v6m-3-3h6" />
+              </svg>
+            </template>
+          </AppButton>
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide">

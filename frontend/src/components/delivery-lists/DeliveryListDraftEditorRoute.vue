@@ -4,9 +4,9 @@
       <button type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700" :disabled="finalizing"
         @click="openFinalizeConfirm">
         {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره تغییرات لیست') }}
+        <AppActionIcon :name="isDraft ? 'check' : 'save'" />
       </button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به
-        لیست‌ها</button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت<AppActionIcon name="back" /></button>
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال آماده‌سازی پیش‌نویس..." />
@@ -481,6 +481,7 @@ import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import CustomerFormModal from '../CustomerFormModal.vue';
+import AppActionIcon from '../ui/AppActionIcon.vue';
 import AppModal from '../ui/AppModal.vue';
 import JalaliDatePicker from '../JalaliDatePicker.vue';
 import TimePicker24 from '../TimePicker24.vue';

@@ -3,20 +3,24 @@
     <Teleport to="#app-shell-actions">
       <button v-if="list?.status === 'DRAFT'" type="button"
         class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
-        @click="requestFinalizeDelivery">ثبت نهایی تحویل</button>
+        @click="requestFinalizeDelivery">ثبت نهایی تحویل<AppActionIcon name="check" /></button>
       <button v-if="list && list.status !== 'DRAFT' && (!list.invoices?.length || list.proforma)" type="button" class="app-button-secondary w-full border-violet-300 text-violet-700"
         :disabled="loadingProforma" @click="openProforma">
         {{ loadingProforma ? 'در حال آماده‌سازی...' : (list.proforma ? 'مشاهده پیش‌فاکتور' : 'ساخت پیش‌فاکتور') }}
+        <AppActionIcon name="document" />
       </button>
       <button v-if="canRecordReturn" type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
-        @click="requestReturnEntry">ثبت برگشت اقلام</button>
+        @click="requestReturnEntry">ثبت برگشت اقلام<AppActionIcon name="return" /></button>
       <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full"
-        :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
+        :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}<AppActionIcon name="documentAdd" /></button>
       <button v-if="historyEntries.length" type="button" class="app-button-secondary w-full"
-        @click="showHistoryModal = true">تاریخچه لیست</button>
+        @click="showHistoryModal = true">تاریخچه لیست<AppActionIcon name="history" /></button>
       <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
-        :disabled="loadingSettlement" @click="openSettlement">{{ loadingSettlement ? 'در حال دریافت...' : 'مدیریت پرداخت و تسویه' }}</button>
-      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به لیست‌ها</button>
+        :disabled="loadingSettlement" @click="openSettlement">
+        {{ loadingSettlement ? 'در حال دریافت...' : 'پرداخت و تسویه' }}
+        <AppActionIcon name="payment" />
+      </button>
+      <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت<AppActionIcon name="back" /></button>
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال دریافت جزئیات لیست..." />
@@ -133,6 +137,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
+import AppActionIcon from '../ui/AppActionIcon.vue';
 import AppModal from '../ui/AppModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryProformaPreviewModal from './DeliveryProformaPreviewModal.vue';

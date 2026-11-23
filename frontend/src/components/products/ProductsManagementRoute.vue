@@ -1,12 +1,12 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <AppButton variant="secondary" block @click="router.push('/products')">بازگشت به محصولات</AppButton>
-      <AppButton variant="primary" block @click="openProductModal()">افزودن محصول</AppButton>
-      <AppButton variant="primary" block @click="openCategoryModal()">افزودن دسته‌بندی</AppButton>
-      <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)">ویرایش دسته‌بندی</AppButton>
-      <AppButton variant="secondary" block :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">افزودن زیرشاخه</AppButton>
-      <AppButton variant="danger" block :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true">حذف دسته</AppButton>
+      <AppButton variant="secondary" icon="back" block @click="router.push('/products')">بازگشت</AppButton>
+      <AppButton variant="primary" icon="documentAdd" block @click="openProductModal()">افزودن محصول</AppButton>
+      <AppButton variant="primary" icon="category" block @click="openCategoryModal()">افزودن دسته‌بندی</AppButton>
+      <AppButton variant="secondary" icon="edit" block :disabled="!selectedCategoryObject" @click="openCategoryModal(selectedCategoryObject)">ویرایش دسته‌بندی</AppButton>
+      <AppButton variant="secondary" icon="branch" block :disabled="!selectedCategoryObject" @click="openCategoryModal({ parent_id: selectedCategoryObject?.id || null })">افزودن زیرشاخه</AppButton>
+      <AppButton variant="danger" icon="trash" block :disabled="!selectedCategoryObject" @click="showDeleteCategoryModal = true">حذف دسته</AppButton>
     </Teleport>
 
     <div class="grid items-start gap-4 xl:grid-cols-[230px_minmax(0,1fr)]">

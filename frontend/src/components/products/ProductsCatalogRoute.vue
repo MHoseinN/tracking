@@ -1,8 +1,8 @@
 <template>
   <div>
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block @click="router.push('/products/manage')">مدیریت محصولات</AppButton>
-      <AppButton variant="info" block @click="showPriceVersionsModal = true">نسخه‌های قیمت</AppButton>
+      <AppButton variant="primary" icon="layers" block @click="router.push('/products/manage')">مدیریت محصولات</AppButton>
+      <AppButton variant="info" icon="history" block @click="showPriceVersionsModal = true">نسخه‌های قیمت</AppButton>
     </Teleport>
 
     <div class="grid items-start gap-4 xl:grid-cols-[230px_minmax(0,1fr)]">

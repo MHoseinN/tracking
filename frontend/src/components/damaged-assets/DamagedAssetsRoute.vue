@@ -1,8 +1,8 @@
 <template>
   <div ref="tableRef" class="space-y-5">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block @click="createOpen = true">ثبت پرونده</AppButton>
-      <AppButton variant="secondary" block @click="router.push('/damaged-assets/repairers')">تعمیرکننده‌ها و پرداخت‌ها</AppButton>
+      <AppButton variant="primary" icon="folder" block @click="createOpen = true">ثبت پرونده</AppButton>
+      <AppButton variant="secondary" icon="repair" block @click="router.push('/damaged-assets/repairers')">تعمیرکننده‌ها و پرداخت‌ها</AppButton>
     </Teleport>
 
     <AppTablePanel>
