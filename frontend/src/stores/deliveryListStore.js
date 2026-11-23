@@ -146,6 +146,18 @@ export const useDeliveryListStore = defineStore('deliveryLists', {
       }
     },
 
+    async prepareProforma(id) {
+      this.saving = true;
+      try {
+        const list = (await deliveryListService.prepareProforma(id)).data;
+        this.currentDraft = list;
+        replaceDraft(this.lists, list);
+        return { success: true, data: list };
+      } catch (error) {
+        return { success: false, message: getApiErrorMessage(error, 'ساخت پیش‌فاکتور انجام نشد') };
+      } finally { this.saving = false; }
+    },
+
     async recordReturn(id, payload) {
       this.saving = true;
       try {

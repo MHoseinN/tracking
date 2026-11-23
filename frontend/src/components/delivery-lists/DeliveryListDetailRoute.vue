@@ -4,9 +4,9 @@
       <button v-if="list?.status === 'DRAFT'" type="button"
         class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
         @click="requestFinalizeDelivery">ثبت نهایی تحویل</button>
-      <button v-if="list?.proforma" type="button" class="app-button-secondary w-full border-violet-300 text-violet-700"
+      <button v-if="list && list.status !== 'DRAFT' && (!list.invoices?.length || list.proforma)" type="button" class="app-button-secondary w-full border-violet-300 text-violet-700"
         :disabled="loadingProforma" @click="openProforma">
-        {{ loadingProforma ? 'در حال ساخت...' : 'مشاهده پیش‌فاکتور' }}
+        {{ loadingProforma ? 'در حال آماده‌سازی...' : (list.proforma ? 'مشاهده پیش‌فاکتور' : 'ساخت پیش‌فاکتور') }}
       </button>
       <button v-if="canRecordReturn" type="button" class="app-button-primary w-full bg-emerald-600 hover:bg-emerald-700"
         @click="requestReturnEntry">ثبت برگشت اقلام</button>
@@ -37,9 +37,6 @@
           <span class="app-badge" :class="invoiceStatus.className">{{ invoiceStatus.label }}</span>
           <span class="app-badge" :class="invoiceSendStatus.className">{{ invoiceSendStatus.label }}</span>
           <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
-          <span v-if="pendingInvoiceCount" class="app-badge bg-amber-100 text-amber-800">
-            {{ formatNumber(pendingInvoiceCount) }} قلم در انتظار فاکتور
-          </span>
         </div>
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
           <span>تحویل‌دهنده  :
@@ -48,7 +45,7 @@
           <span>دریافت‌کننده  :
             <strong class="text-slate-800">{{ returnReceiverNames }}</strong>
           </span>
-          <span>پیش‌فاکتور: <strong class="text-violet-700">{{ list.proforma ? `#${formatNumber(list.proforma.id)}` : 'ایجاد نشده' }}</strong></span>
+          <span v-if="list.proforma">پیش‌فاکتور: <strong class="text-violet-700">#{{ formatNumber(list.proforma.id) }}</strong></span>
         </div>
       </section>
 
@@ -76,7 +73,7 @@
       </section>
 
       <section v-else class="rounded-lg border border-violet-300 bg-violet-50 p-5 text-sm text-violet-800">
-        پیش‌فاکتور خودکار آماده است. پس از ثبت اولین مرجوعی، فاکتور از ردیف‌های برگشتی ساخته می‌شود.
+        هنوز فاکتوری صادر نشده است. پس از ثبت برگشت اقلام، صدور فاکتور از همین لیست در دسترس خواهد بود.
       </section>
     </div>
 
@@ -146,6 +143,7 @@ import DeliverySettlementModal from './DeliverySettlementModal.vue';
 import DeliveryListDraftEditorRoute from './DeliveryListDraftEditorRoute.vue';
 import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { toPersianDate } from '../../utils/dateConverter';
+import { invoiceWorkflowStatus } from '../../utils/invoiceWorkflowStatus';
 
 const route = useRoute();
 const router = useRouter();
@@ -207,10 +205,11 @@ const listStatus = computed(() => ({
   COMPLETED: { label: 'تکمیل', className: 'bg-emerald-100 text-emerald-700' }
 }[list.value?.status] || { label: list.value?.status || 'نامشخص', className: 'bg-slate-100 text-slate-600' }));
 const invoiceStatus = computed(() => ({
-  PROFORMA: { label: 'پیش‌فاکتور', className: 'bg-violet-100 text-violet-700' },
+  WAITING: { label: 'در انتظار فاکتور', className: 'bg-amber-100 text-amber-700' },
   PARTIALLY_ISSUED: { label: 'صدور جزئی', className: 'bg-amber-100 text-amber-700' },
-  ISSUED: { label: 'فاکتور صادرشده', className: 'bg-emerald-100 text-emerald-700' }
-}[list.value?.invoice_status] || { label: 'بدون فاکتور', className: 'bg-slate-100 text-slate-600' }));
+  ISSUED: { label: 'صادرشده', className: 'bg-emerald-100 text-emerald-700' },
+  NO_INVOICE_NEEDED: { label: 'بدون نیاز به فاکتور', className: 'bg-slate-100 text-slate-600' }
+}[invoiceWorkflowStatus(list.value)] || { label: 'بدون فاکتور', className: 'bg-slate-100 text-slate-600' }));
 const invoiceSendStatus = computed(() => invoiceSendStatusMeta(list.value?.invoice_send_status));
 const settlementStatus = computed(() => ({
   UNPAID: { label: 'تسویه‌نشده', className: 'bg-rose-100 text-rose-700' },
@@ -248,9 +247,18 @@ async function editHistoryReturn(eventId) {
 }
 
 async function openProforma() {
-  if (loadingProforma.value || !list.value?.proforma) return;
+  if (loadingProforma.value || !list.value || list.value.status === 'DRAFT') return;
   showProformaModal.value = true;
   loadingProforma.value = true;
+  if (!list.value.proforma) {
+    const prepared = await listStore.prepareProforma(list.value.id);
+    if (!prepared.success) {
+      loadingProforma.value = false;
+      showProformaModal.value = false;
+      return toast.error(prepared.message);
+    }
+    list.value = prepared.data;
+  }
   const result = await listStore.downloadProformaPdf(list.value.id);
   loadingProforma.value = false;
   if (!result.success) {

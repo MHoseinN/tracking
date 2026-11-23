@@ -631,7 +631,7 @@ const finalizeConfirmMessage = computed(() => {
   const debt = Number(selectedCustomerSummary.value.balance_toman) || 0;
   return `تحویل ${formatNumber(activeItems.value.length)} قلم برای «${form.customerName || 'مشتری نامشخص'}» ثبت شود؟ `
     + (debt > 0 ? `این مشتری ${formatCurrency(debt)} بدهی قبلی دارد. ` : 'این مشتری بدهی قبلی ندارد. ')
-    + 'پس از ثبت، پیش‌نویس به لیست تحویل‌شده تبدیل و پیش‌فاکتور خودکار ایجاد می‌شود.';
+    + 'پس از ثبت، پیش‌نویس به لیست تحویل‌شده تبدیل می‌شود.';
 });
 
 const saveStatusClass = computed(() => ({

@@ -497,6 +497,12 @@ function createDeliveryListDraftService(db) {
                WHERE invoices.delivery_list_id = delivery_lists.id
                  AND invoices.status = 'ISSUED'
                  AND invoices.deleted_at IS NULL) AS issued_invoice_count
+             ,COALESCE((SELECT SUM(delivery_list_items.delivered_quantity -
+               COALESCE((SELECT SUM(return_event_items.healthy_quantity + return_event_items.damaged_quantity)
+                 FROM return_event_items WHERE return_event_items.delivery_list_item_id = delivery_list_items.id
+                   AND return_event_items.deleted_at IS NULL), 0))
+               FROM delivery_list_items WHERE delivery_list_items.delivery_list_id = delivery_lists.id
+                 AND delivery_list_items.deleted_at IS NULL), 0) AS remaining_quantity
              ,(SELECT MAX(return_events.returned_at)
                 FROM return_events
                WHERE return_events.delivery_list_id = delivery_lists.id
@@ -970,7 +976,6 @@ function createDeliveryListDraftService(db) {
     `).get(draft.customer_id);
     if (!customer) throw new DeliveryListDraftError('مشتری انتخاب‌شده فعال نیست', 409);
 
-    const deliveryDate = String(draft.delivered_at).slice(0, 10);
     const dailyRateTotal = items.reduce((sum, item) => (
       sum + Number(item.daily_price_toman) * Number(item.delivered_quantity)
     ), 0);
@@ -982,34 +987,13 @@ function createDeliveryListDraftService(db) {
       const update = db.prepare(`
         UPDATE delivery_lists
         SET list_number = ?, customer_name_snapshot = ?, status = 'DELIVERED',
-            invoice_status = 'PROFORMA', delivered_by_user_id = ?,
+            invoice_status = 'NONE', delivered_by_user_id = ?,
             updated_at = CURRENT_TIMESTAMP, version = version + 1
         WHERE id = ? AND status = 'DRAFT' AND archived_at IS NULL AND version = ?
       `).run(listNumber, customer.name, actorUserId, id, version);
       if (update.changes !== 1) {
         throw new DeliveryListDraftError('ثبت تحویل هم‌زمان انجام نشد؛ صفحه را دوباره بارگذاری کنید', 409);
       }
-
-      const invoiceResult = db.prepare(`
-        INSERT INTO invoices (
-          customer_id, date, price, description, notes,
-          delivery_list_id, invoice_type, status, settlement_status, send_status,
-          subtotal_toman, extra_charges_toman, discount_percent_basis_points,
-          discount_amount_toman, rounding_adjustment_toman, final_amount_toman,
-          issued_at, issued_by_user_id, updated_at, version
-        ) VALUES (
-          ?, ?, 0, ?, ?,
-          ?, 'PRIMARY', 'PROFORMA', 'UNPAID', 'NOT_SENT',
-          0, 0, 0, 0, 0, 0,
-          NULL, NULL, CURRENT_TIMESTAMP, 1
-        )
-      `).run(
-        customer.id,
-        deliveryDate,
-        `پیش‌فاکتور خودکار لیست ${listNumber}`,
-        draft.notes || null,
-        id
-      );
 
       db.prepare(`
         INSERT INTO audit_logs (
@@ -1023,11 +1007,37 @@ function createDeliveryListDraftService(db) {
           items: db.prepare(`SELECT product_name_snapshot, delivered_quantity
             FROM delivery_list_items WHERE delivery_list_id = ? AND deleted_at IS NULL
             ORDER BY id`).all(id) }),
-        JSON.stringify({ invoice_id: Number(invoiceResult.lastInsertRowid), daily_rate_total_toman: dailyRateTotal })
+        JSON.stringify({ daily_rate_total_toman: dailyRateTotal })
       );
     });
 
     finalize.immediate();
+    return getList(id);
+  }
+
+  function prepareProforma(id, actorUserId) {
+    const list = getListRow(id);
+    if (list.status === 'DRAFT') throw new DeliveryListDraftError('ابتدا تحویل لیست را ثبت کنید', 409);
+    const existing = db.prepare(`SELECT id FROM invoices
+      WHERE delivery_list_id = ? AND status = 'PROFORMA' AND deleted_at IS NULL`).get(id);
+    if (!existing && db.prepare(`SELECT 1 FROM invoices
+      WHERE delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL LIMIT 1`).get(id)) {
+      throw new DeliveryListDraftError('برای این لیست فاکتور صادر شده است', 409);
+    }
+    if (!existing) db.transaction(() => {
+      const result = db.prepare(`INSERT INTO invoices (
+        customer_id, date, price, description, notes, delivery_list_id,
+        invoice_type, status, settlement_status, send_status, subtotal_toman,
+        extra_charges_toman, discount_percent_basis_points, discount_amount_toman,
+        rounding_adjustment_toman, final_amount_toman, updated_at, version
+      ) VALUES (?, ?, 0, ?, ?, ?, 'PRIMARY', 'PROFORMA', 'UNPAID', 'NOT_SENT',
+        0, 0, 0, 0, 0, 0, CURRENT_TIMESTAMP, 1)`)
+        .run(list.customer_id, String(list.delivered_at).slice(0, 10),
+          `پیش‌فاکتور لیست ${list.list_number}`, list.notes || null, id);
+      db.prepare(`INSERT INTO audit_logs (actor_user_id, entity_type, entity_id, action, after_json)
+        VALUES (?, 'DELIVERY_LIST', ?, 'PREPARE_PROFORMA', ?)`)
+        .run(actorUserId, String(id), JSON.stringify({ invoice_id: Number(result.lastInsertRowid) }));
+    })();
     return getList(id);
   }
 
@@ -1351,6 +1361,7 @@ function createDeliveryListDraftService(db) {
     deleteDraft,
     archiveList,
     finalizeDraft,
+    prepareProforma,
     recordReturn,
     updateReturnEvent
   };

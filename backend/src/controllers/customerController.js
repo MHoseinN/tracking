@@ -214,6 +214,18 @@ function getCustomerWorkflow(req, res) {
            FROM return_events re
           WHERE re.delivery_list_id = dl.id AND re.deleted_at IS NULL
         ) AS last_returned_at,
+        (SELECT COUNT(*) FROM invoices i WHERE i.delivery_list_id = dl.id
+          AND i.status = 'ISSUED' AND i.deleted_at IS NULL) AS issued_invoice_count,
+        COALESCE((SELECT SUM(dli.delivered_quantity - COALESCE((SELECT SUM(rei.healthy_quantity + rei.damaged_quantity)
+          FROM return_event_items rei WHERE rei.delivery_list_item_id = dli.id AND rei.deleted_at IS NULL), 0))
+          FROM delivery_list_items dli WHERE dli.delivery_list_id = dl.id AND dli.deleted_at IS NULL), 0) AS remaining_quantity,
+        (SELECT COUNT(*) FROM return_event_items rei
+          JOIN return_events re ON re.id = rei.return_event_id AND re.deleted_at IS NULL
+          JOIN delivery_list_items dli ON dli.id = rei.delivery_list_item_id AND dli.deleted_at IS NULL
+          WHERE dli.delivery_list_id = dl.id AND rei.deleted_at IS NULL
+            AND rei.invoice_excluded_at IS NULL
+            AND NOT EXISTS (SELECT 1 FROM invoice_lines il WHERE il.return_event_item_id = rei.id
+              AND il.line_type = 'RENTAL' AND il.deleted_at IS NULL)) AS pending_invoice_item_count,
         (SELECT COALESCE(SUM(i.final_amount_toman), 0)
            FROM invoices i
           WHERE i.delivery_list_id = dl.id

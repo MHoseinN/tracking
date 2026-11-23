@@ -466,11 +466,6 @@ function createDeliveryInvoiceService(db) {
     let number;
     const issue = db.transaction(() => {
       number = nextInvoiceNumber(db, issuedAt);
-      const proforma = db.prepare(`
-        SELECT id FROM invoices
-        WHERE delivery_list_id = ? AND status = 'PROFORMA' AND deleted_at IS NULL
-        ORDER BY id DESC LIMIT 1
-      `).get(list.id);
       const primary = db.prepare(`
         SELECT id FROM invoices
         WHERE delivery_list_id = ? AND invoice_type = 'PRIMARY'
@@ -478,23 +473,21 @@ function createDeliveryInvoiceService(db) {
         ORDER BY id LIMIT 1
       `).get(list.id);
 
-      if (proforma) {
-        invoiceId = Number(proforma.id);
-        db.prepare(`
-          UPDATE invoices
-          SET invoice_number = ?, status = 'ISSUED', date = ?, price = ?,
-              description = ?, notes = ?, subtotal_toman = ?, extra_charges_toman = ?,
-              discount_percent_basis_points = ?, discount_amount_toman = ?,
-              rounding_adjustment_toman = ?, final_amount_toman = ?,
-              issued_at = ?, issued_by_user_id = ?, updated_at = CURRENT_TIMESTAMP,
-              version = version + 1
-          WHERE id = ?
-        `).run(number, invoiceDate(issuedAt), finalAmount,
-          `فاکتور اصلی لیست ${list.list_number}`, textOrNull(payload.notes), subtotal,
-          extraCharges, discountBasisPoints, totalDiscount, rounding, finalAmount,
-          issuedAt, actorUserId, invoiceId);
+      if (!primary) {
+        const result = db.prepare(`INSERT INTO invoices (
+          customer_id, date, price, description, notes, delivery_list_id,
+          parent_invoice_id, invoice_number, invoice_type, status,
+          settlement_status, send_status, subtotal_toman, extra_charges_toman,
+          discount_percent_basis_points, discount_amount_toman, rounding_adjustment_toman,
+          final_amount_toman, issued_at, issued_by_user_id, updated_at, version
+        ) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 'PRIMARY', 'ISSUED',
+          'UNPAID', 'NOT_SENT', ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 1)`)
+          .run(list.customer_id, invoiceDate(issuedAt), finalAmount,
+            `فاکتور اصلی لیست ${list.list_number}`, textOrNull(payload.notes), list.id,
+            number, subtotal, extraCharges, discountBasisPoints, totalDiscount,
+            rounding, finalAmount, issuedAt, actorUserId);
+        invoiceId = Number(result.lastInsertRowid);
       } else {
-        if (!primary) throw new DeliveryListDraftError('فاکتور اصلی این لیست پیدا نشد', 409);
         const result = db.prepare(`
           INSERT INTO invoices (
             customer_id, date, price, description, notes, delivery_list_id,

@@ -108,6 +108,7 @@ export const deliveryListService = {
   deleteDraft(id) { return api.delete(`/delivery-lists/${id}/draft`); },
   deleteList(id) { return api.delete(`/delivery-lists/${id}/draft`); },
   finalizeDraft(id, version) { return api.post(`/delivery-lists/${id}/finalize`, { version }); },
+  prepareProforma(id) { return api.post(`/delivery-lists/${id}/proforma`); },
   recordReturn(id, payload) { return api.post(`/delivery-lists/${id}/returns`, payload); },
   updateReturnEvent(id, returnEventId, payload) { return api.put(`/delivery-lists/${id}/returns/${returnEventId}`, payload); },
   getInvoicePreview(id) { return api.get(`/delivery-lists/${id}/invoice-preview`); },

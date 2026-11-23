@@ -8,9 +8,10 @@ export const STATUS_GROUPS = Object.freeze({
   }),
   invoice: Object.freeze({
     NONE: { label: 'بدون فاکتور', tone: 'neutral' },
-    PROFORMA: { label: 'پیش‌فاکتور', tone: 'violet' },
+    WAITING: { label: 'در انتظار فاکتور', tone: 'warning' },
     PARTIALLY_ISSUED: { label: 'صدور جزئی', tone: 'warning' },
-    ISSUED: { label: 'صادرشده', tone: 'success' }
+    ISSUED: { label: 'صادرشده', tone: 'success' },
+    NO_INVOICE_NEEDED: { label: 'بدون نیاز به فاکتور', tone: 'neutral' }
   }),
   send: Object.freeze({
     NOT_SENT: { label: 'ارسال‌نشده', tone: 'danger' },

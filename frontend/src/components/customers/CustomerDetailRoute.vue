@@ -92,7 +92,7 @@
               :aria-label="`مدیریت وضعیت لیست ${displayListNumber(list)}`" @click="manageListStatus(list)" />
           </td>
           <td>
-            <AppStatusButton group="invoice" :status="list.invoice_status" :loading="isActionLoading(list, 'invoice')"
+            <AppStatusButton group="invoice" :status="invoiceWorkflowStatus(list)" :loading="isActionLoading(list, 'invoice')"
               :aria-label="`مدیریت فاکتور ${displayListNumber(list)}`" @click="manageInvoice(list)" />
           </td>
           <td>
@@ -166,6 +166,7 @@ import { useCustomerProfileForm } from '../../composables/useCustomerProfileForm
 import { exportRowsToExcel } from '../../utils/exportToExcel';
 import { toPersianDate } from '../../utils/dateConverter';
 import { normalizeNumericSearch } from '../../utils/numberSearch';
+import { invoiceWorkflowStatus } from '../../utils/invoiceWorkflowStatus';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 const router = useRouter();
@@ -225,8 +226,9 @@ const listStatusOptions = makeOptions([
   { label: 'تکمیل', value: 'COMPLETED' }
 ]);
 const invoiceStatusOptions = makeOptions([
-  { label: 'بدون فاکتور', value: 'NONE' }, { label: 'پیش‌فاکتور', value: 'PROFORMA' },
-  { label: 'صدور جزئی', value: 'PARTIALLY_ISSUED' }, { label: 'صادرشده', value: 'ISSUED' }
+  { label: 'بدون فاکتور', value: 'NONE' }, { label: 'در انتظار فاکتور', value: 'WAITING' },
+  { label: 'صدور جزئی', value: 'PARTIALLY_ISSUED' }, { label: 'صادرشده', value: 'ISSUED' },
+  { label: 'بدون نیاز به فاکتور', value: 'NO_INVOICE_NEEDED' }
 ]);
 const sendStatusOptions = makeOptions([
   { label: 'ارسال‌نشده', value: 'NOT_SENT' }, { label: 'ارسال جزئی', value: 'PARTIALLY_SENT' },
@@ -241,7 +243,7 @@ const filteredLists = computed(() => lists.value.filter((list) => (
   (!searchQuery.value || String(list.list_number || list.id).includes(searchQuery.value))
   && (!deliveryDateFilter.value || formatDate(list.delivered_at) === deliveryDateFilter.value)
   && (listStatusFilter.value === 'all' || list.status === listStatusFilter.value)
-  && (invoiceStatusFilter.value === 'all' || list.invoice_status === invoiceStatusFilter.value)
+  && (invoiceStatusFilter.value === 'all' || invoiceWorkflowStatus(list) === invoiceStatusFilter.value)
   && (sendStatusFilter.value === 'all' || list.invoice_send_status === sendStatusFilter.value)
   && (settlementStatusFilter.value === 'all' || list.settlement_status === settlementStatusFilter.value)
   && (!invoiceAmountQuery.value || (

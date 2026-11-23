@@ -335,6 +335,7 @@ test('archives a finalized list while preserving its invoices and audit history'
       items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 1 }]
     });
     service.finalizeDraft(draft.id, saved.version, 1);
+    service.prepareProforma(draft.id, 1);
 
     const result = service.archiveList(draft.id, 1);
     assert.deepEqual(result, { id: draft.id, deleted: true, archived: true });
@@ -379,7 +380,7 @@ test('rejects stale autosaves and duplicate products', () => {
   }
 });
 
-test('finalizes a complete draft and creates exactly one linked proforma', () => {
+test('finalizes a complete draft without creating a proforma', () => {
   const db = createDatabase();
   try {
     const service = createDeliveryListDraftService(db);
@@ -397,20 +398,18 @@ test('finalizes a complete draft and creates exactly one linked proforma', () =>
 
     const finalized = service.finalizeDraft(draft.id, saved.version, 1);
     assert.equal(finalized.status, 'DELIVERED');
-    assert.equal(finalized.invoice_status, 'PROFORMA');
+    assert.equal(finalized.invoice_status, 'NONE');
     assert.equal(finalized.list_number, '051000');
     assert.equal(finalized.delivered_by_user_id, 1);
-    assert.equal(finalized.proforma.status, 'PROFORMA');
-    assert.equal(finalized.proforma.invoice_type, 'PRIMARY');
-    assert.equal(finalized.proforma.final_amount_toman, 0);
-    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
+    assert.equal(finalized.proforma, null);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 0);
     assert.equal(db.prepare('SELECT action FROM audit_logs').get().action, 'FINALIZE_DELIVERY');
 
     assert.throws(
       () => service.finalizeDraft(draft.id, finalized.version, 1),
       (error) => error instanceof DeliveryListDraftError && error.statusCode === 409
     );
-    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 0);
   } finally {
     db.close();
   }
@@ -430,6 +429,11 @@ test('generates a non-binding proforma PDF from the latest delivery list data', 
       items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
     });
     const finalized = listService.finalizeDraft(draft.id, saved.version, 1);
+    await assert.rejects(() => createInvoicePdfService(db).generateProforma(finalized.id), /پیش‌فاکتور/);
+    const prepared = listService.prepareProforma(finalized.id, 1);
+    assert.equal(prepared.proforma.status, 'PROFORMA');
+    assert.equal(prepared.invoice_status, 'NONE');
+    assert.equal(listService.prepareProforma(finalized.id, 1).proforma.id, prepared.proforma.id);
 
     const result = await createInvoicePdfService(db).generateProforma(finalized.id);
     assert.equal(result.filename, 'proforma-051000.pdf');
@@ -441,6 +445,16 @@ test('generates a non-binding proforma PDF from the latest delivery list data', 
     assert.equal(result.data.lines.length, 1);
     assert.equal(result.data.lines[0].charged_days, 1);
     assert.equal(result.data.list_financials.invoiced_toman, 0);
+    listService.recordReturn(draft.id, {
+      returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: finalized.items[0].id, healthy_quantity: 2 }]
+    }, 1);
+    const invoiceService = createDeliveryInvoiceService(db);
+    const issued = invoiceService.issueInvoice(draft.id, {
+      lines: invoiceService.getPreview(draft.id).lines
+    }, 1);
+    assert.notEqual(issued.id, prepared.proforma.id);
+    assert.equal(listService.getList(draft.id).proforma.id, prepared.proforma.id);
   } finally {
     db.close();
   }
@@ -460,7 +474,7 @@ test('edits a finalized list without recreating its proforma', () => {
       items: [{ product_id: 1, daily_price_toman: 1500000, delivered_quantity: 2 }]
     });
     const finalized = service.finalizeDraft(draft.id, saved.version, 1);
-    const originalProformaId = finalized.proforma.id;
+    const originalProformaId = service.prepareProforma(draft.id, 1).proforma.id;
 
     const edited = service.saveDraft(finalized.id, {
       version: finalized.version,
@@ -912,7 +926,7 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(editedPrimary.extras[0].amount_toman, 200000);
     assert.equal(editedPrimary.fixed_discount_toman, 100000);
     assert.equal(editedPrimary.notes, 'نسخه ویرایش شده پیش از دانلود');
-    assert.equal(editedPrimary.version, 5);
+    assert.equal(editedPrimary.version, 4);
     const primaryListSummary = listService.listDeliveryLists().find((list) => list.id === draft.id);
     assert.equal(primaryListSummary.issued_invoice_count, 1);
     assert.equal(primaryListSummary.invoice_total_toman, 2450000);

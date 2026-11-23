@@ -10,6 +10,7 @@ const {
   saveDraft,
   archiveList,
   finalizeDraft,
+  prepareProforma,
   recordReturn,
   updateReturnEvent,
   getInvoicePreview,
@@ -59,6 +60,7 @@ router.post('/:id/finalize', [
   idValidation,
   body('version').isInt({ min: 1 })
 ], finalizeDraft);
+router.post('/:id/proforma', [idValidation], prepareProforma);
 router.post('/:id/returns', [
   idValidation,
   body('returned_at').isISO8601(),

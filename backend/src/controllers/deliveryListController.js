@@ -67,6 +67,15 @@ function finalizeDraft(req, res) {
   catch (error) { return handleError(error, res); }
 }
 
+function prepareProforma(req, res) {
+  if (hasValidationErrors(req, res)) return undefined;
+  try {
+    const result = draftService.prepareProforma(req.params.id, req.user.id);
+    deliveryListEvents.publish({ action: 'PROFORMA_PREPARED', list_id: Number(req.params.id) });
+    return res.json(result);
+  } catch (error) { return handleError(error, res); }
+}
+
 function recordReturn(req, res) {
   if (hasValidationErrors(req, res)) return undefined;
   try {
@@ -259,6 +268,7 @@ module.exports = {
   deleteDraft,
   archiveList,
   finalizeDraft,
+  prepareProforma,
   recordReturn,
   updateReturnEvent,
   getInvoicePreview,
