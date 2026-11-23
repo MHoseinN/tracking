@@ -99,7 +99,7 @@
               type="button" class="mt-2 text-xs font-bold text-teal-700 underline"
               @click="editHistoryReturn(entry.return_event_id)">اصلاح برگشت و سلامت اقلام</button>
           </div>
-          <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatDateTime(entry.created_at) }}</time>
+          <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatAuditDateTime(entry.created_at) }}</time>
         </article>
       </div>
     </AppModal>
@@ -592,6 +592,23 @@ function formatDateTime(value) {
   if (!value) return '—';
   const text = String(value);
   return `${toPersianDate(text.slice(0, 10))} - ${text.slice(11, 16)}`;
+}
+
+function formatAuditDateTime(value) {
+  if (!value) return '—';
+  const text = String(value).trim();
+  // SQLite's CURRENT_TIMESTAMP stores UTC without a timezone suffix.
+  const timestamp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)
+    ? `${text.replace(' ', 'T')}Z` : text;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return text;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(date);
+  const getPart = (type) => parts.find((part) => part.type === type)?.value;
+  const localDate = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+  return `${toPersianDate(localDate)} - ${getPart('hour')}:${getPart('minute')}`;
 }
 </script>
 
