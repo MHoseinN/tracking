@@ -28,6 +28,11 @@
           <GlobalSearch />
         </div>
 
+        <div class="app-shell__global-actions flex w-full flex-col gap-2">
+          <AppButton variant="primary" block :loading="creatingList" @click="createNewList">لیست جدید</AppButton>
+          <AppButton variant="secondary" block @click="openCustomerForm">مشتری جدید</AppButton>
+        </div>
+
         <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
           <div id="app-shell-actions" class="app-shell__actions-content flex w-full flex-col gap-2" />
         </div>
@@ -85,16 +90,23 @@
         </div>
       </div>
     </main>
+    <CustomerFormModal :is-open="showCustomerForm" :existing-customers="invoiceStore.customers"
+      @close="showCustomerForm = false" @saved="handleCustomerSaved" />
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { isNavigationFailure, useRoute, useRouter } from 'vue-router';
 import GlobalSearch from '../components/GlobalSearch.vue';
+import CustomerFormModal from '../components/CustomerFormModal.vue';
 import SidebarNavigation from '../components/SidebarNavigation.vue';
+import AppButton from '../components/ui/AppButton.vue';
 import AppIconButton from '../components/ui/AppIconButton.vue';
 import { useAuthStore } from '../stores/authStore';
+import { useDeliveryListStore } from '../stores/deliveryListStore';
+import { useInvoiceStore } from '../stores/invoiceStore';
+import { useToast } from 'vue-toastification';
 
 const props = defineProps({
   title: { type: String, default: '' }
@@ -103,6 +115,11 @@ const props = defineProps({
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const deliveryListStore = useDeliveryListStore();
+const invoiceStore = useInvoiceStore();
+const toast = useToast();
+const creatingList = ref(false);
+const showCustomerForm = ref(false);
 
 const navCollapsed = ref(false);
 const actionsCollapsed = ref(false);
@@ -171,6 +188,36 @@ function navigateTo(path) {
   closeMobilePanels();
   if (!path || route.path === path) return;
   router.push(path);
+}
+
+async function createNewList() {
+  if (creatingList.value) return;
+  creatingList.value = true;
+  try {
+    const customerId = route.name === 'CustomerDetail' ? Number(route.params.id) : null;
+    if (route.name === 'DeliveryListDraftEditor') {
+      const navigationResult = await router.push('/lists');
+      if (isNavigationFailure(navigationResult)) return;
+    }
+    const result = await deliveryListStore.createDraft();
+    if (!result.success) return toast.error(result.message);
+    closeMobilePanels();
+    await router.push({ path: `/lists/${result.data.id}/edit`, query: customerId ? { customer_id: customerId } : {} });
+  } finally {
+    creatingList.value = false;
+  }
+}
+
+async function openCustomerForm() {
+  try { await invoiceStore.fetchCustomers(); }
+  catch { return toast.error(invoiceStore.error || 'دریافت فهرست مشتریان انجام نشد'); }
+  closeMobilePanels();
+  showCustomerForm.value = true;
+}
+
+async function handleCustomerSaved() {
+  showCustomerForm.value = false;
+  await Promise.allSettled([invoiceStore.fetchCustomers(), invoiceStore.fetchCustomersOverview()]);
 }
 
 async function handleLogout() {

@@ -1,7 +1,6 @@
 <template>
   <div ref="tableSectionRef">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block @click="openAddModal">افزودن مشتری</AppButton>
       <AppButton variant="info" block @click="exportCustomers">گزارش‌گیری</AppButton>
     </Teleport>
 

@@ -1,11 +1,5 @@
 <template>
   <div ref="tableSectionRef" class="space-y-5">
-    <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block :loading="creating" @click="createNewDraft">
-        {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست جدید' }}
-      </AppButton>
-    </Teleport>
-
     <div v-if="hasPendingInvoices" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <span>لیست‌های دارای برگشتی در انتظار صدور فاکتور هستند.</span>
       <AppButton variant="secondary" @click="invoiceStatusFilter = 'WAITING'">نمایش لیست‌های در انتظار فاکتور</AppButton>
@@ -191,7 +185,6 @@ const sendStatusFilter = ref('all');
 const settlementStatusFilter = ref('all');
 const invoiceAmountFilter = ref('');
 const invoiceAmountQuery = computed(() => normalizeNumericSearch(invoiceAmountFilter.value));
-const creating = ref(false);
 const deleting = ref(false);
 const draftToDelete = ref(null);
 const actionLoadingKey = ref('');
@@ -307,15 +300,6 @@ function setActionLoading(list, action) {
 
 function isActionLoading(list, action) {
   return actionLoadingKey.value === `${list.id}:${action}`;
-}
-
-async function createNewDraft() {
-  if (creating.value) return;
-  creating.value = true;
-  const result = await draftStore.createDraft();
-  creating.value = false;
-  if (!result.success) return toast.error(result.message);
-  router.push(`/lists/${result.data.id}/edit`);
 }
 
 async function confirmDelete() {

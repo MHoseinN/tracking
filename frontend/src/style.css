@@ -325,7 +325,12 @@ body {
   color: #fff;
 }
 
-.app-shell__actions-search { border-bottom:1px solid #e7dfcb; padding:.15rem 0 .85rem; }
+.app-shell__actions-search { padding:.15rem 0 0; }
+.app-shell__global-actions { border-bottom:1px solid #e7dfcb; padding-bottom:.85rem; }
+@media (min-width: 1024px) {
+  .app-shell--actions-collapsed .app-shell__global-actions { display:none; }
+  .app-shell--actions-collapsed .app-shell__actions-search { border-bottom:1px solid #e7dfcb; padding-bottom:.85rem; }
+}
 .app-shell__account { display:flex; flex-direction:column; gap:.55rem; border-top:1px solid #e7dfcb; padding-top:.85rem; }
 .app-shell__account-summary { display:flex; width:100%; align-items:center; gap:.7rem; border-radius:.65rem; padding:.4rem; transition:.2s; }
 .app-shell__account-summary:hover { background:#f4eedf; }

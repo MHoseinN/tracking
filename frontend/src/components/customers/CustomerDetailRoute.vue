@@ -1,8 +1,6 @@
 <template>
   <div ref="tableSectionRef" class="space-y-5">
     <Teleport to="#app-shell-actions">
-      <AppButton variant="primary" block :loading="creatingList" @click="createListForCustomer">لیست جدید
-      </AppButton>
       <AppButton :variant="view === 'account' ? 'primary' : 'secondary'" block @click="setView('account')">حساب</AppButton>
       <AppButton :variant="view === 'stats' ? 'primary' : 'secondary'" block @click="setView('stats')">آمار</AppButton>
       <AppButton variant="info" block @click="exportCustomerLists">گزارش‌گیری</AppButton>
@@ -185,7 +183,6 @@ const customer = ref(null);
 const lists = ref([]);
 const allCustomers = ref([]);
 const loading = ref(false);
-const creatingList = ref(false);
 const isCustomerInfoOpen = ref(false);
 const tableSectionRef = ref(null);
 const summary = ref({ list_count: 0, invoice_count: 0, invoiced_total_toman: 0, paid_total_toman: 0, balance_toman: 0 });
@@ -297,15 +294,6 @@ async function loadWorkflow() {
 async function loadCustomers() {
   try { await invoiceStore.fetchCustomers(); allCustomers.value = [...invoiceStore.customers]; }
   catch { allCustomers.value = []; }
-}
-
-async function createListForCustomer() {
-  if (creatingList.value) return;
-  creatingList.value = true;
-  const result = await deliveryListStore.createDraft();
-  creatingList.value = false;
-  if (!result.success) return toast.error(result.message);
-  router.push({ path: `/lists/${result.data.id}/edit`, query: { customer_id: customerId.value } });
 }
 
 function setActionLoading(list, action) {

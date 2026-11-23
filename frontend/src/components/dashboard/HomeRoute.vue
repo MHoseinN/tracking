@@ -5,8 +5,6 @@
         <span class="app-filter-label">سال آماری</span>
         <CustomSelect v-model="selectedYear" :options="yearOptions" trigger-class="app-filter-control" />
       </label>
-      <AppButton variant="primary" block :loading="creatingList" @click="createNewList">ایجاد لیست جدید</AppButton>
-      <AppButton variant="secondary" block @click="showCustomerForm = true">افزودن مشتری</AppButton>
     </Teleport>
 
     <AppContentState v-if="loading" loading message="در حال بارگذاری نمای کلی سیستم..."
@@ -112,18 +110,14 @@
     </template>
   </div>
 
-  <CustomerFormModal :is-open="showCustomerForm" :existing-customers="invoiceStore.customers"
-    @close="showCustomerForm = false" @saved="handleCustomerSaved" />
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import AppFinancialOverview from '../AppFinancialOverview.vue';
 import AppStatCard from '../AppStatCard.vue';
-import CustomerFormModal from '../CustomerFormModal.vue';
 import CustomSelect from '../CustomSelect.vue';
 import AppButton from '../ui/AppButton.vue';
 import AppDataTable from '../ui/AppDataTable.vue';
@@ -131,19 +125,14 @@ import AppIconButton from '../ui/AppIconButton.vue';
 import AppStatusBadge from '../ui/AppStatusBadge.vue';
 import AppTablePanel from '../ui/AppTablePanel.vue';
 import { reportService } from '../../modules/reports/api/report.service';
-import { useDeliveryListStore } from '../../stores/deliveryListStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { formatYear, toPersianDate } from '../../utils/dateConverter';
 
 const router = useRouter();
-const toast = useToast();
 const invoiceStore = useInvoiceStore();
-const deliveryListStore = useDeliveryListStore();
 const loading = ref(true);
-const creatingList = ref(false);
 const errorMessage = ref('');
-const showCustomerForm = ref(false);
 const selectedYear = ref(currentPersianYear());
 const report = ref({ summary: {}, operational: { list_status: {} }, dashboard: {} });
 const summary = computed(() => report.value.summary || {});
@@ -185,15 +174,6 @@ async function loadDashboard() {
   catch (error) { errorMessage.value = getApiErrorMessage(error, 'دریافت اطلاعات داشبورد با خطا مواجه شد'); }
   finally { loading.value = false; }
 }
-async function createNewList() {
-  if (creatingList.value) return;
-  creatingList.value = true;
-  const result = await deliveryListStore.createDraft();
-  creatingList.value = false;
-  if (!result.success) return toast.error(result.message);
-  router.push(`/lists/${result.data.id}/edit`);
-}
-async function handleCustomerSaved() { showCustomerForm.value = false; await Promise.all([invoiceStore.fetchCustomers(), loadDashboard()]); }
 function currentPersianYear() {
   const part = new Intl.DateTimeFormat('en-u-ca-persian', { year: 'numeric', timeZone: 'Asia/Tehran' })
     .formatToParts(new Date()).find((entry) => entry.type === 'year');

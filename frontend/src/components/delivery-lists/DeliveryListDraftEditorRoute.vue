@@ -5,9 +5,6 @@
         @click="openFinalizeConfirm">
         {{ finalizing ? (isDraft ? 'در حال ثبت تحویل...' : 'در حال ذخیره...') : (isDraft ? 'ثبت نهایی تحویل' : 'ذخیره تغییرات لیست') }}
       </button>
-      <button type="button" class="app-button-primary w-full" :disabled="creating" @click="createAnotherDraft">
-        {{ creating ? 'در حال ایجاد...' : 'ایجاد لیست دیگر' }}
-      </button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به
         لیست‌ها</button>
     </Teleport>
@@ -507,7 +504,6 @@ const invoiceStore = useInvoiceStore();
 const productStore = useProductCatalogStore();
 const draftId = computed(() => Number(route.params.id));
 const loading = ref(true);
-const creating = ref(false);
 const finalizing = ref(false);
 const showFinalizeConfirm = ref(false);
 const showCustomerModal = ref(false);
@@ -1380,16 +1376,6 @@ function removeProduct(localKey) {
   delete rowSearchState[oldKey];
   if (form.items.length > 5) form.items.splice(index, 1);
   else form.items.splice(index, 1, createItemRow());
-}
-
-async function createAnotherDraft() {
-  if (creating.value) return;
-  if (!(await persistDraft())) return toast.error('ابتدا خطای ذخیره پیش‌نویس فعلی را برطرف کنید');
-  creating.value = true;
-  const result = await draftStore.createDraft();
-  creating.value = false;
-  if (!result.success) return toast.error(result.message);
-  router.push(`/lists/${result.data.id}/edit`);
 }
 
 async function openFinalizeConfirm() {

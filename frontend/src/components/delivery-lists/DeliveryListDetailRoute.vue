@@ -16,7 +16,6 @@
         @click="showHistoryModal = true">تاریخچه لیست</button>
       <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
         :disabled="loadingSettlement" @click="openSettlement">{{ loadingSettlement ? 'در حال دریافت...' : 'مدیریت پرداخت و تسویه' }}</button>
-      <button type="button" class="app-button-primary w-full" @click="createNewDraft">ایجاد لیست جدید</button>
       <button type="button" class="app-button-secondary w-full" @click="router.push('/lists')">بازگشت به لیست‌ها</button>
     </Teleport>
 
@@ -295,12 +294,6 @@ function downloadPreparedProforma() {
   window.setTimeout(() => URL.revokeObjectURL(url), 30000);
   downloadingProforma.value = false;
   toast.success('فایل PDF پیش‌فاکتور دانلود شد');
-}
-
-async function createNewDraft() {
-  const result = await listStore.createDraft();
-  if (!result.success) return toast.error(result.message);
-  router.push(`/lists/${result.data.id}/edit`);
 }
 
 async function openInvoiceModal() {
