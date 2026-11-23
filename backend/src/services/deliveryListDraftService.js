@@ -43,6 +43,13 @@ function applyIssuedInvoiceTotal(db, listId, targetTotal) {
   const previousTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.final_amount_toman || 0), 0);
   let difference = targetTotal - previousTotal;
   if (difference === 0) return { previousTotal, targetTotal, changed: false };
+  const settled = db.prepare(`SELECT 1 FROM invoices
+    WHERE delivery_list_id = ? AND status = 'ISSUED' AND deleted_at IS NULL
+      AND (settlement_status = 'PAID' OR (final_amount_toman > 0 AND
+        (SELECT COALESCE(SUM(amount_toman), 0) FROM payments
+         WHERE invoice_id = invoices.id AND voided_at IS NULL) >= final_amount_toman))
+    LIMIT 1`).get(listId);
+  if (settled) throw new DeliveryListDraftError('فاکتور تسویه‌شده قابل تغییر نیست', 409);
 
   const insertAdjustment = db.prepare(`
     INSERT INTO invoice_adjustments (
@@ -109,7 +116,12 @@ function recalculateReturnedDays(db, listId, deliveredAt, nightBefore, actorUser
            invoice_lines.invoice_id, invoice_lines.quantity,
            invoice_lines.billing_from_at,
            invoice_lines.charged_days AS invoice_charged_days,
-           invoice_lines.unit_price_toman
+           invoice_lines.unit_price_toman,
+           invoices.settlement_status AS invoice_settlement_status,
+           invoices.final_amount_toman AS invoice_final_amount_toman,
+           (SELECT COALESCE(SUM(payments.amount_toman), 0) FROM payments
+             WHERE payments.invoice_id = invoice_lines.invoice_id
+               AND payments.voided_at IS NULL) AS directly_paid_toman
     FROM return_event_items
     JOIN return_events ON return_events.id = return_event_items.return_event_id
       AND return_events.deleted_at IS NULL
@@ -117,6 +129,7 @@ function recalculateReturnedDays(db, listId, deliveredAt, nightBefore, actorUser
       AND delivery_list_items.deleted_at IS NULL
     LEFT JOIN invoice_lines ON invoice_lines.return_event_item_id = return_event_items.id
       AND invoice_lines.line_type = 'RENTAL' AND invoice_lines.deleted_at IS NULL
+    LEFT JOIN invoices ON invoices.id = invoice_lines.invoice_id AND invoices.deleted_at IS NULL
     WHERE delivery_list_items.delivery_list_id = ? AND return_event_items.deleted_at IS NULL
   `).all(listId);
   if (!rows.length) return;
@@ -139,6 +152,11 @@ function recalculateReturnedDays(db, listId, deliveredAt, nightBefore, actorUser
       const invoiceDays = Number(row.invoice_charged_days) === Number(row.final_charged_days)
         ? finalDays : Number(row.invoice_charged_days);
       if (invoiceDays !== Number(row.invoice_charged_days) || deliveredAt !== row.billing_from_at) {
+        if (row.invoice_settlement_status === 'PAID'
+          || (Number(row.invoice_final_amount_toman) > 0
+            && Number(row.directly_paid_toman) >= Number(row.invoice_final_amount_toman))) {
+          throw new DeliveryListDraftError('ابتدا باید تسویه فاکتور باطل شود؛ فاکتور تسویه‌شده قابل تغییر نیست', 409);
+        }
         updateLine.run(deliveredAt, invoiceDays,
           Number(row.quantity) * invoiceDays * Number(row.unit_price_toman), row.invoice_line_id);
         changedInvoiceIds.add(Number(row.invoice_id));

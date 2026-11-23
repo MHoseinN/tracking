@@ -188,6 +188,10 @@ function createDeliveryInvoiceService(db) {
         AND deleted_at IS NULL
     `).get(invoiceId, listId);
     if (!invoice) throw new DeliveryListDraftError('فاکتور صادرشده پیدا نشد', 404);
+    const directlyPaid = Number(db.prepare(`SELECT COALESCE(SUM(amount_toman), 0) AS total
+      FROM payments WHERE invoice_id = ? AND voided_at IS NULL`).get(invoice.id).total);
+    invoice.edit_locked = invoice.settlement_status === 'PAID'
+      || (Number(invoice.final_amount_toman) > 0 && directlyPaid >= Number(invoice.final_amount_toman));
     invoice.lines = db.prepare(`
       SELECT id, return_event_item_id, delivery_list_item_id, description, quantity,
              billing_from_at, billing_to_at, charged_days, unit_price_toman,
@@ -280,21 +284,28 @@ function createDeliveryInvoiceService(db) {
 
   function updateInvoice(listId, invoiceId, payload = {}, actorUserId) {
     const existing = getInvoice(listId, invoiceId);
+    if (existing.edit_locked) {
+      throw new DeliveryListDraftError('فاکتور تسویه‌شده قابل ویرایش نیست', 409);
+    }
     if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'damaged_assets'").get()
       && db.prepare('SELECT 1 FROM damaged_assets WHERE invoice_id = ? LIMIT 1').get(existing.id)) {
       throw new DeliveryListDraftError('فاکتور دارای خسارت ثبت‌شده از صفحه اموال خسارتی است و ویرایش مستقیم آن مجاز نیست');
     }
     const inputLines = Array.isArray(payload.lines) ? payload.lines : [];
-    if (inputLines.length !== existing.lines.length) {
-      throw new DeliveryListDraftError('تمام ردیف‌های فاکتور باید برای ویرایش ارسال شوند');
-    }
     const existingById = new Map(existing.lines.map((line) => [Number(line.id), line]));
+    const availableByReturnId = new Map(unbilledReturnLines(listId)
+      .map((line) => [Number(line.return_event_item_id), line]));
     const seen = new Set();
+    const seenReturns = new Set();
     const lines = inputLines.map((line) => {
-      const id = Number(line.id);
-      const source = existingById.get(id);
-      if (!source || seen.has(id)) throw new DeliveryListDraftError('ردیف فاکتور نامعتبر یا تکراری است');
-      seen.add(id);
+      const id = line.id == null ? null : Number(line.id);
+      const returnItemId = Number(line.return_event_item_id);
+      const source = id ? existingById.get(id) : availableByReturnId.get(returnItemId);
+      if (!source || (id && seen.has(id)) || (!id && seenReturns.has(returnItemId))) {
+        throw new DeliveryListDraftError('ردیف فاکتور نامعتبر یا تکراری است');
+      }
+      if (id) seen.add(id);
+      else seenReturns.add(returnItemId);
       const chargedDays = Number(line.charged_days);
       const unitPrice = Number(line.unit_price_toman);
       if (!Number.isInteger(chargedDays) || chargedDays < 1) {
@@ -305,11 +316,16 @@ function createDeliveryInvoiceService(db) {
       }
       return {
         ...source,
+        id,
+        return_event_item_id: Number(source.return_event_item_id),
         charged_days: chargedDays,
         unit_price_toman: unitPrice,
         line_total_toman: Number(source.quantity) * chargedDays * unitPrice
       };
     });
+    if (!lines.length && !(Array.isArray(payload.extras) && payload.extras.length)) {
+      throw new DeliveryListDraftError('فاکتور باید دست‌کم یک ردیف یا هزینه اضافی داشته باشد');
+    }
 
     const extras = normalizeExtras(payload.extras);
     const discountBasisPoints = nonNegativeInteger(
@@ -351,10 +367,26 @@ function createDeliveryInvoiceService(db) {
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND invoice_id = ? AND deleted_at IS NULL
       `);
-      lines.forEach((line) => updateLine.run(
+      lines.filter((line) => line.id).forEach((line) => updateLine.run(
         line.charged_days, line.unit_price_toman, line.line_total_toman,
         line.id, existing.id
       ));
+      const removedIds = existing.lines.filter((line) => !seen.has(Number(line.id))).map((line) => Number(line.id));
+      const removeLine = db.prepare(`UPDATE invoice_lines
+        SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND invoice_id = ? AND deleted_at IS NULL`);
+      removedIds.forEach((id) => removeLine.run(id, existing.id));
+      const insertLine = db.prepare(`INSERT INTO invoice_lines (
+        invoice_id, delivery_list_item_id, return_event_item_id, line_type,
+        description, quantity, billing_from_at, billing_to_at, charged_days,
+        unit_price_toman, line_total_toman, sort_order
+      ) VALUES (?, ?, ?, 'RENTAL', ?, ?, ?, ?, ?, ?, ?, ?)`);
+      lines.forEach((line, index) => {
+        if (line.id) return;
+        insertLine.run(existing.id, line.delivery_list_item_id, line.return_event_item_id,
+          line.description, line.quantity, line.billing_from_at, line.billing_to_at,
+          line.charged_days, line.unit_price_toman, line.line_total_toman, index);
+      });
 
       db.prepare(`
         UPDATE invoice_adjustments

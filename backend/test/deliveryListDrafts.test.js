@@ -954,6 +954,55 @@ test('issues a primary invoice for returned items and a supplement after the rem
   }
 });
 
+test('adds and removes returned invoice lines before settlement and locks a paid invoice', () => {
+  const db = createDatabase();
+  try {
+    const lists = createDeliveryListDraftService(db);
+    const invoices = createDeliveryInvoiceService(db);
+    const draft = lists.createDraft(1);
+    const saved = lists.saveDraft(draft.id, {
+      version: draft.version, customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30',
+      items: [{ product_id: 1, daily_price_toman: 100000, delivered_quantity: 2 }]
+    });
+    const delivered = lists.finalizeDraft(draft.id, saved.version, 1);
+    lists.recordReturn(draft.id, { returned_at: '2026-08-25T11:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }] }, 1);
+    const first = invoices.issueInvoice(draft.id, { lines: invoices.getPreview(draft.id).lines }, 1);
+    lists.recordReturn(draft.id, { returned_at: '2026-08-26T11:00:00+03:30',
+      items: [{ delivery_list_item_id: delivered.items[0].id, healthy_quantity: 1 }] }, 1);
+    const available = invoices.getPreview(draft.id).lines[0];
+    const added = invoices.updateInvoice(draft.id, first.id, {
+      lines: [
+        ...invoices.getInvoice(draft.id, first.id).lines.map((line) => ({ id: line.id,
+          charged_days: line.charged_days, unit_price_toman: line.unit_price_toman })),
+        { return_event_item_id: available.return_event_item_id, charged_days: 2, unit_price_toman: 100000 }
+      ]
+    }, 1);
+    assert.equal(added.lines.length, 2);
+    assert.equal(added.final_amount_toman, 300000);
+    assert.equal(invoices.getPreview(draft.id).lines.length, 0);
+    const removed = invoices.updateInvoice(draft.id, first.id, {
+      lines: [{ id: added.lines[1].id, charged_days: 2, unit_price_toman: 100000 }]
+    }, 1);
+    assert.equal(removed.lines.length, 1);
+    assert.equal(removed.final_amount_toman, 200000);
+    assert.equal(invoices.getPreview(draft.id).lines.length, 1);
+    db.prepare("UPDATE invoices SET settlement_status = 'PAID' WHERE id = ?").run(first.id);
+    assert.equal(invoices.getInvoice(draft.id, first.id).edit_locked, true);
+    assert.throws(() => invoices.updateInvoice(draft.id, first.id, { lines: [] }, 1), /تسویه‌شده/);
+    const before = lists.getList(draft.id);
+    assert.throws(() => lists.saveDraft(draft.id, {
+      version: before.version, customer_id: 1,
+      delivered_at: '2026-08-24T18:00:00+03:30',
+      expected_return_at: '2026-08-26T11:00:00+03:30', night_before: true,
+      items: [{ product_id: 1, daily_price_toman: 100000, delivered_quantity: 2 }]
+    }, 1), /تسویه‌شده/);
+    assert.equal(lists.getList(draft.id).night_before, false);
+  } finally { db.close(); }
+});
+
 test('excludes a tracked return item from the invoice without removing its return record', () => {
   const db = createDatabase();
   try {

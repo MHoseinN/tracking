@@ -106,6 +106,7 @@
       :pdf-url="proformaPdfUrl" :loading="loadingProforma" :downloading="downloadingProforma"
       @close="closeProforma" @download="downloadPreparedProforma" />
     <DeliveryInvoicePreviewModal :is-open="showIssuedInvoiceModal" :invoice="selectedInvoice"
+      :available-lines="invoicePreview?.lines || []"
       :pdf-url="invoicePdfUrl" :saving="editingInvoice" :loading-pdf="loadingInvoicePdf"
       :downloading="Boolean(downloadingInvoiceId)" @close="closeIssuedInvoiceModal"
       @save="handleUpdateIssuedInvoice($event, false)" @save-download="handleUpdateIssuedInvoice($event, true)"
@@ -342,14 +343,16 @@ async function openIssuedInvoice(invoice) {
   if (openingInvoiceId.value) return;
   openingInvoiceId.value = invoice.id;
   loadingInvoicePdf.value = true;
-  const [detailResult, pdfResult] = await Promise.all([
+  const [detailResult, pdfResult, previewResult] = await Promise.all([
     listStore.getInvoice(list.value.id, invoice.id),
-    listStore.downloadInvoicePdf(list.value.id, invoice.id)
+    listStore.downloadInvoicePdf(list.value.id, invoice.id),
+    listStore.getInvoicePreview(list.value.id)
   ]);
   openingInvoiceId.value = null;
   loadingInvoicePdf.value = false;
   if (!detailResult.success) return toast.error(detailResult.message);
   selectedInvoice.value = detailResult.data;
+  invoicePreview.value = previewResult.success ? previewResult.data : null;
   if (pdfResult.success) setInvoicePdfBlob(pdfResult.data);
   else {
     releaseInvoicePdfUrl();
@@ -366,6 +369,8 @@ async function handleUpdateIssuedInvoice(payload, downloadAfter) {
   if (!result.success) return toast.error(result.message);
   list.value = result.data.list;
   selectedInvoice.value = result.data.invoice;
+  const previewResult = await listStore.getInvoicePreview(list.value.id);
+  invoicePreview.value = previewResult.success ? previewResult.data : null;
   toast.success('تغییرات فاکتور ذخیره شد');
   const refreshed = await refreshInvoicePdf();
   if (downloadAfter && refreshed) await downloadPreparedInvoice();
