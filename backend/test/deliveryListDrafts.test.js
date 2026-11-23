@@ -860,6 +860,7 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(primary.final_amount_toman, 1440000);
     assert.equal(listService.getList(draft.id).invoice_status, 'PARTIALLY_ISSUED');
     assert.equal(invoiceService.getPreview(draft.id).lines.length, 0);
+    assert.equal(listService.listDeliveryLists().find((list) => list.id === draft.id).pending_invoice_item_count, 0);
 
     const primaryDetail = invoiceService.getInvoice(draft.id, primary.id);
     const editedPrimary = invoiceService.updateInvoice(draft.id, primary.id, {
@@ -902,6 +903,7 @@ test('issues a primary invoice for returned items and a supplement after the rem
     const secondPreview = invoiceService.getPreview(draft.id);
     assert.equal(secondPreview.lines[0].quantity, 2);
     assert.equal(secondPreview.lines[0].charged_days, 2);
+    assert.equal(listService.listDeliveryLists().find((list) => list.id === draft.id).pending_invoice_item_count, 1);
     const supplement = invoiceService.issueInvoice(draft.id, {
       issued_at: '2026-08-27T14:00:00+03:30',
       lines: secondPreview.lines
@@ -909,6 +911,7 @@ test('issues a primary invoice for returned items and a supplement after the rem
     assert.equal(supplement.invoice_number, '4051001');
     assert.equal(supplement.invoice_type, 'SUPPLEMENT');
     assert.equal(supplement.parent_invoice_id, primary.id);
+    assert.equal(listService.listDeliveryLists().find((list) => list.id === draft.id).pending_invoice_item_count, 0);
     const completedListSummary = listService.listDeliveryLists().find((list) => list.id === draft.id);
     assert.equal(completedListSummary.issued_invoice_count, 2);
     assert.equal(completedListSummary.invoice_total_toman, 8450000);

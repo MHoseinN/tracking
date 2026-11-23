@@ -6,6 +6,11 @@
       </AppButton>
     </Teleport>
 
+    <div v-if="pendingInvoiceListCount" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <span><strong>{{ formatNumber(pendingInvoiceListCount) }} لیست</strong> دارای قلم برگشتی در انتظار صدور فاکتور است.</span>
+      <AppButton variant="secondary" @click="pendingInvoiceFilter = 'pending'">نمایش لیست‌های در انتظار فاکتور</AppButton>
+    </div>
+
     <AppTablePanel title="مرکز  لیست‌ها" :count="draftStore.loading ? null : filteredDrafts.length">
       <template #filters>
         <AppFilterBar :expanded="filtersExpanded" collapsible columns-class="md:grid-cols-2 xl:grid-cols-4"
@@ -29,6 +34,10 @@
           <template #advanced>
             <label class="app-filter-field"><span class="app-filter-label">وضعیت فاکتور</span>
               <CustomSelect v-model="invoiceStatusFilter" :options="invoiceStatusOptions"
+                trigger-class="app-filter-control" />
+            </label>
+            <label class="app-filter-field"><span class="app-filter-label">اقلام برگشتی فاکتورنشده</span>
+              <CustomSelect v-model="pendingInvoiceFilter" :options="pendingInvoiceOptions"
                 trigger-class="app-filter-control" />
             </label>
             <label class="app-filter-field"><span class="app-filter-label">وضعیت تسویه</span>
@@ -73,6 +82,9 @@
           <td class="text-center">
             <AppStatusButton group="invoice" :status="draft.invoice_status" :loading="isActionLoading(draft, 'invoice')"
               :aria-label="`مدیریت فاکتور لیست ${draft.list_number || draft.id}`" @click="manageInvoice(draft)" />
+            <button v-if="Number(draft.pending_invoice_item_count) > 0" type="button"
+              class="mt-1 block w-full text-center text-xs font-bold text-amber-700 underline"
+              @click="manageInvoice(draft)">{{ formatNumber(draft.pending_invoice_item_count) }} قلم در انتظار</button>
           </td>
           <td class="text-center">
             <AppStatusButton v-if="draft.invoice_status !== 'NONE' && draft.invoice_status !== 'PROFORMA'" group="send"
@@ -181,6 +193,7 @@ const filtersExpanded = ref(false);
 const deliveryDateFilter = ref('');
 const listStatusFilter = ref('all');
 const invoiceStatusFilter = ref('all');
+const pendingInvoiceFilter = ref('all');
 const sendStatusFilter = ref('all');
 const settlementStatusFilter = ref('all');
 const invoiceAmountFilter = ref('');
@@ -215,6 +228,13 @@ function statusOptions(group, allLabel) {
 
 const listStatusOptions = statusOptions('list', 'همه لیست‌ها');
 const invoiceStatusOptions = statusOptions('invoice', 'همه فاکتورها');
+const pendingInvoiceOptions = [
+  { label: 'همه لیست‌ها', value: 'all' },
+  { label: 'در انتظار صدور فاکتور', value: 'pending' },
+  { label: 'بدون قلم فاکتورنشده', value: 'clear' }
+];
+const pendingInvoiceListCount = computed(() => draftStore.lists.filter((draft) =>
+  Number(draft.pending_invoice_item_count) > 0).length);
 const sendStatusOptions = statusOptions('send', 'همه ارسال‌ها');
 const settlementStatusOptions = statusOptions('settlement', 'همه تسویه‌ها');
 
@@ -223,6 +243,9 @@ const filteredDrafts = computed(() => {
   return draftStore.lists.filter((draft) => {
     const matchesListStatus = listStatusFilter.value === 'all' || draft.status === listStatusFilter.value;
     const matchesInvoiceStatus = invoiceStatusFilter.value === 'all' || draft.invoice_status === invoiceStatusFilter.value;
+    const matchesPendingInvoice = pendingInvoiceFilter.value === 'all'
+      || (pendingInvoiceFilter.value === 'pending' && Number(draft.pending_invoice_item_count) > 0)
+      || (pendingInvoiceFilter.value === 'clear' && Number(draft.pending_invoice_item_count) === 0);
     const matchesSendStatus = sendStatusFilter.value === 'all' || draft.invoice_send_status === sendStatusFilter.value;
     const matchesSettlementStatus = settlementStatusFilter.value === 'all' || draft.settlement_status === settlementStatusFilter.value;
     const matchesInvoiceAmount = !invoiceAmountQuery.value || (
@@ -235,7 +258,7 @@ const filteredDrafts = computed(() => {
       || String(draft.created_by_name || '').toLowerCase().includes(query)
       || String(draft.delivered_by_name || '').toLowerCase().includes(query)
       || String(draft.list_number || '').toLowerCase().includes(query);
-    return matchesListStatus && matchesInvoiceStatus && matchesSendStatus && matchesSettlementStatus
+    return matchesListStatus && matchesInvoiceStatus && matchesPendingInvoice && matchesSendStatus && matchesSettlementStatus
       && matchesInvoiceAmount && matchesDeliveryDate && matchesQuery;
   });
 });
@@ -254,7 +277,7 @@ const {
 } = usePaginatedList(filteredDrafts, {
   initialPageSize: 15,
   pageSizeOptions: [10, 15, 20, 50, 100],
-  resetSources: [searchQuery, deliveryDateFilter, listStatusFilter, invoiceStatusFilter, sendStatusFilter,
+  resetSources: [searchQuery, deliveryDateFilter, listStatusFilter, invoiceStatusFilter, pendingInvoiceFilter, sendStatusFilter,
     settlementStatusFilter, invoiceAmountFilter],
   scrollTarget: tableSectionRef
 });
@@ -286,6 +309,7 @@ function clearFilters() {
   deliveryDateFilter.value = '';
   listStatusFilter.value = 'all';
   invoiceStatusFilter.value = 'all';
+  pendingInvoiceFilter.value = 'all';
   sendStatusFilter.value = 'all';
   settlementStatusFilter.value = 'all';
   invoiceAmountFilter.value = '';

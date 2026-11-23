@@ -12,6 +12,8 @@
         @click="requestReturnEntry">ثبت برگشت اقلام</button>
       <button v-if="canIssueInvoice" type="button" class="app-button-primary w-full"
         :disabled="loadingInvoicePreview" @click="openInvoiceModal">{{ loadingInvoicePreview ? 'در حال آماده‌سازی...' : 'بررسی و صدور فاکتور' }}</button>
+      <button v-if="list?.change_history?.length" type="button" class="app-button-secondary w-full"
+        @click="showHistoryModal = true">تاریخچه ویرایش لیست</button>
       <button type="button" class="app-button-primary w-full bg-amber-600 hover:bg-amber-700"
         :disabled="loadingSettlement" @click="openSettlement">{{ loadingSettlement ? 'در حال دریافت...' : 'مدیریت پرداخت و تسویه' }}</button>
       <button type="button" class="app-button-primary w-full" @click="createNewDraft">ایجاد لیست جدید</button>
@@ -35,6 +37,9 @@
           <span class="app-badge" :class="invoiceStatus.className">{{ invoiceStatus.label }}</span>
           <span class="app-badge" :class="invoiceSendStatus.className">{{ invoiceSendStatus.label }}</span>
           <span class="app-badge" :class="settlementStatus.className">{{ settlementStatus.label }}</span>
+          <span v-if="pendingInvoiceCount" class="app-badge bg-amber-100 text-amber-800">
+            {{ formatNumber(pendingInvoiceCount) }} قلم در انتظار فاکتور
+          </span>
         </div>
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
           <span>تحویل‌دهنده  :
@@ -44,31 +49,6 @@
             <strong class="text-slate-800">{{ returnReceiverNames }}</strong>
           </span>
           <span>پیش‌فاکتور: <strong class="text-violet-700">{{ list.proforma ? `#${formatNumber(list.proforma.id)}` : 'ایجاد نشده' }}</strong></span>
-        </div>
-      </section>
-
-      <section v-if="list.change_history?.length" class="app-panel overflow-hidden">
-        <div class="border-b border-slate-200 px-5 py-4">
-          <h3 class="text-sm font-black text-slate-800">تاریخچه ویرایش لیست</h3>
-          <p class="mt-1 text-xs text-slate-500">تغییرات ثبت‌شده به تفکیک کاربر و نقش سیستم</p>
-        </div>
-        <div class="divide-y divide-slate-100">
-          <article v-for="entry in list.change_history" :key="entry.id"
-            class="grid gap-3 px-5 py-4 md:grid-cols-[12rem_minmax(0,1fr)_10rem] md:items-center">
-            <div class="min-w-0">
-              <strong class="block truncate text-sm text-slate-800">{{ entry.actor_name }}</strong>
-              <span class="mt-1 inline-flex rounded-md bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700">
-                {{ roleLabel(entry.actor_role) }}
-              </span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <span v-for="change in historyChanges(entry)" :key="change"
-                class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600">
-                {{ change }}
-              </span>
-            </div>
-            <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatDateTime(entry.created_at) }}</time>
-          </article>
         </div>
       </section>
 
@@ -100,6 +80,28 @@
       </section>
     </div>
 
+    <AppModal title="تاریخچه ویرایش لیست" description="تغییرات ثبت‌شده به تفکیک کاربر و نقش" size="lg"
+      :is-open="showHistoryModal" @close="showHistoryModal = false">
+      <div class="divide-y divide-slate-100">
+        <article v-for="entry in list?.change_history || []" :key="entry.id"
+          class="grid gap-3 py-4 md:grid-cols-[9rem_minmax(0,1fr)_9rem] md:items-center">
+          <div class="min-w-0">
+            <strong class="block truncate text-sm text-slate-800">{{ entry.actor_name }}</strong>
+            <span class="mt-1 inline-flex rounded-md bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700">
+              {{ roleLabel(entry.actor_role) }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="change in historyChanges(entry)" :key="change"
+              class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600">
+              {{ change }}
+            </span>
+          </div>
+          <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatDateTime(entry.created_at) }}</time>
+        </article>
+      </div>
+    </AppModal>
+
     <DeliveryInvoiceIssueModal :is-open="showInvoiceModal" :preview="invoicePreview" :saving="issuingInvoice"
       @close="showInvoiceModal = false" @issue="handleIssueInvoice" @exclude="handleExcludeInvoiceItems" />
     <DeliveryProformaPreviewModal :is-open="showProformaModal" :list-number="list?.list_number"
@@ -129,6 +131,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AppContentState from '../AppContentState.vue';
 import ConfirmModal from '../ConfirmModal.vue';
+import AppModal from '../ui/AppModal.vue';
 import DeliveryInvoiceIssueModal from './DeliveryInvoiceIssueModal.vue';
 import DeliveryProformaPreviewModal from './DeliveryProformaPreviewModal.vue';
 import DeliveryInvoicePreviewModal from './DeliveryInvoicePreviewModal.vue';
@@ -148,6 +151,7 @@ const loading = ref(true);
 const loadingInvoicePreview = ref(false);
 const issuingInvoice = ref(false);
 const showInvoiceModal = ref(false);
+const showHistoryModal = ref(false);
 const invoicePreview = ref(null);
 const loadingSettlement = ref(false);
 const settlementSaving = ref(false);
@@ -179,13 +183,15 @@ const canRecordReturn = computed(() => (
 const returnRows = computed(() => (list.value?.return_events || []).flatMap((event) => (
   event.items.map((item) => ({ ...item, returned_at: event.returned_at, received_by_name: event.received_by_name }))
 )));
+const pendingInvoiceCount = computed(() => returnRows.value.filter((item) =>
+  !item.rental_invoice_id && !item.invoice_excluded_at).length);
 const returnReceiverNames = computed(() => {
   const names = (list.value?.return_events || [])
     .map((event) => event.received_by_name)
     .filter(Boolean);
   return [...new Set(names)].join('، ') || 'هنوز برگشتی ثبت نشده';
 });
-const canIssueInvoice = computed(() => returnRows.value.some((item) => !item.rental_invoice_id && !item.invoice_excluded_at));
+const canIssueInvoice = computed(() => pendingInvoiceCount.value > 0);
 const listStatus = computed(() => ({
   DELIVERED: { label: 'تحویل‌شده', className: 'bg-blue-100 text-blue-700' },
   REMAINING: { label: 'مانده', className: 'bg-orange-100 text-orange-700' },

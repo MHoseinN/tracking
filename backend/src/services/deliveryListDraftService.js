@@ -491,6 +491,18 @@ function createDeliveryListDraftService(db) {
                 FROM return_events
                WHERE return_events.delivery_list_id = delivery_lists.id
                  AND return_events.deleted_at IS NULL) AS last_returned_at
+             ,(SELECT COUNT(*) FROM return_event_items
+                JOIN return_events ON return_events.id = return_event_items.return_event_id
+                  AND return_events.deleted_at IS NULL
+                JOIN delivery_list_items ON delivery_list_items.id = return_event_items.delivery_list_item_id
+                  AND delivery_list_items.deleted_at IS NULL
+               WHERE delivery_list_items.delivery_list_id = delivery_lists.id
+                 AND return_event_items.deleted_at IS NULL
+                 AND return_event_items.invoice_excluded_at IS NULL
+                 AND NOT EXISTS (SELECT 1 FROM invoice_lines
+                   WHERE invoice_lines.return_event_item_id = return_event_items.id
+                     AND invoice_lines.line_type = 'RENTAL'
+                     AND invoice_lines.deleted_at IS NULL)) AS pending_invoice_item_count
       FROM delivery_lists
       LEFT JOIN customers ON customers.id = delivery_lists.customer_id
       JOIN users ON users.id = delivery_lists.created_by_user_id
