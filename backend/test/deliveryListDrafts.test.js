@@ -488,6 +488,30 @@ test('edits a finalized list without recreating its proforma', () => {
     assert.equal(edited.items[0].daily_price_toman, 1600000);
     assert.equal(edited.items[0].delivered_quantity, 3);
     assert.equal(edited.proforma.id, originalProformaId);
+    assert.ok(edited.change_history[0].item_changes.some((change) =>
+      change.type === 'QUANTITY' && change.product_name === edited.items[0].product_name_snapshot
+      && change.before === 2 && change.after === 3));
+    assert.ok(edited.change_history[0].item_changes.some((change) => change.type === 'PRICE'
+      && change.before === 1500000 && change.after === 1600000));
+    assert.ok(edited.change_history[0].item_changes.some((change) => change.type === 'ADDED'
+      && change.quantity_after === 1));
+    assert.equal(edited.change_history[0].before.night_before, false);
+    assert.equal(edited.change_history[0].after.night_before, true);
+    const historyCount = edited.change_history.length;
+    const unchanged = service.saveDraft(draft.id, {
+      version: edited.version, customer_id: 2,
+      delivered_at: '2026-08-24T19:00:00+03:30',
+      expected_return_at: '2026-08-27T11:00:00+03:30',
+      night_before: true, notes: 'ویرایش پس از ثبت',
+      items: edited.items.map((item) => ({
+        id: item.id, product_id: item.product_id,
+        daily_price_toman: item.daily_price_toman,
+        delivered_quantity: item.delivered_quantity,
+        remaining_expected_return_at: item.remaining_expected_return_at,
+        notes: item.notes
+      }))
+    }, 1);
+    assert.equal(unchanged.change_history.length, historyCount);
     assert.equal(db.prepare('SELECT customer_id FROM invoices WHERE id = ?').get(originalProformaId).customer_id, 2);
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM invoices').get().count, 1);
     assert.equal(

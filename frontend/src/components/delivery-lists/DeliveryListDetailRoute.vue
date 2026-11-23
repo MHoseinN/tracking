@@ -84,19 +84,19 @@
       :is-open="showHistoryModal" @close="showHistoryModal = false">
       <div class="divide-y divide-slate-100">
         <article v-for="entry in list?.change_history || []" :key="entry.id"
-          class="grid gap-3 py-4 md:grid-cols-[9rem_minmax(0,1fr)_9rem] md:items-center">
+          class="grid gap-3 py-4 md:grid-cols-[8rem_minmax(0,1fr)_8rem]">
           <div class="min-w-0">
             <strong class="block truncate text-sm text-slate-800">{{ entry.actor_name }}</strong>
             <span class="mt-1 inline-flex rounded-md bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700">
               {{ roleLabel(entry.actor_role) }}
             </span>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="change in historyChanges(entry)" :key="change"
-              class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600">
+          <ul class="space-y-2">
+            <li v-for="change in historyChanges(entry)" :key="change"
+              class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-6 text-slate-700">
               {{ change }}
-            </span>
-          </div>
+            </li>
+          </ul>
           <time class="text-xs font-semibold text-slate-500 md:text-left">{{ formatDateTime(entry.created_at) }}</time>
         </article>
       </div>
@@ -489,18 +489,36 @@ function roleLabel(role) {
 function historyChanges(entry) {
   const before = entry.before || {};
   const after = entry.after || {};
-  return (entry.changed_fields || []).map((field) => {
-    if (field === 'OWNER') return `مالک: ${before.customer_name || '—'} ← ${after.customer_name || '—'}`;
+  const itemChanges = (entry.item_changes || []).map((change) => {
+    const name = `«${change.product_name || 'محصول'}»`;
+    if (change.type === 'ADDED') return `${name} افزوده شد؛ تعداد ${formatNumber(change.quantity_after)}، قیمت روزانه ${formatCurrency(change.daily_price_after)}`;
+    if (change.type === 'REMOVED') return `${name} حذف شد؛ تعداد قبلی ${formatNumber(change.quantity_before)}، قیمت روزانه ${formatCurrency(change.daily_price_before)}`;
+    if (change.type === 'QUANTITY') return `تعداد ${name}: ${formatNumber(change.before)} ← ${formatNumber(change.after)}`;
+    if (change.type === 'PRICE') return `قیمت روزانه ${name}: ${formatCurrency(change.before)} ← ${formatCurrency(change.after)}`;
+    if (change.type === 'REMAINING_RETURN_AT') return `زمان برگشت مانده ${name}: ${formatDateTime(change.before)} ← ${formatDateTime(change.after)}`;
+    if (change.type === 'NOTES') return `توضیحات ${name}: ${change.before || 'بدون توضیح'} ← ${change.after || 'بدون توضیح'}`;
+    return null;
+  }).filter(Boolean);
+  const changes = (entry.changed_fields || []).flatMap((field) => {
+    if (field === 'OWNER') return [`مشتری: ${before.customer_name || '—'} ← ${after.customer_name || '—'}`];
     if (field === 'TOTAL_PRICE') {
-      return `مجموع قیمت: ${formatCurrency(before.total_price_toman)} ← ${formatCurrency(after.total_price_toman)}`;
+      if (Number(before.total_price_toman) !== Number(after.total_price_toman)) {
+        return [`مجموع قیمت: ${formatCurrency(before.total_price_toman)} ← ${formatCurrency(after.total_price_toman)}`];
+      }
+      return itemChanges.length ? [] : ['قیمت اقلام تغییر کرده است؛ جزئیات این ویرایش قدیمی ثبت نشده است.'];
     }
-    if (field === 'DELIVERED_AT') return `زمان تحویل: ${formatDateTime(before.delivered_at)} ← ${formatDateTime(after.delivered_at)}`;
-    if (field === 'EXPECTED_RETURN_AT') return `زمان برگشت: ${formatDateTime(before.expected_return_at)} ← ${formatDateTime(after.expected_return_at)}`;
-    if (field === 'ITEMS') return 'اقلام لیست';
-    if (field === 'NIGHT_BEFORE') return 'محاسبه شب قبل';
-    if (field === 'NOTES') return 'توضیحات لیست';
-    return 'ویرایش لیست';
+    if (field === 'DELIVERED_AT') return [`زمان تحویل: ${formatDateTime(before.delivered_at)} ← ${formatDateTime(after.delivered_at)}`];
+    if (field === 'EXPECTED_RETURN_AT') return [`زمان تقریبی برگشت: ${formatDateTime(before.expected_return_at)} ← ${formatDateTime(after.expected_return_at)}`];
+    if (field === 'ITEMS') return itemChanges.length ? [] : ['اقلام لیست تغییر کرده‌اند؛ جزئیات این ویرایش قدیمی ثبت نشده است.'];
+    if (field === 'NIGHT_BEFORE') return before.night_before === undefined
+      ? ['وضعیت «شب قبل» تغییر کرده است؛ مقدار قبلی ثبت نشده است.']
+      : [`شب قبل: ${before.night_before ? 'فعال' : 'غیرفعال'} ← ${after.night_before ? 'فعال' : 'غیرفعال'}`];
+    if (field === 'NOTES') return before.notes === undefined
+      ? ['توضیحات لیست تغییر کرده است؛ متن قبلی ثبت نشده است.']
+      : [`توضیحات لیست: ${before.notes || 'بدون توضیح'} ← ${after.notes || 'بدون توضیح'}`];
+    return [];
   });
+  return [...changes, ...itemChanges];
 }
 
 function formatNumber(value) { return Number(value || 0).toLocaleString('fa-IR'); }

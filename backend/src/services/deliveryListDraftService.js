@@ -409,7 +409,7 @@ function createDeliveryListDraftService(db) {
         AND audit_logs.entity_id = ?
         AND audit_logs.action = 'UPDATE_DELIVERY_LIST'
       ORDER BY audit_logs.id DESC
-      LIMIT 30
+      LIMIT 200
     `).all(String(id)).map((entry) => ({
       id: entry.id,
       action: entry.action,
@@ -418,8 +418,9 @@ function createDeliveryListDraftService(db) {
       created_at: entry.created_at,
       before: parseJson(entry.before_json, {}),
       after: parseJson(entry.after_json, {}),
-      changed_fields: parseJson(entry.metadata_json, {}).changed_fields || []
-    }));
+      changed_fields: parseJson(entry.metadata_json, {}).changed_fields || [],
+      item_changes: parseJson(entry.metadata_json, {}).item_changes || []
+    })).filter((entry) => entry.changed_fields.length || entry.item_changes.length).slice(0, 30);
     return {
       ...list,
       items,
@@ -612,7 +613,8 @@ function createDeliveryListDraftService(db) {
       throw new DeliveryListDraftError('مجموع قیمت لیست نامعتبر است');
     }
     const previousItems = db.prepare(`
-      SELECT id, product_id, daily_price_toman, delivered_quantity, notes
+      SELECT id, product_id, product_name_snapshot, daily_price_toman,
+             delivered_quantity, remaining_expected_return_at, notes
       FROM delivery_list_items
       WHERE delivery_list_id = ? AND deleted_at IS NULL
       ORDER BY id
@@ -631,16 +633,39 @@ function createDeliveryListDraftService(db) {
     if (String(draft.expected_return_at || '') !== String(expectedReturnAt || '')) changedFields.push('EXPECTED_RETURN_AT');
     if (Boolean(draft.night_before) !== Boolean(nightBefore)) changedFields.push('NIGHT_BEFORE');
     if (String(draft.notes || '') !== String(notes || '')) changedFields.push('NOTES');
-    const previousById = new Map(previousItems.map((item) => [Number(item.id), item]));
-    if (items.some((item) => {
-      const previous = previousById.get(Number(item.itemId));
-      return !previous || Number(previous.product_id) !== Number(item.productId)
-        || Number(previous.delivered_quantity) !== Number(item.quantity);
-    }) || items.length !== previousItems.filter((item) => item.product_id).length) changedFields.push('ITEMS');
-    const itemPriceChanged = items.some((item) => {
-      const previous = previousById.get(Number(item.itemId));
-      return previous && Number(previous.daily_price_toman) !== Number(item.dailyPrice);
+    const previousByProductId = new Map(previousItems.filter((item) => item.product_id)
+      .map((item) => [Number(item.product_id), item]));
+    const nextByProductId = new Map(items.map((item) => [Number(item.productId), item]));
+    const itemChanges = [];
+    previousByProductId.forEach((previous, productId) => {
+      const next = nextByProductId.get(productId);
+      const productName = previous.product_name_snapshot || next?.productName || 'محصول';
+      if (!next) return itemChanges.push({ type: 'REMOVED', product_name: productName,
+        quantity_before: previous.delivered_quantity, daily_price_before: previous.daily_price_toman });
+      if (Number(previous.delivered_quantity) !== Number(next.quantity)) itemChanges.push({
+        type: 'QUANTITY', product_name: productName,
+        before: Number(previous.delivered_quantity), after: Number(next.quantity)
+      });
+      if (Number(previous.daily_price_toman) !== Number(next.dailyPrice)) itemChanges.push({
+        type: 'PRICE', product_name: productName,
+        before: Number(previous.daily_price_toman), after: Number(next.dailyPrice)
+      });
+      if (String(previous.remaining_expected_return_at || '') !== String(next.remainingExpectedReturnAt || '')) itemChanges.push({
+        type: 'REMAINING_RETURN_AT', product_name: productName,
+        before: previous.remaining_expected_return_at, after: next.remainingExpectedReturnAt
+      });
+      if (String(previous.notes || '') !== String(next.notes || '')) itemChanges.push({
+        type: 'NOTES', product_name: productName, before: previous.notes, after: next.notes
+      });
     });
+    items.forEach((item) => {
+      if (!previousByProductId.has(Number(item.productId))) itemChanges.push({
+        type: 'ADDED', product_name: item.productName,
+        quantity_after: item.quantity, daily_price_after: item.dailyPrice
+      });
+    });
+    if (itemChanges.some((change) => change.type !== 'PRICE')) changedFields.push('ITEMS');
+    const itemPriceChanged = itemChanges.some((change) => change.type === 'PRICE');
     const previousComparableTotal = previousInvoiceTotal > 0 ? previousInvoiceTotal : previousDailyTotal;
     if (itemPriceChanged || (requestedTotal !== null && requestedTotal !== previousComparableTotal)) {
       changedFields.push('TOTAL_PRICE');
@@ -810,7 +835,7 @@ function createDeliveryListDraftService(db) {
         `).run(nextStatus, nextStatus, id);
       }
 
-      if (draft.status !== 'DRAFT') {
+      if (draft.status !== 'DRAFT' && changedFields.length) {
         db.prepare(`
           INSERT INTO audit_logs (
             actor_user_id, entity_type, entity_id, action,
@@ -826,6 +851,8 @@ function createDeliveryListDraftService(db) {
             customer_name: draft.customer_name || draft.customer_name_snapshot,
             delivered_at: draft.delivered_at,
             expected_return_at: draft.expected_return_at,
+            night_before: Boolean(draft.night_before),
+            notes: draft.notes,
             total_price_toman: previousComparableTotal
           }),
           JSON.stringify({
@@ -834,9 +861,14 @@ function createDeliveryListDraftService(db) {
             customer_name: customer.customerName,
             delivered_at: deliveredAt,
             expected_return_at: expectedReturnAt,
-            total_price_toman: invoicePriceChange?.targetTotal ?? requestedTotal ?? previousDailyTotal
+            night_before: Boolean(nightBefore),
+            notes,
+            total_price_toman: invoicePriceChange?.targetTotal ?? requestedTotal
+              ?? (previousInvoiceTotal > 0 ? previousInvoiceTotal : items.reduce((sum, item) =>
+                sum + Number(item.dailyPrice) * Number(item.quantity), 0))
           }),
-          JSON.stringify({ item_count: items.length, edited_after_finalize: true, changed_fields: changedFields })
+          JSON.stringify({ item_count: items.length, edited_after_finalize: true,
+            changed_fields: changedFields, item_changes: itemChanges })
         );
       }
     });
